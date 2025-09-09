@@ -216,6 +216,335 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Khám phá cách học hiện đại Section */}
+          <div className="py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center text-white mb-20">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+                  KHÁM PHÁ CÁCH HỌC HIỆN ĐẠI
+                </h2>
+                <p className="text-lg text-purple-100 max-w-3xl mx-auto leading-relaxed">
+                  Trải nghiệm những phương pháp học tập tiên tiến được hỗ trợ bởi công nghệ AI và các giải pháp giáo dục thông minh
+                </p>
+              </div>
+              
+              {/* Top 3 Cards Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                {/* Card 1 - Interactive Learning */}
+                <div className="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                  <div className="relative h-80 overflow-hidden">
+                    <img 
+                      src="/discoverImage.png" 
+                      alt="Học Tập Tương Tác" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #eab308 100%)';
+                      }}
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 via-purple-600/40 to-transparent"></div>
+                    
+                    {/* Top badge */}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-white text-purple-800 text-xs font-bold px-3 py-2 rounded-full shadow-md">
+                        Học mọi lúc, mọi nơi
+                      </span>
+                    </div>
+                    
+                    {/* Bottom content */}
+                    <div className="absolute bottom-6 left-4 right-4">
+                      <h3 className="text-white font-bold text-xl mb-3">
+                        Học Tập Tương Tác
+                      </h3>
+                      <p className="text-white/90 text-sm leading-relaxed mb-4">
+                        Phương pháp học tập hiện đại với công nghệ AI giúp học sinh tiếp thu kiến thức một cách trực quan và hiệu quả.
+                      </p>
+                      <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors group-hover:scale-105 transform duration-200 flex items-center">
+                        Khám phá ngay
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2 - Flexible Learning */}
+                <div className="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                  <div className="relative h-80 overflow-hidden">
+                    <img 
+                      src="/discoverImage.png" 
+                      alt="Học Tập Linh Hoạt" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.background = 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%)';
+                      }}
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-pink-900/80 via-pink-600/40 to-transparent"></div>
+                    
+                    {/* Top badge */}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-white text-pink-800 text-xs font-bold px-3 py-2 rounded-full shadow-md">
+                        Linh hoạt & tiện lợi
+                      </span>
+                    </div>
+                    
+                    {/* Bottom content */}
+                    <div className="absolute bottom-6 left-4 right-4">
+                      <h3 className="text-white font-bold text-xl mb-3">
+                        Học Tập Linh Hoạt
+                      </h3>
+                      <p className="text-white/90 text-sm leading-relaxed mb-4">
+                        Nền tảng học trực tuyến cho phép học sinh học tập mọi lúc, mọi nơi với thiết bị di động.
+                      </p>
+                      <button className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors group-hover:scale-105 transform duration-200 flex items-center">
+                        Trải nghiệm ngay
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3 - Personalized Learning */}
+                <div className="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300">
+                  <div className="relative h-80 overflow-hidden">
+                    <img 
+                      src="/discoverImage.png" 
+                      alt="Học Tập Cá Nhân Hóa" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.background = 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #4338ca 100%)';
+                      }}
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-600/40 to-transparent"></div>
+                    
+                    {/* Top badge */}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-white text-blue-800 text-xs font-bold px-3 py-2 rounded-full shadow-md">
+                        AI cá nhân hóa
+                      </span>
+                    </div>
+                    
+                    {/* Bottom content */}
+                    <div className="absolute bottom-6 left-4 right-4">
+                      <h3 className="text-white font-bold text-xl mb-3">
+                        Học Tập Cá Nhân Hóa
+                      </h3>
+                      <p className="text-white/90 text-sm leading-relaxed mb-4">
+                        AI thông minh cá nhân hóa trải nghiệm học tập theo nhu cầu và khả năng của từng học sinh.
+                      </p>
+                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors group-hover:scale-105 transform duration-200 flex items-center">
+                        Khám phá AI
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bài viết Section */}
+              <div className="mb-16">
+                <div className="text-center mb-12">
+                  <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+                    Bài Viết Nổi Bật
+                  </h3>
+                  <p className="text-purple-100 text-lg max-w-2xl mx-auto leading-relaxed">
+                    Khám phá những bài viết chuyên sâu về phương pháp học tập hiện đại, công nghệ giáo dục và xu hướng mới trong việc học tập thông minh
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom 3 Cards Row with Navigation */}
+              <div className="relative px-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {/* Article Card 1 - AI Technology */}
+                  <div className="group bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
+                    <div className="relative h-52 overflow-hidden">
+                      <img 
+                        src="/newsImage.png" 
+                        alt="AI Technology" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.style.background = 'linear-gradient(135deg, #1e293b 0%, #3730a3 50%, #1e3a8a 100%)';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      <div className="absolute top-4 right-4">
+                        <span className="bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          Mới nhất
+                        </span>
+                      </div>
+                      {/* Tech pattern overlay */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-4 left-4 w-8 h-8 border border-white/30 rounded animate-pulse"></div>
+                        <div className="absolute bottom-4 right-8 w-6 h-6 border border-white/30 rounded-full animate-pulse delay-300"></div>
+                        <div className="absolute top-1/2 right-4 w-4 h-4 bg-white/20 rounded animate-pulse delay-700"></div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center mb-3">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full">Công nghệ</span>
+                        <span className="text-gray-400 text-sm ml-auto">5 phút đọc</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-3 text-lg group-hover:text-blue-600 transition-colors">
+                        AI không chỉ là công cụ - mà là đồng đội học tập của bạn
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                        Tìm hiểu cách AI có thể trở thành người bạn đồng hành trong quá trình học tập, không chỉ hỗ trợ mà còn tạo động lực và cá nhân hóa trải nghiệm học tập.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-blue-600 font-medium text-sm group-hover:text-blue-700 transition-colors">
+                          <span>Đọc thêm</span>
+                          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                        <div className="flex items-center text-gray-400 text-xs">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          1.2k
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Article Card 2 - Group Learning */}
+                  <div className="group bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
+                    <div className="relative h-52 overflow-hidden">
+                      <img 
+                        src="/newsImage.png" 
+                        alt="Group Learning" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.style.background = 'linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #a855f7 100%)';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      <div className="absolute top-4 right-4">
+                        <span className="bg-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          Phổ biến
+                        </span>
+                      </div>
+                      {/* Connection pattern */}
+                      <div className="absolute inset-0 opacity-20">
+                        <div className="absolute top-6 left-6 w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        <div className="absolute top-8 left-12 w-2 h-2 bg-white rounded-full animate-pulse delay-300"></div>
+                        <div className="absolute bottom-8 right-8 w-3 h-3 bg-white rounded-full animate-pulse delay-700"></div>
+                        <div className="absolute bottom-6 right-14 w-2 h-2 bg-white rounded-full animate-pulse delay-1000"></div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center mb-3">
+                        <span className="bg-pink-100 text-pink-800 text-xs font-medium px-3 py-1 rounded-full">Học nhóm</span>
+                        <span className="text-gray-400 text-sm ml-auto">8 phút đọc</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-3 text-lg group-hover:text-pink-600 transition-colors">
+                        5 cách tận dụng học nhóm online hiệu quả nhất
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                        Học nhóm online không chỉ là họp video đơn thuần. Khám phá những phương pháp và công cụ hiệu quả để tối ưu hóa việc học nhóm từ xa.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-pink-600 font-medium text-sm group-hover:text-pink-700 transition-colors">
+                          <span>Xem chi tiết</span>
+                          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                        <div className="flex items-center text-gray-400 text-xs">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          856
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Article Card 3 - Smart Learning */}
+                  <div className="group bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
+                    <div className="relative h-52 overflow-hidden">
+                      <img 
+                        src="/newsImage.png" 
+                        alt="Smart Learning" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.style.background = 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #3b82f6 100%)';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      <div className="absolute top-4 right-4">
+                        <span className="bg-cyan-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          Xu hướng
+                        </span>
+                      </div>
+                      {/* Digital pattern */}
+                      <div className="absolute inset-0 opacity-15">
+                        <div className="absolute top-4 left-4 text-white text-xs animate-pulse">{'{ }'}</div>
+                        <div className="absolute bottom-4 right-4 text-white text-xs animate-pulse delay-500">{'< />'}</div>
+                        <div className="absolute top-1/2 left-8 text-white text-xs animate-pulse delay-1000">{'#'}</div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center mb-3">
+                        <span className="bg-cyan-100 text-cyan-800 text-xs font-medium px-3 py-1 rounded-full">Xu hướng</span>
+                        <span className="text-gray-400 text-sm ml-auto">6 phút đọc</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-3 text-lg group-hover:text-cyan-600 transition-colors">
+                        Làm sao để công nghệ số trở thành công cụ học tập thông minh?
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                        Tìm hiểu cách sử dụng công nghệ số một cách thông minh và hiệu quả để nâng cao chất lượng học tập và phát triển kỹ năng tư duy.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-cyan-600 font-medium text-sm group-hover:text-cyan-700 transition-colors">
+                          <span>Tìm hiểu</span>
+                          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                        <div className="flex items-center text-gray-400 text-xs">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          942
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Navigation Arrows */}
+                <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full p-4 text-white transition-all duration-300 hover:scale-110 shadow-lg border border-white/20">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full p-4 text-white transition-all duration-300 hover:scale-110 shadow-lg border border-white/20">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Về chúng tôi Section */}
           <div className="py-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
