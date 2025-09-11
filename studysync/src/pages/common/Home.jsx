@@ -1,71 +1,11 @@
 import React from 'react';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            {/* Logo Section */}
-            <div className="flex items-center">
-              <img 
-                src="/authLogo.png" 
-                alt="StudySync Logo" 
-                className="h-10 w-auto"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-              <span className="ml-3 text-2xl font-bold text-gray-900">StudySync</span>
-            </div>
-
-            {/* Navigation Menu */}
-            <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
-                Trang chủ
-              </a>
-              <a href="#" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
-                Khóa học
-              </a>
-              <a href="#" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
-                Về chúng tôi
-              </a>
-              <a href="#" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors">
-                Liên hệ
-              </a>
-            </nav>
-
-            {/* Auth Buttons */}
-            <div className="flex items-center space-x-4">
-              <a 
-                href="/login" 
-                className="text-purple-600 hover:text-purple-700 px-4 py-2 text-sm font-medium transition-colors"
-              >
-                Đăng nhập
-              </a>
-              <a 
-                href="/register" 
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Đăng ký
-              </a>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                type="button"
-                className="text-gray-700 hover:text-purple-600 focus:outline-none focus:text-purple-600"
-                aria-label="Toggle menu"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section with White Background */}
       <section className="bg-white py-8 lg:py-0 relative overflow-hidden">
@@ -719,52 +659,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center mb-4">
-                <img 
-                  src="/authLogo.png" 
-                  alt="StudySync Logo" 
-                  className="h-8 w-auto"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-                <span className="ml-3 text-xl font-bold">StudySync</span>
-              </div>
-              <p className="text-gray-400 mb-4">
-                Ứng dụng công nghệ AI mang lại hiệu quả học tập tốt hơn cho mọi người.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Liên kết</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Trang chủ</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Khóa học</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Về chúng tôi</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Liên hệ</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Hỗ trợ</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Trung tâm trợ giúp</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Chính sách bảo mật</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Điều khoản sử dụng</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 StudySync. Tất cả quyền được bảo lưu.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
