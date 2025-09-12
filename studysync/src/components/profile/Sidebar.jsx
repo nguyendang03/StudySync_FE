@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserOutlined, LockOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, UsergroupAddOutlined, MailOutlined } from '@ant-design/icons';
 
 export default function Sidebar({ activeItem = 'profile', onItemClick }) {
   const menuItems = [
@@ -14,6 +14,12 @@ export default function Sidebar({ activeItem = 'profile', onItemClick }) {
       icon: UsergroupAddOutlined, 
       label: 'Groups',
       active: activeItem === 'groups'
+    },
+    { 
+      id: 'invitations', 
+      icon: MailOutlined, 
+      label: 'Invitations',
+      active: activeItem === 'invitations'
     },
     { 
       id: 'change-password', 

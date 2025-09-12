@@ -4,6 +4,7 @@ import ProfilePictureUpload from '../../components/profile/ProfilePictureUpload'
 import ProfileInfoForm from '../../components/profile/ProfileInfoForm';
 import ChangePassword from '../../components/profile/ChangePassword';
 import GroupList from '../../components/profile/GroupList';
+import InvitationList from '../../components/profile/InvitationList';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 
@@ -42,6 +43,13 @@ export default function Profile() {
         return (
           <div className="w-full">
             <GroupList />
+          </div>
+        );
+      
+      case 'invitations':
+        return (
+          <div className="w-full">
+            <InvitationList />
           </div>
         );
       
