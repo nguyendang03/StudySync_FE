@@ -3,6 +3,7 @@ import Sidebar from '../../components/profile/Sidebar';
 import ProfilePictureUpload from '../../components/profile/ProfilePictureUpload';
 import ProfileInfoForm from '../../components/profile/ProfileInfoForm';
 import ChangePassword from '../../components/profile/ChangePassword';
+import GroupList from '../../components/profile/GroupList';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 
@@ -34,6 +35,13 @@ export default function Profile() {
         return (
           <div className="flex justify-center items-start w-full h-full pt-8">
             <ChangePassword />
+          </div>
+        );
+      
+      case 'groups':
+        return (
+          <div className="w-full">
+            <GroupList />
           </div>
         );
       
