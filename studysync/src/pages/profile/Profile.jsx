@@ -86,7 +86,7 @@ export default function Profile() {
   return (
     <>
       <Header/>
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 p-8">
+      <div className="min-h-screen p-8" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="flex min-h-[600px]">

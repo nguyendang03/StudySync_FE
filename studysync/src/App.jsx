@@ -5,6 +5,8 @@ import Login from './pages/common/Login';
 import Register from './pages/common/Register';
 import ForgotPassword from './pages/common/ForgotPassword';
 import Profile from './pages/profile/Profile';
+import GroupDiscovery from './pages/groups/GroupDiscovery';
+import GroupDetail from './pages/groups/GroupDetail';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/groups" element={<GroupDiscovery />} />
+          <Route path="/groups/:id" element={<GroupDetail />} />
           {/* Add more routes here as needed */}
         </Routes>
       </div>
