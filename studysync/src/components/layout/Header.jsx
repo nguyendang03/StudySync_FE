@@ -27,12 +27,18 @@ export default function Header() {
             >
               Trang chủ
             </Link>
-            <a 
-              href="#" 
+            <Link 
+              to="/groups" 
               className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
             >
-              Khóa học
-            </a>
+              Nhóm học
+            </Link>
+            <Link 
+              to="/faq" 
+              className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Hỗ trợ
+            </Link>
             <a 
               href="#" 
               className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"

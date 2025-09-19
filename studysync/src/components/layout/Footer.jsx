@@ -32,9 +32,14 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Khóa học
-                </a>
+                <Link to="/groups" className="hover:text-white transition-colors">
+                  Nhóm học
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="hover:text-white transition-colors">
+                  Hỗ trợ
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
@@ -52,6 +57,11 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Hỗ trợ</h3>
             <ul className="space-y-2 text-gray-400">
+              <li>
+                <Link to="/faq" className="hover:text-white transition-colors">
+                  Giải đáp thắc mắc
+                </Link>
+              </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
                   Trung tâm trợ giúp

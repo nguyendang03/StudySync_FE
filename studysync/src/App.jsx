@@ -7,6 +7,7 @@ import ForgotPassword from './pages/common/ForgotPassword';
 import Profile from './pages/profile/Profile';
 import GroupDiscovery from './pages/groups/GroupDiscovery';
 import GroupDetail from './pages/groups/GroupDetail';
+import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
 
 function App() {
   return (
@@ -21,6 +22,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/groups" element={<GroupDiscovery />} />
           <Route path="/groups/:id" element={<GroupDetail />} />
+          <Route path="/faq" element={<GiaiDapThacMac />} />
+          <Route path="/giai-dap-thac-mac" element={<GiaiDapThacMac />} />
           {/* Add more routes here as needed */}
         </Routes>
       </div>
