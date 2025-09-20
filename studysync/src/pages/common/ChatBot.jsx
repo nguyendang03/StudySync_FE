@@ -95,9 +95,18 @@ export default function ChatBot() {
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Left Sidebar */}
-      <div className="w-80 bg-gray-950 border-r border-gray-800 flex flex-col">
+      <div className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <MessageOutlined className="text-white text-xl" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white">AI TRỢ LÝ</h1>
+              <p className="text-gray-400 text-xs">Hỗ trợ học tập thông minh</p>
+            </div>
+          </div>
           <button 
             onClick={startNewChat}
             className="w-full flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium"
@@ -107,9 +116,8 @@ export default function ChatBot() {
           </button>
         </div>
 
-        {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Chat History */}
+        {/* Chat History Section */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
           <div className="p-4">
             <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center">
               <HistoryOutlined className="mr-2" />
@@ -150,67 +158,53 @@ export default function ChatBot() {
               ))}
             </div>
           </div>
-
-          {/* Navigation Links */}
-          <div className="border-t border-gray-800 p-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Điều hướng</h3>
-            <div className="space-y-1">
-              <Link 
-                to="/home"
-                className="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
-              >
-                <HomeOutlined />
-                <span>Trang chủ</span>
-              </Link>
-              <Link 
-                to="/my-groups"
-                className="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
-              >
-                <BookOutlined />
-                <span>Nhóm của tôi</span>
-              </Link>
-              <Link 
-                to="/groups"
-                className="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
-              >
-                <UserOutlined />
-                <span>Khám phá nhóm</span>
-              </Link>
-              <Link 
-                to="/faq"
-                className="flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
-              >
-                <QuestionCircleOutlined />
-                <span>Hỗ trợ</span>
-              </Link>
-            </div>
-          </div>
         </div>
 
-        {/* Bottom Navigation */}
+        {/* Navigation Links */}
         <div className="border-t border-gray-800 p-4">
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200">
-              <SettingOutlined />
-              <span>Cài đặt</span>
+          <div className="space-y-2">
+            <Link 
+              to="/home"
+              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
+            >
+              <HomeOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Trang chủ</span>
+            </Link>
+            <Link 
+              to="/groups"
+              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
+            >
+              <UserOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Khám phá nhóm</span>
+            </Link>
+            <Link 
+              to="/my-groups"
+              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
+            >
+              <BookOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Nhóm của tôi</span>
+            </Link>
+            <Link 
+              to="/chatbot"
+              className="flex items-center gap-3 px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-lg transition-all group"
+            >
+              <MessageOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">AI Trợ lý</span>
+            </Link>
+            
+            <div className="border-t border-gray-700 my-2"></div>
+            
+            <Link 
+              to="/faq"
+              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
+            >
+              <QuestionCircleOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Hỗ trợ</span>
+            </Link>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group">
+              <SettingOutlined className="text-lg group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Cài đặt</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200">
-              <LogoutOutlined />
-              <span>Đăng xuất</span>
-            </button>
-          </div>
-          
-          {/* User Profile */}
-          <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <UserOutlined className="text-sm" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">Nguyễn Văn A</p>
-                <p className="text-xs text-gray-400 truncate">student@studysync.edu.vn</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
