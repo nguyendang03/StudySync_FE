@@ -34,6 +34,12 @@ export default function Header() {
               Nhóm học
             </Link>
             <Link 
+              to="/chatbot" 
+              className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              AI Trợ lý
+            </Link>
+            <Link 
               to="/faq" 
               className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
             >

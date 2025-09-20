@@ -7,7 +7,9 @@ import ForgotPassword from './pages/common/ForgotPassword';
 import Profile from './pages/profile/Profile';
 import GroupDiscovery from './pages/groups/GroupDiscovery';
 import GroupDetail from './pages/groups/GroupDetail';
+// import MyGroups from './pages/groups/MyGroups';
 import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
+import ChatBot from './pages/common/ChatBot';
 
 function App() {
   return (
@@ -22,9 +24,10 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/groups" element={<GroupDiscovery />} />
           <Route path="/groups/:id" element={<GroupDetail />} />
+          {/* <Route path="/my-groups" element={<MyGroups />} /> */}
+          <Route path="/chatbot" element={<ChatBot />} />
           <Route path="/faq" element={<GiaiDapThacMac />} />
           <Route path="/giai-dap-thac-mac" element={<GiaiDapThacMac />} />
-          {/* Add more routes here as needed */}
         </Routes>
       </div>
     </Router>
