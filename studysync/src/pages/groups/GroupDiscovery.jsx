@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SearchOutlined, DownOutlined, UsergroupAddOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import CreateGroupModal from '../../components/groups/CreateGroupModal';
@@ -10,6 +11,10 @@ export default function GroupDiscovery() {
   const [showMore, setShowMore] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
   const [groups, setGroups] = useState([
     {
       id: 1,
@@ -66,10 +71,6 @@ export default function GroupDiscovery() {
     setIsCreateModalOpen(false);
   };
 
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
   const visibleGroups = showMore ? groups : groups.slice(0, 3);
 
   return (
@@ -81,25 +82,55 @@ export default function GroupDiscovery() {
       >
         <div className="max-w-5xl mx-auto">
           {/* Page Title */}
-          <div className={`text-center mb-8 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <h1 className="text-3xl font-bold text-white mb-2">Khám phá nhóm học tập</h1>
-            <p className="text-white/80">Tìm kiếm và tham gia các nhóm học tập phù hợp với bạn</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 30 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-8"
+          >
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-3xl font-bold text-white mb-2"
+            >
+              Khám phá nhóm học tập
+            </motion.h1>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-white/80"
+            >
+              Tìm kiếm và tham gia các nhóm học tập phù hợp với bạn
+            </motion.p>
+          </motion.div>
 
           {/* Search Bar */}
-          <div className={`flex items-center justify-between mb-8 transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="flex items-center justify-between mb-8"
+          >
             <div className="flex items-center space-x-4">
-              <button className="px-6 py-3 bg-white/20 text-white rounded-full border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm font-medium shadow-lg hover:scale-105 transform">
+              <motion.button 
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-white/20 text-white rounded-full border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm font-medium shadow-lg"
+              >
                 <UsergroupAddOutlined className="mr-2" style={{ fontSize: '16px' }} />
                 Danh sách nhóm
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
                 onClick={handleOpenCreateModal}
-                className="px-6 py-3 bg-white text-purple-600 rounded-full hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg hover:scale-105 transform"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-white text-purple-600 rounded-full hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg"
               >
                 <PlusOutlined className="mr-2" style={{ fontSize: '16px' }} />
                 Tạo nhóm
-              </button>
+              </motion.button>
             </div>
             
             <div className="relative">
@@ -112,20 +143,28 @@ export default function GroupDiscovery() {
                 placeholder="Bạn tìm nhóm nào?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-6 py-3 bg-white/20 text-white placeholder-white/70 rounded-full border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/30 w-96 backdrop-blur-sm transition-all duration-300 hover:scale-105 focus:scale-105"
+                className="pl-12 pr-6 py-3 bg-white/20 text-white placeholder-white/70 rounded-full border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/30 w-96 backdrop-blur-sm transition-all duration-300"
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Groups List */}
-          <div className={`bg-white rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg transition-all duration-1000 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="bg-white rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg"
+          >
             <div className="p-8">
               <div className="space-y-6">
                 {visibleGroups.map((group, index) => (
-                  <div 
+                  <motion.div 
                     key={group.id} 
-                    className={`bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-500 border border-gray-200 hover:scale-[1.02] transform ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
-                    style={{ transitionDelay: `${800 + index * 200}ms` }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+                    transition={{ delay: 0.6 + index * 0.1, duration: 0.6 }}
+                    whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
+                    className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-gray-200"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -160,35 +199,39 @@ export default function GroupDiscovery() {
                       
                       {/* Join Button */}
                       <div className="ml-8 flex-shrink-0">
-                        <button 
+                        <motion.button 
                           onClick={() => handleViewGroup(group.id)}
-                          className="px-8 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-full font-semibold hover:from-pink-500 hover:to-pink-600 transition-all duration-300 shadow-lg transform hover:scale-110 hover:shadow-xl"
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-8 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-full font-semibold hover:from-pink-500 hover:to-pink-600 transition-all duration-300 shadow-lg transform hover:scale-105"
                         >
                           VÀO XEM
-                        </button>
+                        </motion.button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
               
               {/* Show More Button */}
               {groups.length > 3 && (
                 <div className="text-center mt-10">
-                  <button
+                  <motion.button
                     onClick={() => setShowMore(!showMore)}
-                    className="inline-flex items-center px-6 py-3 text-purple-600 font-semibold hover:text-purple-700 transition-all duration-300 bg-purple-50 rounded-full hover:bg-purple-100 hover:scale-105 transform"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="inline-flex items-center px-6 py-3 text-purple-600 font-semibold hover:text-purple-700 transition-colors bg-purple-50 rounded-full hover:bg-purple-100"
                   >
                     {showMore ? 'ẨN BỚT' : 'HIỂN THỊ THÊM...'}
                     <DownOutlined 
                       className={`ml-2 transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`}
                       style={{ fontSize: '14px' }}
                     />
-                  </button>
+                  </motion.button>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
       

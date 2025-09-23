@@ -16,7 +16,8 @@ import {
   DownOutlined,
   MenuOutlined,
   HomeOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
 
@@ -63,11 +64,21 @@ export default function Header() {
         ),
       },
       {
+        key: 'schedule',
+        icon: <CalendarOutlined className="text-green-600" />,
+        label: (
+          <Link to="/schedule" className="flex items-center gap-3 py-1">
+            <span>Thời khóa biểu</span>
+            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">New</span>
+          </Link>
+        ),
+      },
+      {
         type: 'divider',
       },
       {
         key: 'groups',
-        icon: <SearchOutlined className="text-green-600" />,
+        icon: <SearchOutlined className="text-orange-600" />,
         label: <Link to="/groups">Khám phá nhóm</Link>,
       },
     ],
@@ -297,6 +308,14 @@ export default function Header() {
                 >
                   <MessageOutlined />
                   AI Trợ lý
+                </Link>
+                <Link 
+                  to="/schedule" 
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <CalendarOutlined />
+                  Thời khóa biểu
                 </Link>
                 <Link 
                   to="/faq" 
