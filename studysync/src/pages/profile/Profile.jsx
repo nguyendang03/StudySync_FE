@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/profile/Sidebar';
 import ProfilePictureUpload from '../../components/profile/ProfilePictureUpload';
 import ProfileInfoForm from '../../components/profile/ProfileInfoForm';
 import ChangePassword from '../../components/profile/ChangePassword';
 import GroupList from '../../components/profile/GroupList';
 import InvitationList from '../../components/profile/InvitationList';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 
 export default function Profile() {
   const [activeView, setActiveView] = useState('profile');
@@ -23,69 +22,124 @@ export default function Profile() {
   }, []);
 
   const renderMainContent = () => {
-    const contentClass = `transition-all duration-500 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`;
-    
     switch (activeView) {
       case 'profile':
         return (
-          <div key={contentKey} className={`grid grid-cols-1 lg:grid-cols-3 gap-8 h-full ${contentClass}`}>
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full"
+          >
             {/* Profile Picture Section */}
-            <div className="lg:col-span-1 flex flex-col justify-center transition-all duration-700 delay-200">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="lg:col-span-1 flex flex-col justify-center"
+            >
               <ProfilePictureUpload />
-            </div>
+            </motion.div>
             
             {/* Profile Information Form */}
-            <div className="lg:col-span-2 transition-all duration-700 delay-400">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="lg:col-span-2"
+            >
               <ProfileInfoForm />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         );
       
       case 'change-password':
         return (
-          <div key={contentKey} className={`flex justify-center items-start w-full h-full pt-8 ${contentClass}`}>
-            <div className="transition-all duration-700 delay-200 hover:scale-105 transform">
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.6 }}
+            className="flex justify-center items-start w-full h-full pt-8"
+          >
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <ChangePassword />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         );
       
       case 'groups':
         return (
-          <div key={contentKey} className={`w-full ${contentClass}`}>
-            <div className="transition-all duration-700 delay-200">
-              <GroupList />
-            </div>
-          </div>
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6 }}
+            className="w-full"
+          >
+            <GroupList />
+          </motion.div>
         );
       
       case 'invitations':
         return (
-          <div key={contentKey} className={`w-full ${contentClass}`}>
-            <div className="transition-all duration-700 delay-200">
-              <InvitationList />
-            </div>
-          </div>
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6 }}
+            className="w-full"
+          >
+            <InvitationList />
+          </motion.div>
         );
       
       case 'friends':
         return (
-          <div key={contentKey} className={`text-center py-16 ${contentClass}`}>
-            <div className="transition-all duration-700 delay-200 hover:scale-105 transform">
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.6 }}
+            className="text-center py-16"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Bạn bè</h2>
               <p className="text-gray-600">Tính năng này đang được phát triển...</p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         );
       
       case 'messages':
         return (
-          <div key={contentKey} className={`text-center py-16 ${contentClass}`}>
-            <div className="transition-all duration-700 delay-200 hover:scale-105 transform">
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.6 }}
+            className="text-center py-16"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Tin nhắn</h2>
               <p className="text-gray-600">Tính năng này đang được phát triển...</p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         );
       
       default:
@@ -104,28 +158,49 @@ export default function Profile() {
 
   return (
     <>
-      <Header/>
-      <div className={`min-h-screen p-8 transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="min-h-screen p-8" 
+        style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
+      >
         <div className="max-w-7xl mx-auto">
-          <div className={`bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="bg-white rounded-3xl shadow-2xl overflow-hidden"
+          >
             <div className="flex min-h-[600px]">
               {/* Sidebar */}
-              <div className={`w-20 bg-purple-100/50 flex flex-col items-center py-8 space-y-6 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
+                className="w-20 bg-purple-100/50 flex flex-col items-center py-8 space-y-6"
+              >
                 <Sidebar 
                   activeItem={activeView} 
                   onItemClick={handleSidebarItemClick}
                 />
-              </div>
+              </motion.div>
               
               {/* Main Content */}
-              <div className={`flex-1 p-8 transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {renderMainContent()}
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.6 }}
+                className="flex-1 p-8"
+              >
+                <AnimatePresence mode="wait">
+                  {renderMainContent()}
+                </AnimatePresence>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
-      <Footer/>
+      </motion.div>
     </>
   );
 }

@@ -21,8 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown } from 'antd';
 import toast from 'react-hot-toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
+import Sidebar from '../../components/layout/Sidebar';
 
 export default function MyGroups() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,72 +150,8 @@ export default function MyGroups() {
 
   return (
     <>
-    <Header/>
     <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
-      {/* Left Sidebar Navigation */}
-      <div className="w-64 bg-white/10 backdrop-blur-lg border-r border-white/20 lg:flex flex-col max-h-screen sticky top-0 hidden">
-        {/* Mobile Overlay */}
-        {isMobileMenuOpen && (
-          <div 
-            className="lg:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-        )}
-        
-        {/* Sidebar Content */}
-        <div className={`lg:relative fixed inset-y-0 left-0 z-50 w-64 bg-white/10 backdrop-blur-lg border-r border-white/20 flex flex-col max-h-screen transform transition-transform lg:transform-none ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}>
-
-        {/* Navigation Links */}
-        <div className="flex-1 p-6">
-          <div className="space-y-3">
-            <Link 
-              to="/home"
-              className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
-            >
-              <HomeOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Trang chủ</span>
-            </Link>
-            <Link 
-              to="/groups"
-              className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
-            >
-              <SearchOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Khám phá nhóm</span>
-            </Link>
-            <Link 
-              to="/my-groups"
-              className="flex items-center gap-3 px-4 py-3 text-white bg-white/20 border border-white/30 rounded-lg transition-all group"
-            >
-              <TeamOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Nhóm của tôi</span>
-            </Link>
-            <Link 
-              to="/chatbot"
-              className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
-            >
-              <MessageOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">AI Trợ lý</span>
-            </Link>
-            
-            <div className="border-t border-white/20 my-4"></div>
-            
-            <Link 
-              to="/profile"
-              className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
-            >
-              <UserOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Hồ sơ</span>
-            </Link>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group">
-              <SettingOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Cài đặt</span>
-            </button>
-          </div>
-        </div>
-        </div>
-      </div>
+      <Sidebar />
 
       {/* Mobile Menu Button */}
       <button
@@ -486,7 +421,6 @@ export default function MyGroups() {
         </div>
       </div>
     </div>
-    <Footer/>
     </>
   );
 }

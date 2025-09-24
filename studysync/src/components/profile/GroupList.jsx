@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined } from '@ant-design/icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Modal, Form, Input, Button, message } from 'antd';
+import toast from 'react-hot-toast';
 
 export default function GroupList() {
   const [groups, setGroups] = useState([
@@ -7,15 +10,50 @@ export default function GroupList() {
       id: 1,
       name: 'Tung Tung Tung Sahur',
       subject: 'EXE101',
-      status: 'VÀO XEM'
+      status: 'VÀO XEM',
+      members: 6,
+      progress: 75
     }
     // You can add more groups here
   ]);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [form] = Form.useForm();
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateGroup = () => {
     setShowCreateForm(true);
+  };
+
+  const handleCreateSubmit = async (values) => {
+    setIsCreating(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newGroup = {
+        id: groups.length + 1,
+        name: values.groupName,
+        subject: values.subject,
+        status: 'VÀO XEM',
+        members: 1,
+        progress: 0
+      };
+      
+      setGroups([...groups, newGroup]);
+      setShowCreateForm(false);
+      form.resetFields();
+      toast.success('Tạo nhóm thành công!');
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi tạo nhóm!');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowCreateForm(false);
+    form.resetFields();
   };
 
   const getStatusColor = (status) => {
@@ -30,126 +68,258 @@ export default function GroupList() {
   };
 
   return (
-    <div className="w-full">
-      <h2 className="text-2xl font-bold text-gray-800 mb-8">Danh sách nhóm</h2>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full"
+    >
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+          <TeamOutlined className="text-purple-600 text-3xl" />
+          Danh sách nhóm
+        </h2>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateGroup}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl h-10 px-6 shadow-lg hover:shadow-xl"
+            size="large"
+          >
+            Tạo nhóm mới
+          </Button>
+        </motion.div>
+      </div>
       
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100"
+      >
         {/* Table Header */}
-        <div className="bg-gray-50 px-6 py-4">
-          <div className="grid grid-cols-4 gap-4 font-semibold text-gray-700">
-            <div>STT</div>
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-6 py-4 border-b border-purple-100">
+          <div className="grid grid-cols-5 gap-4 font-semibold text-gray-700">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+              STT
+            </div>
             <div>Tên nhóm</div>
             <div>Môn học</div>
+            <div>Thành viên</div>
             <div>Hành động</div>
           </div>
         </div>
         
         {/* Table Body */}
-        <div className="divide-y divide-gray-100">
-          {groups.map((group, index) => (
-            <div key={group.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-              <div className="grid grid-cols-4 gap-4 items-center">
-                {/* STT */}
-                <div className="text-gray-600 font-medium">
-                  {index + 1}
+        <AnimatePresence>
+          <div className="divide-y divide-gray-100">
+            {groups.map((group, index) => (
+              <motion.div
+                key={group.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ backgroundColor: 'rgba(147, 51, 234, 0.02)' }}
+                className="px-6 py-4 transition-all duration-200"
+              >
+                <div className="grid grid-cols-5 gap-4 items-center">
+                  {/* STT */}
+                  <div className="text-gray-600 font-medium flex items-center gap-3">
+                    <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
+                      {index + 1}
+                    </span>
+                  </div>
+                  
+                  {/* Group Name */}
+                  <div className="text-gray-900 font-medium">
+                    <div className="flex items-center gap-2">
+                      <BookOutlined className="text-purple-500" />
+                      {group.name}
+                    </div>
+                  </div>
+                  
+                  {/* Subject */}
+                  <div>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.subject)}`}>
+                      {group.subject}
+                    </span>
+                  </div>
+                  
+                  {/* Members */}
+                  <div className="flex items-center gap-2">
+                    <TeamOutlined className="text-gray-400" />
+                    <span className="text-gray-600">{group.members} thành viên</span>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                    >
+                      {group.status}
+                    </motion.button>
+                  </div>
                 </div>
-                
-                {/* Group Name */}
-                <div className="text-gray-900 font-medium">
-                  {group.name}
-                </div>
-                
-                {/* Subject */}
-                <div>
-                  <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.subject)}`}>
-                    {group.subject}
-                  </span>
-                </div>
-                
-                {/* Actions */}
-                <div>
-                  <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.status)}`}>
-                    {group.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {/* Empty State */}
-          {groups.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có nhóm nào</h3>
-              <p className="text-gray-500 mb-6">Bạn chưa tham gia hoặc tạo nhóm học nào.</p>
-            </div>
-          )}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        </AnimatePresence>
         
-        {/* Footer with Create Button */}
-        <div className="bg-gray-50 px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              HIỂN THỊ THÊM...
-            </div>
-            <button
-              onClick={handleCreateGroup}
-              className="inline-flex items-center px-6 py-2 bg-purple-600 text-white rounded-full text-sm font-medium hover:bg-purple-700 transition-colors shadow-lg"
+        {/* Empty State */}
+        {groups.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="px-6 py-16 text-center"
+          >
+            <motion.div 
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+              className="text-purple-400 mb-6"
             >
-              <PlusOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
-              Tạo nhóm
-            </button>
+              <TeamOutlined className="text-6xl" />
+            </motion.div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có nhóm nào</h3>
+            <p className="text-gray-500 mb-8">Bạn chưa tham gia hoặc tạo nhóm học nào.</p>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreateGroup}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl h-10 px-6"
+              size="large"
+            >
+              Tạo nhóm đầu tiên
+            </Button>
+          </motion.div>
+        )}
+        
+        {/* Footer */}
+        {groups.length > 0 && (
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-500 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Hiển thị {groups.length} nhóm
+              </div>
+              <button className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors">
+                HIỂN THỊ THÊM...
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+      </motion.div>
 
-      {/* Create Group Modal/Form - Simple implementation */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Tạo nhóm mới</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tên nhóm</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                  placeholder="Nhập tên nhóm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Môn học</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                  placeholder="Nhập mã môn học"
-                />
-              </div>
+      {/* Enhanced Create Group Modal using Ant Design */}
+      <Modal
+        title={
+          <div className="flex items-center gap-3 text-xl font-bold">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <PlusOutlined className="text-white" />
             </div>
-            <div className="flex space-x-4 mt-8">
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => {
-                  // TODO: Add create group logic here
-                  setShowCreateForm(false);
-                }}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
-              >
-                Tạo nhóm
-              </button>
-            </div>
+            Tạo nhóm mới
           </div>
+        }
+        open={showCreateForm}
+        onCancel={handleCancel}
+        footer={null}
+        width={500}
+        centered
+        destroyOnClose
+        className="custom-modal"
+        styles={{
+          content: {
+            borderRadius: '16px',
+            overflow: 'hidden'
+          },
+          header: {
+            background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(59, 130, 246, 0.05))',
+            borderBottom: '1px solid rgba(147, 51, 234, 0.1)',
+            padding: '20px 24px'
+          }
+        }}
+      >
+        <div className="pt-6">
+          <Form
+            form={form}
+            onFinish={handleCreateSubmit}
+            layout="vertical"
+            size="large"
+          >
+            <Form.Item
+              name="groupName"
+              label={
+                <span className="text-gray-700 font-medium flex items-center gap-2">
+                  <BookOutlined className="text-purple-500" />
+                  Tên nhóm
+                </span>
+              }
+              rules={[
+                { required: true, message: 'Vui lòng nhập tên nhóm!' },
+                { min: 3, message: 'Tên nhóm phải có ít nhất 3 ký tự!' }
+              ]}
+            >
+              <Input
+                placeholder="Nhập tên nhóm học tập"
+                className="rounded-xl border-gray-200 hover:border-purple-400 focus:border-purple-500"
+                prefix={<TeamOutlined className="text-gray-400" />}
+              />
+            </Form.Item>
+            
+            <Form.Item
+              name="subject"
+              label={
+                <span className="text-gray-700 font-medium flex items-center gap-2">
+                  <BookOutlined className="text-blue-500" />
+                  Mã môn học
+                </span>
+              }
+              rules={[
+                { required: true, message: 'Vui lòng nhập mã môn học!' },
+                { pattern: /^[A-Z]{2,3}[0-9]{3}$/, message: 'Mã môn học không đúng định dạng (VD: EXE101)!' }
+              ]}
+            >
+              <Input
+                placeholder="VD: EXE101, SWP391, WDP301"
+                className="rounded-xl border-gray-200 hover:border-blue-400 focus:border-blue-500"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </Form.Item>
+            
+            <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
+              <Button
+                onClick={handleCancel}
+                className="flex-1 h-12 rounded-xl border-gray-300 hover:border-gray-400"
+                size="large"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isCreating}
+                className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl shadow-lg hover:shadow-xl"
+                size="large"
+              >
+                {isCreating ? 'Đang tạo...' : 'Tạo nhóm'}
+              </Button>
+            </div>
+          </Form>
         </div>
-      )}
-    </div>
+      </Modal>
+    </motion.div>
   );
 }

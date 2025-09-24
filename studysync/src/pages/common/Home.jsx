@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
+import { motion } from 'framer-motion';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -11,52 +10,87 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
 
       {/* Hero Section with White Background */}
       <section className="bg-white py-8 lg:py-0 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-0 items-center min-h-[500px] lg:min-h-[600px]">
             {/* Text Content */}
-            <div className={`text-center lg:text-left order-2 lg:order-1 z-10 lg:pr-8 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : -50 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-center lg:text-left order-2 lg:order-1 z-10 lg:pr-8"
+            >
               {/* Pink subtitle */}
-              <p className={`text-pink-400 text-lg font-medium mb-4 uppercase tracking-wide transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="text-pink-400 text-lg font-medium mb-4 uppercase tracking-wide"
+              >
                 HỌC NHÓM THÔNG MINH HƠN CÙNG STUDYSYNC
-              </p>
+              </motion.p>
               
               {/* Main title */}
-              <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold text-purple-800 mb-6 leading-tight transition-all duration-1000 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+              <motion.h1 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 30 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="text-4xl md:text-5xl lg:text-6xl font-bold text-purple-800 mb-6 leading-tight"
+              >
                 TRỢ LÝ AI HỌC TẬP CỦA BẠN
-              </h1>
+              </motion.h1>
               
               {/* Description */}
-              <p className={`text-gray-600 text-lg md:text-xl mb-8 leading-relaxed transition-all duration-1000 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="text-gray-600 text-lg md:text-xl mb-8 leading-relaxed"
+              >
                 Tạo nhóm học dễ dàng, chia sẻ nội dung học tập, call online, giải bài tập - tất cả chỉ trong một nền tảng
-              </p>
+              </motion.p>
               
-              <div className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start transition-all duration-1000 delay-800 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <a
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+                transition={{ delay: 0.8, duration: 0.6 }}
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              >
+                <motion.a
                   href="/register"
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors shadow-lg"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Bắt đầu ngay
-                </a>
-                <a
+                </motion.a>
+                <motion.a
                   href="#features"
-                  className="border border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-300 hover:scale-105 transform"
+                  className="border border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-3 rounded-lg text-lg font-medium transition-colors"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Tìm hiểu thêm
-                </a>
-              </div>
-            </div>
+                </motion.a>
+              </motion.div>
+            </motion.div>
 
             {/* Home Image - Filling top right corner */}
-            <div className={`order-1 lg:order-2 lg:absolute lg:right-0 lg:top-0 lg:w-1/2 lg:h-full flex items-center justify-end transition-all duration-1200 delay-300 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : 50 }}
+              transition={{ delay: 0.3, duration: 1.2 }}
+              className="order-1 lg:order-2 lg:absolute lg:right-0 lg:top-0 lg:w-1/2 lg:h-full flex items-center justify-end"
+            >
               <div className="w-full h-full flex items-center justify-center lg:justify-end">
-                <img 
+                <motion.img 
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }} 
                   src="/homeImage.png" 
                   alt="StudySync Home Illustration" 
-                  className="w-full h-auto object-contain lg:object-cover lg:h-full max-w-none hover:scale-105 transition-transform duration-700"
+                  className="w-full h-auto object-contain lg:object-cover lg:h-full max-w-none"
                   style={{ maxHeight: '500px' }}
                   onError={(e) => {
                     console.log('Home image failed to load:', e.target.src);
@@ -67,7 +101,7 @@ export default function Home() {
                   onLoad={() => console.log('Home image loaded successfully')}
                 />
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -100,9 +134,9 @@ export default function Home() {
               {/* Features Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 {/* Feature 1: AI trường nhớ */}
-                <div className={`bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} delay-1000`}>
+                <div className="bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center hover:bg-purple-200 transition-colors duration-300">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
@@ -115,9 +149,9 @@ export default function Home() {
                 </div>
 
                 {/* Feature 2: Phòng học ảo tích hợp */}
-                <div className={`bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} delay-1200`}>
+                <div className="bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center hover:bg-purple-200 transition-colors duration-300">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
@@ -130,9 +164,9 @@ export default function Home() {
                 </div>
 
                 {/* Feature 3: AI giải bài & tạo đề cương */}
-                <div className={`bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} delay-1400`}>
+                <div className="bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center hover:bg-purple-200 transition-colors duration-300">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -145,9 +179,9 @@ export default function Home() {
                 </div>
 
                 {/* Feature 4: Tự động sắp xếp lịch học nhóm */}
-                <div className={`bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} delay-1600`}>
+                <div className="bg-white rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center hover:bg-purple-200 transition-colors duration-300">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -665,7 +699,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }

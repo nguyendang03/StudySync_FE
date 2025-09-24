@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 
 export default function GroupDetail() {
   const navigate = useNavigate();
@@ -39,12 +37,10 @@ export default function GroupDetail() {
   };
 
   return (
-    <>
-      <Header />
-      <div 
-        className={`min-h-screen p-8 transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-        style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
-      >
+    <div 
+      className={`min-h-screen p-8 transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
+    >
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
@@ -188,8 +184,6 @@ export default function GroupDetail() {
             </div>
           </div>
         </div>
-      </div>
-      <Footer />
-    </>
+    </div>
   );
 }
