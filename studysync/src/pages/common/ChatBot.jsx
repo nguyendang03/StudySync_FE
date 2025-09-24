@@ -5,15 +5,8 @@ import {
   SendOutlined, 
   UserOutlined, 
   HistoryOutlined,
-  BookOutlined,
-  QuestionCircleOutlined,
-  SettingOutlined,
-  HomeOutlined,
-  LogoutOutlined,
   EditOutlined,
   DeleteOutlined,
-  BulbOutlined,
-  ThunderboltOutlined,
   RobotOutlined
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +14,9 @@ import { Button, Avatar, Tooltip, Badge, Dropdown, Card, Tag, Divider } from 'an
 import { Link } from 'react-router-dom';
 import { Sparkles, Brain, Zap, Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
+import Sidebar from '../../components/layout/Sidebar';
 
 export default function ChatBot() {
   const [messages, setMessages] = useState([
@@ -154,126 +150,83 @@ export default function ChatBot() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Left Sidebar */}
-      <div className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-800">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <MessageOutlined className="text-white text-xl" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-white">AI TRỢ LÝ</h1>
-              <p className="text-gray-400 text-xs">Hỗ trợ học tập thông minh</p>
-            </div>
-          </div>
-          <button 
-            onClick={startNewChat}
-            className="w-full flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium"
-          >
-            <PlusOutlined className="text-lg" />
-            Cuộc trò chuyện mới
-          </button>
-        </div>
-
-        {/* Chat History Section */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center">
-              <HistoryOutlined className="mr-2" />
-              Lịch sử trò chuyện
-            </h3>
-            <div className="space-y-2">
-              {conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    conv.isActive 
-                      ? 'bg-gray-800 border border-gray-700' 
-                      : 'hover:bg-gray-800/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-white truncate">
-                        {conv.title}
-                      </h4>
-                      <p className="text-xs text-gray-400 truncate mt-1">
-                        {conv.lastMessage}
-                      </p>
-                      <span className="text-xs text-gray-500 mt-1">
-                        {conv.time}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1 hover:bg-gray-700 rounded">
-                        <EditOutlined className="text-xs text-gray-400" />
-                      </button>
-                      <button className="p-1 hover:bg-gray-700 rounded">
-                        <DeleteOutlined className="text-xs text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
+    <>
+      <Header />
+      <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
+        <Sidebar />
+        
+        <div className="flex flex-1 h-screen">
+          {/* Chat-specific Sidebar */}
+          <div className="w-64 bg-white/10 backdrop-blur-lg border-r border-white/20 flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <MessageOutlined className="text-white text-xl" />
                 </div>
-              ))}
+                <div>
+                  <h1 className="text-lg font-bold text-white">AI TRỢ LÝ</h1>
+                  <p className="text-white/60 text-xs">Hỗ trợ học tập thông minh</p>
+                </div>
+              </div>
+              <button 
+                onClick={startNewChat}
+                className="w-full flex items-center justify-center gap-3 bg-white/20 hover:bg-white/30 text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium border border-white/30"
+              >
+                <PlusOutlined className="text-lg" />
+                Cuộc trò chuyện mới
+              </button>
+            </div>
+
+            {/* Chat History Section */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center">
+                  <HistoryOutlined className="mr-2" />
+                  Lịch sử trò chuyện
+                </h3>
+                <div className="space-y-2">
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        conv.isActive 
+                          ? 'bg-white/20 border border-white/30' 
+                          : 'hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-white truncate">
+                            {conv.title}
+                          </h4>
+                          <p className="text-xs text-white/60 truncate mt-1">
+                            {conv.lastMessage}
+                          </p>
+                          <span className="text-xs text-white/50 mt-1">
+                            {conv.time}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="p-1 hover:bg-white/20 rounded">
+                            <EditOutlined className="text-xs text-white/60" />
+                          </button>
+                          <button className="p-1 hover:bg-white/20 rounded">
+                            <DeleteOutlined className="text-xs text-white/60" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation Links */}
-        <div className="border-t border-gray-800 p-4">
-          <div className="space-y-2">
-            <Link 
-              to="/home"
-              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
-            >
-              <HomeOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Trang chủ</span>
-            </Link>
-            <Link 
-              to="/groups"
-              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
-            >
-              <UserOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Khám phá nhóm</span>
-            </Link>
-            <Link 
-              to="/my-groups"
-              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
-            >
-              <BookOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Nhóm của tôi</span>
-            </Link>
-            <Link 
-              to="/chatbot"
-              className="flex items-center gap-3 px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-lg transition-all group"
-            >
-              <MessageOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">AI Trợ lý</span>
-            </Link>
-            
-            <div className="border-t border-gray-700 my-2"></div>
-            
-            <Link 
-              to="/faq"
-              className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group"
-            >
-              <QuestionCircleOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Hỗ trợ</span>
-            </Link>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all group">
-              <SettingOutlined className="text-lg group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Cài đặt</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="bg-gray-900 border-b border-gray-800 p-4">
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Chat Header */}
+            <div className="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -281,18 +234,18 @@ export default function ChatBot() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-white">StudySync AI</h1>
-                <p className="text-sm text-gray-400">Trợ lý học tập thông minh</p>
+                <p className="text-sm text-white/80">Trợ lý học tập thông minh</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span className="text-sm text-gray-400">Đang hoạt động</span>
+              <span className="text-sm text-white/80">Đang hoạt động</span>
             </div>
           </div>
         </div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -413,7 +366,7 @@ export default function ChatBot() {
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
                 <RobotOutlined className="text-white text-lg" />
               </div>
-              <Card className="bg-gray-800 border-gray-700" bodyStyle={{ padding: '16px' }}>
+              <Card className="bg-white/10 border-white/30 backdrop-blur-sm" bodyStyle={{ padding: '16px' }}>
                 <div className="flex items-center gap-3">
                   <div className="flex space-x-1">
                     <motion.div 
@@ -444,40 +397,43 @@ export default function ChatBot() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="bg-gray-900 border-t border-gray-800 p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative">
-              <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Hỏi AI về bất kỳ điều gì..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 pr-12 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all duration-200"
-                rows={1}
-                style={{ 
-                  minHeight: '48px',
-                  maxHeight: '120px'
-                }}
-                onInput={(e) => {
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                }}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isTyping}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg flex items-center justify-center transition-colors duration-200"
-              >
-                <SendOutlined className="text-sm" />
-              </button>
-            </div>
-            
-            <div className="mt-2 text-xs text-gray-500 text-center">
-              AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
+            {/* Input Area */}
+            <div className="bg-white/10 backdrop-blur-lg border-t border-white/20 p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="relative">
+                <textarea
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="Hỏi AI về bất kỳ điều gì..."
+                    className="w-full bg-white/10 border border-white/30 rounded-2xl px-4 py-3 pr-12 text-white placeholder-white/60 focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-white/20 resize-none transition-all duration-200 backdrop-blur-sm"
+                  rows={1}
+                  style={{ 
+                    minHeight: '48px',
+                    maxHeight: '120px'
+                  }}
+                  onInput={(e) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isTyping}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed text-white rounded-lg flex items-center justify-center transition-colors duration-200 backdrop-blur-sm border border-white/30"
+                >
+                  <SendOutlined className="text-sm" />
+                </button>
+              </div>
+              
+              <div className="mt-2 text-xs text-white/50 text-center">
+                AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
+              </div>
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }
