@@ -10,8 +10,14 @@ import {
   BookOutlined,
   VideoCameraOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  HomeOutlined,
+  SearchOutlined,
+  MessageOutlined,
+  SettingOutlined,
+  MenuOutlined
 } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, Tooltip, Modal, Form, Input, TimePicker, Select, DatePicker } from 'antd';
 import { Calendar, Clock, Users, Video, Plus } from 'lucide-react';
@@ -28,6 +34,7 @@ export default function Schedule() {
   const [currentWeek, setCurrentWeek] = useState(0);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [form] = Form.useForm();
 
   // Sample schedule data
@@ -159,9 +166,91 @@ export default function Schedule() {
   return (
     <>
       <Header />
-      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
-        <div className="p-8">
-          <div className="max-w-7xl mx-auto">
+      <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
+        {/* Left Sidebar Navigation */}
+        <div className="w-64 bg-white/10 backdrop-blur-lg border-r border-white/20 lg:flex flex-col max-h-screen sticky top-0 hidden">
+          {/* Mobile Overlay */}
+          {isMobileMenuOpen && (
+            <div 
+              className="lg:hidden fixed inset-0 bg-black/50 z-40"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+          
+          {/* Sidebar Content */}
+          <div className={`lg:relative fixed inset-y-0 left-0 z-50 w-64 bg-white/10 backdrop-blur-lg border-r border-white/20 flex flex-col max-h-screen transform transition-transform lg:transform-none ${
+            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}>
+
+          {/* Navigation Links */}
+          <div className="flex-1 p-6">
+            <div className="space-y-3">
+              <Link 
+                to="/home"
+                className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
+              >
+                <HomeOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Trang chủ</span>
+              </Link>
+              <Link 
+                to="/groups"
+                className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
+              >
+                <SearchOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Khám phá nhóm</span>
+              </Link>
+              <Link 
+                to="/my-groups"
+                className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
+              >
+                <TeamOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Nhóm của tôi</span>
+              </Link>
+              <Link 
+                to="/schedule"
+                className="flex items-center gap-3 px-4 py-3 text-white bg-white/20 border border-white/30 rounded-lg transition-all group"
+              >
+                <CalendarOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Thời khóa biểu</span>
+              </Link>
+              <Link 
+                to="/chatbot"
+                className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
+              >
+                <MessageOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">AI Trợ lý</span>
+              </Link>
+              
+              <div className="border-t border-white/20 my-4"></div>
+              
+              <Link 
+                to="/profile"
+                className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group"
+              >
+                <UserOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Hồ sơ</span>
+              </Link>
+              <button className="w-full flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group">
+                <SettingOutlined className="text-lg group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Cài đặt</span>
+              </button>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="lg:hidden fixed top-4 left-4 z-50 bg-white/20 backdrop-blur-sm border border-white/30 text-white p-3 rounded-lg"
+          onClick={() => setIsMobileMenuOpen(true)}
+        >
+          <MenuOutlined />
+        </button>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          <div className="p-8">
+            <div className="max-w-7xl mx-auto">
             {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -439,6 +528,7 @@ export default function Schedule() {
           </Form>
         </div>
       </Modal>
+      </div>
 
       <Footer />
     </>

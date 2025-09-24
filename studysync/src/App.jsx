@@ -12,6 +12,7 @@ import MyGroups from './pages/groups/MyGroups';
 import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
 import ChatBot from './pages/common/ChatBot';
 import Schedule from './pages/common/Schedule';
+import TaskDistribution from './pages/groups/TaskDistribution';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/my-groups" element={<MyGroups />} />
           <Route path="/chatbot" element={<ChatBot />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/task-distribution" element={<TaskDistribution />} />
           <Route path="/faq" element={<GiaiDapThacMac />} />
           <Route path="/giai-dap-thac-mac" element={<GiaiDapThacMac />} />
         </Routes>
