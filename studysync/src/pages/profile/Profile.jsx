@@ -6,8 +6,6 @@ import ProfileInfoForm from '../../components/profile/ProfileInfoForm';
 import ChangePassword from '../../components/profile/ChangePassword';
 import GroupList from '../../components/profile/GroupList';
 import InvitationList from '../../components/profile/InvitationList';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 
 export default function Profile() {
   const [activeView, setActiveView] = useState('profile');
@@ -160,7 +158,6 @@ export default function Profile() {
 
   return (
     <>
-      <Header/>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -204,7 +201,6 @@ export default function Profile() {
           </motion.div>
         </div>
       </motion.div>
-      <Footer/>
     </>
   );
 }

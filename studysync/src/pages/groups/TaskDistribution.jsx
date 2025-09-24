@@ -29,8 +29,6 @@ import {
 } from 'antd';
 import { Users, Clock, Target, CheckCircle2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import Sidebar from '../../components/layout/Sidebar';
 import dayjs from 'dayjs';
 
@@ -244,7 +242,6 @@ export default function TaskDistribution() {
 
   return (
     <>
-      <Header />
       <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
         <Sidebar />
 
@@ -613,7 +610,6 @@ export default function TaskDistribution() {
         </Form>
       </Modal>
 
-      <Footer />
     </>
   );
 }

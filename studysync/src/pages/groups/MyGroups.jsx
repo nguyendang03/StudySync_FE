@@ -21,8 +21,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown } from 'antd';
 import toast from 'react-hot-toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import Sidebar from '../../components/layout/Sidebar';
 
 export default function MyGroups() {
@@ -152,7 +150,6 @@ export default function MyGroups() {
 
   return (
     <>
-    <Header/>
     <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
       <Sidebar />
 
@@ -424,7 +421,6 @@ export default function MyGroups() {
         </div>
       </div>
     </div>
-    <Footer/>
     </>
   );
 }

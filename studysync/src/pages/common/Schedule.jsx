@@ -22,8 +22,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, Tooltip, Modal, Form, Input, TimePicker, Select, DatePicker } from 'antd';
 import { Calendar, Clock, Users, Video, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import dayjs from 'dayjs';
 import Sidebar from '../../components/layout/Sidebar';
 
@@ -166,7 +164,6 @@ export default function Schedule() {
 
   return (
     <>
-      <Header />
       <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
         <Sidebar />
 
@@ -461,7 +458,6 @@ export default function Schedule() {
       </Modal>
       </div>
 
-      <Footer />
     </>
   );
 }

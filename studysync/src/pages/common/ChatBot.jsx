@@ -14,8 +14,6 @@ import { Button, Avatar, Tooltip, Badge, Dropdown, Card, Tag, Divider } from 'an
 import { Link } from 'react-router-dom';
 import { Sparkles, Brain, Zap, Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import Sidebar from '../../components/layout/Sidebar';
 
 export default function ChatBot() {
@@ -151,7 +149,6 @@ export default function ChatBot() {
 
   return (
     <>
-      <Header />
       <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
         <Sidebar />
         
@@ -433,7 +430,6 @@ export default function ChatBot() {
         </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

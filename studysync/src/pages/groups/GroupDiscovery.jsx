@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { SearchOutlined, DownOutlined, UsergroupAddOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import CreateGroupModal from '../../components/groups/CreateGroupModal';
 
 export default function GroupDiscovery() {
@@ -75,7 +73,6 @@ export default function GroupDiscovery() {
 
   return (
     <>
-      <Header />
       <div 
         className="min-h-screen p-8" 
         style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
@@ -242,7 +239,6 @@ export default function GroupDiscovery() {
         onCreateGroup={handleCreateGroup}
       />
       
-      <Footer />
     </>
   );
 }

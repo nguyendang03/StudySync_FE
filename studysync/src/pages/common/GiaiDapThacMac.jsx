@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SearchOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 
 export default function GiaiDapThacMac() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,7 +95,6 @@ export default function GiaiDapThacMac() {
 
   return (
     <>
-      <Header />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -402,7 +399,6 @@ export default function GiaiDapThacMac() {
           </div>
         </motion.div>
       </motion.div>
-      <Footer />
     </>
   );
 }

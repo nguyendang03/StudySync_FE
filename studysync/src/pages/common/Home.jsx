@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -12,7 +10,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
 
       {/* Hero Section with White Background */}
       <section className="bg-white py-8 lg:py-0 relative overflow-hidden">
@@ -702,7 +699,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }
