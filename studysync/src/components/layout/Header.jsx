@@ -135,7 +135,7 @@ export default function Header() {
       {
         key: 'logout',
         icon: <LogoutOutlined className="text-red-500" />,
-        label: <span className="text-red-500" onClick={handleLogout}>Đăng xuất</span>,
+        label: <span className="text-red-500">Đăng xuất</span>,
       },
     ],
     onClick: ({ key }) => {

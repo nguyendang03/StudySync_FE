@@ -46,7 +46,7 @@ function App() {
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
           <Toaster 
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               duration: 3000,
               style: {

@@ -129,12 +129,6 @@ export default function Register() {
           <AuthToggle activeTab="register" />
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className={`space-y-6 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Full Name Input */}
