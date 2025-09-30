@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SearchOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GiaiDapThacMac() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,32 +95,52 @@ export default function GiaiDapThacMac() {
 
   return (
     <>
-      <Header />
-      <div
-        className={`min-h-screen transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="min-h-screen"
         style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
       >
         {/* Header Section with Decorative Pattern */}
-        <div className="relative overflow-hidden py-16">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative overflow-hidden py-16"
+        >
           {/* Decorative Checkerboard Pattern */}
-          <div className="absolute top-0 left-0 w-full h-full opacity-30">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.3 }}
+            transition={{ delay: 0.5, duration: 1 }}
+            className="absolute top-0 left-0 w-full h-full"
+          >
             <div className="flex flex-wrap">
               {[...Array(200)].map((_, i) => (
-                <div 
-                  key={i} 
+                <motion.div 
+                  key={i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: (i * 0.01), duration: 0.3 }}
                   className={`${i % 2 === 0 ? 'bg-white' : 'bg-transparent'} h-4 w-4`}
                   style={{
                     width: '20px',
                     height: '20px'
                   }}
-                ></div>
+                ></motion.div>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Title and Image Section */}
-        <div className="bg-gradient-to-br from-white via-gray-50 to-white relative overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="bg-gradient-to-br from-white via-gray-50 to-white relative overflow-hidden"
+        >
           {/* Subtle background decorations */}
           <div className="absolute inset-0 opacity-30">
             <div className="absolute top-10 left-10 w-20 h-20 bg-purple-100 rounded-full blur-xl"></div>
@@ -129,25 +148,50 @@ export default function GiaiDapThacMac() {
             <div className="absolute bottom-20 left-1/3 w-24 h-24 bg-pink-100 rounded-full blur-xl"></div>
           </div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 relative z-10">
-            <div className={`transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+            >
               <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
                 {/* Title Section */}
-                <div className="flex-1 text-center lg:text-left space-y-6">
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.4 }}
+                  className="flex-1 text-center lg:text-left space-y-6"
+                >
                   
-                  <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 bg-clip-text text-transparent leading-tight hover:scale-105 transition-transform duration-300 drop-shadow-sm">
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: 0.6 }}
+                    whileHover={{ scale: 1.05 }}
+                    className="text-4xl sm:text-5xl lg:text-7xl font-black bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 bg-clip-text text-transparent leading-tight transition-transform duration-300 drop-shadow-sm"
+                  >
                     GIẢI ĐÁP<br />
                     <span className="text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">THẮC MẮC</span>
-                  </h1>
+                  </motion.h1>
                   
                   {/* Subtitle */}
-                  <p className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-lg">
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: 0.8 }}
+                    className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-lg"
+                  >
                     Chúng tôi luôn sẵn sàng hỗ trợ bạn với mọi câu hỏi về StudySync. 
                     Tìm kiếm câu trả lời nhanh chóng và dễ dàng.
-                  </p>
-                </div>
+                  </motion.p>
+                </motion.div>
                 
                 {/* Help Image */}
-                <div className={`w-full lg:w-auto transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.4 }}
+                  className="w-full lg:w-auto"
+                >
                   <div className="relative group">
                     {/* Main card */}
                     <div className="bg-gradient-to-br from-white via-purple-50 to-purple-100 rounded-3xl p-6 lg:p-8 shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500 max-w-sm mx-auto lg:max-w-none border border-purple-200/50 backdrop-blur-sm">
@@ -174,26 +218,57 @@ export default function GiaiDapThacMac() {
                     </div>
                     
                     {/* Floating elements */}
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-400 rounded-full opacity-60 animate-pulse"></div>
-                    <div className="absolute -bottom-3 -left-3 w-8 h-8 bg-purple-400 rounded-full opacity-40 animate-pulse delay-300"></div>
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1, duration: 0.5 }}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-blue-400 rounded-full opacity-60 animate-pulse"
+                    ></motion.div>
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.3, duration: 0.5 }}
+                      className="absolute -bottom-3 -left-3 w-8 h-8 bg-purple-400 rounded-full opacity-40 animate-pulse delay-300"
+                    ></motion.div>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Ask Question Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="bg-gradient-to-br from-gray-50 to-gray-100 py-16"
+        >
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className={`text-center transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6 lg:mb-8 bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.6 }}
+              className="text-center"
+            >
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.8 }}
+                className="text-2xl sm:text-3xl font-bold mb-6 lg:mb-8 bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"
+              >
                 ĐẶT CÂU HỎI
-              </h2>
+              </motion.h2>
               
               {/* Search Input */}
-              <div className="relative max-w-2xl mx-auto">
-                <input
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, delay: 1 }}
+                className="relative max-w-2xl mx-auto"
+              >
+                <motion.input
+                  whileFocus={{ scale: 1.02 }}
                   type="text"
                   placeholder="Điền vào đây"
                   value={searchQuery}
@@ -203,18 +278,30 @@ export default function GiaiDapThacMac() {
                 <SearchOutlined 
                   className="absolute right-4 lg:right-6 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl lg:text-2xl hover:text-purple-600 transition-colors duration-200 cursor-pointer" 
                 />
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
+        
         {/* FAQ Grid Section */}
-        <div className="py-20">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="py-20"
+        >
           <div className="max-w-7xl mx-auto px-4 md:px-8">
-            <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 transition-all duration-700 delay-800 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              {filteredFaq.map((faq, index) => (
-                <div
-                  key={faq.id}
-                  className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl cursor-pointer transition-all duration-500 hover:shadow-2xl hover:scale-105 border border-gray-100 ${
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+              <AnimatePresence>
+                {filteredFaq.map((faq, index) => (
+                  <motion.div
+                    key={faq.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl cursor-pointer transition-all duration-500 hover:shadow-2xl border border-gray-100 ${
                     expandedCard === faq.id ? 'ring-4 ring-purple-300 shadow-2xl scale-105' : ''
                   }`}
                   style={{ 
@@ -261,15 +348,23 @@ export default function GiaiDapThacMac() {
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
 
             {/* Show More Button */}
-            <div className={`text-center mt-12 md:mt-16 transition-all duration-700 delay-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <button
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 1.2 }}
+              className="text-center mt-12 md:mt-16"
+            >
+              <motion.button
                 onClick={toggleShowMore}
-                className="bg-white/20 backdrop-blur-sm border-2 border-white/30 text-white px-8 md:px-12 py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl hover:bg-white/30 hover:border-white/40 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center space-x-3 mx-auto shadow-lg hover:shadow-xl"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white/20 backdrop-blur-sm border-2 border-white/30 text-white px-8 md:px-12 py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-lg md:text-xl hover:bg-white/30 hover:border-white/40 transition-all duration-300 flex items-center space-x-3 mx-auto shadow-lg hover:shadow-xl"
               >
                 <span>{showMore ? 'ẨN BỚT ĐI' : 'HIỂN THỊ THÊM'}</span>
                 {showMore ? (
@@ -277,26 +372,33 @@ export default function GiaiDapThacMac() {
                 ) : (
                   <DownOutlined className="text-base md:text-lg" />
                 )}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Bottom Decorative Section */}
-        <div className="relative overflow-hidden pb-20">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.5 }}
+          className="relative overflow-hidden pb-20"
+        >
           <div className="absolute bottom-0 left-0 w-full h-32 opacity-20">
             <div className="flex flex-wrap h-full">
               {[...Array(100)].map((_, i) => (
-                <div 
-                  key={i} 
+                <motion.div 
+                  key={i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: (i * 0.01), duration: 0.3 }}
                   className={`${i % 2 === 0 ? 'bg-white' : 'bg-transparent'} h-8 w-8`}
-                ></div>
+                ></motion.div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
-      <Footer />
+        </motion.div>
+      </motion.div>
     </>
   );
 }

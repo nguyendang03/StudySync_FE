@@ -66,6 +66,62 @@
   background: rgba(229, 231, 235, 0.6) !important;
 }
 
+/* Enhanced Modal Styles */
+.custom-modal .ant-modal-content {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.custom-modal .ant-modal-header {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(59, 130, 246, 0.05)) !important;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.1) !important;
+  padding: 20px 24px !important;
+}
+
+.custom-modal .ant-modal-body {
+  padding: 0 24px 24px 24px !important;
+}
+
+.custom-modal .ant-modal-close {
+  top: 16px !important;
+  right: 16px !important;
+}
+
+.custom-modal .ant-modal-close-x {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.custom-modal .ant-modal-close-x:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+/* Form input enhancements */
+.ant-input:focus,
+.ant-input-focused {
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2) !important;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500 !important;
+}
+
+/* Button gradient animations */
+.ant-btn-primary {
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3) !important;
+}
+
 /* Notification badge animation */
 .ant-badge-count {
   animation: pulse-badge 2s infinite;

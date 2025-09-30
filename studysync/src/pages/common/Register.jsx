@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -10,12 +13,17 @@ import { Link } from 'react-router-dom';
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsLoaded(true);
@@ -26,12 +34,88 @@ export default function Register() {
       ...formData,
       [e.target.id]: e.target.value
     });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    if (!formData.username.trim()) {
+      const errorMsg = 'Vui lòng nhập họ và tên';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+    if (!formData.email.trim()) {
+      const errorMsg = 'Vui lòng nhập email';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+    if (!formData.password) {
+      const errorMsg = 'Vui lòng nhập mật khẩu';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+    if (formData.password.length < 6) {
+      const errorMsg = 'Mật khẩu phải có ít nhất 6 ký tự';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      const errorMsg = 'Mật khẩu xác nhận không khớp';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Add register logic here
-    console.log('Register submitted:', formData);
+    
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Prepare data for backend (backend expects username, email, password)
+      const registerData = {
+        username: formData.username, // Using username as username
+        email: formData.email,
+        password: formData.password
+      };
+
+      await register(registerData);
+      
+      // Show success toast
+      toast.success('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...');
+      
+      // Redirect to login after successful registration
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+
+    } catch (err) {
+      console.error('Registration error:', err);
+      
+      // Handle different error types
+      let errorMessage;
+      if (err.message.includes('email')) {
+        errorMessage = 'Email này đã được sử dụng';
+      } else if (err.message.includes('username')) {
+        errorMessage = 'Tên người dùng này đã được sử dụng';
+      } else {
+        errorMessage = err.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,15 +129,17 @@ export default function Register() {
           <AuthToggle activeTab="register" />
         </div>
 
+
         <form onSubmit={handleSubmit} className={`space-y-6 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Full Name Input */}
           <div className={`transition-all duration-500 delay-600 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
             <InputField
               label="Họ và tên"
-              id="fullName"
+              id="username"
               placeholder="Nhập họ và tên của bạn"
-              value={formData.fullName}
+              value={formData.username}
               onChange={handleInputChange}
+              required
             />
           </div>
 
@@ -66,6 +152,7 @@ export default function Register() {
               placeholder="Nhập email của bạn"
               value={formData.email}
               onChange={handleInputChange}
+              required
             />
           </div>
 
@@ -74,9 +161,10 @@ export default function Register() {
             <PasswordInput
               label="Mật khẩu"
               id="password"
-              placeholder="Nhập mật khẩu của bạn"
+              placeholder="Nhập mật khẩu của bạn (ít nhất 6 ký tự)"
               value={formData.password}
               onChange={handleInputChange}
+              required
             />
           </div>
 
@@ -88,13 +176,24 @@ export default function Register() {
               placeholder="Nhập lại mật khẩu của bạn"
               value={formData.confirmPassword}
               onChange={handleInputChange}
+              required
             />
           </div>
 
           {/* Register Button */}
           <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <AuthButton type="submit">
-              Đăng ký
+            <AuthButton type="submit" disabled={loading}>
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang đăng ký...
+                </div>
+              ) : (
+                'Đăng ký'
+              )}
             </AuthButton>
           </div>
         </form>
