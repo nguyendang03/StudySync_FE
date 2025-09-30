@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -20,7 +21,6 @@ export default function Register() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -40,23 +40,33 @@ export default function Register() {
 
   const validateForm = () => {
     if (!formData.username.trim()) {
-      setError('Vui lòng nhập họ và tên');
+      const errorMsg = 'Vui lòng nhập họ và tên';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
     if (!formData.email.trim()) {
-      setError('Vui lòng nhập email');
+      const errorMsg = 'Vui lòng nhập email';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
     if (!formData.password) {
-      setError('Vui lòng nhập mật khẩu');
+      const errorMsg = 'Vui lòng nhập mật khẩu';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
     if (formData.password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      const errorMsg = 'Mật khẩu phải có ít nhất 6 ký tự';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      const errorMsg = 'Mật khẩu xác nhận không khớp';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return false;
     }
     return true;
@@ -69,7 +79,6 @@ export default function Register() {
 
     setLoading(true);
     setError('');
-    setSuccess('');
 
     try {
       // Prepare data for backend (backend expects username, email, password)
@@ -81,7 +90,8 @@ export default function Register() {
 
       await register(registerData);
       
-      setSuccess('Đăng ký thành công! Vui lòng đăng nhập.');
+      // Show success toast
+      toast.success('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...');
       
       // Redirect to login after successful registration
       setTimeout(() => {
@@ -92,13 +102,17 @@ export default function Register() {
       console.error('Registration error:', err);
       
       // Handle different error types
+      let errorMessage;
       if (err.message.includes('email')) {
-        setError('Email này đã được sử dụng');
+        errorMessage = 'Email này đã được sử dụng';
       } else if (err.message.includes('username')) {
-        setError('Tên người dùng này đã được sử dụng');
+        errorMessage = 'Tên người dùng này đã được sử dụng';
       } else {
-        setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+        errorMessage = err.message || 'Đăng ký thất bại. Vui lòng thử lại.';
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -119,13 +133,6 @@ export default function Register() {
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
             {error}
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
-            {success}
           </div>
         )}
 
@@ -182,7 +189,17 @@ export default function Register() {
           {/* Register Button */}
           <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <AuthButton type="submit" disabled={loading}>
-              {loading ? 'Đang đăng ký...' : 'Đăng ký'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang đăng ký...
+                </div>
+              ) : (
+                'Đăng ký'
+              )}
             </AuthButton>
           </div>
         </form>

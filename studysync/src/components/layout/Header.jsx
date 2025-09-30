@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Dropdown, Menu, Avatar, Badge, Divider } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 import {
   UserOutlined,
   TeamOutlined,
@@ -26,6 +28,15 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications] = useState(3); // Mock notification count
   const dropdownRef = useRef(null);
+  
+  const { isAuthenticated, logout, user } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    logout();
+    toast.success('Đăng xuất thành công!');
+    navigate('/login');
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -124,9 +135,14 @@ export default function Header() {
       {
         key: 'logout',
         icon: <LogoutOutlined className="text-red-500" />,
-        label: <span className="text-red-500">Đăng xuất</span>,
+        label: <span className="text-red-500" onClick={handleLogout}>Đăng xuất</span>,
       },
     ],
+    onClick: ({ key }) => {
+      if (key === 'logout') {
+        handleLogout();
+      }
+    },
   };
 
   return (
@@ -219,44 +235,48 @@ export default function Header() {
 
             {/* User Menu - Show if authenticated, otherwise show auth buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* For demonstration, showing auth buttons. Replace with user menu when authenticated */}
-              <Link 
-                to="/login" 
-                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-              >
-                Đăng nhập
-              </Link>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link 
-                  to="/register" 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              {isAuthenticated ? (
+                /* User Menu for authenticated users */
+                <Dropdown 
+                  menu={userMenu}
+                  trigger={['click']}
+                  placement="bottomRight"
+                  arrow
                 >
-                  Đăng ký
-                </Link>
-              </motion.div>
-              
-              {/* Uncomment when user is authenticated */}
-              {/* <Dropdown 
-                menu={userMenu}
-                trigger={['click']}
-                placement="bottomRight"
-                arrow
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                >
-                  <Avatar 
-                    size={36}
-                    icon={<UserOutlined />}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500"
-                  />
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                </motion.button>
-              </Dropdown> */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                  >
+                    <Avatar 
+                      size={36}
+                      icon={<UserOutlined />}
+                      className="bg-gradient-to-r from-purple-500 to-blue-500"
+                    />
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </motion.button>
+                </Dropdown>
+              ) : (
+                /* Auth buttons for non-authenticated users */
+                <>
+                  <Link 
+                    to="/login" 
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link 
+                      to="/register" 
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Đăng ký
+                    </Link>
+                  </motion.div>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -327,20 +347,55 @@ export default function Header() {
                 </Link>
                 <Divider className="my-4" />
                 <div className="px-4 space-y-3">
-                  <Link 
-                    to="/login" 
-                    className="block w-full text-center text-purple-600 hover:text-purple-700 border border-purple-600 hover:border-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Đăng nhập
-                  </Link>
-                  <Link 
-                    to="/register" 
-                    className="block w-full text-center bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Đăng ký
-                  </Link>
+                  {isAuthenticated ? (
+                    /* Mobile menu for authenticated users */
+                    <>
+                      <Link 
+                        to="/profile" 
+                        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <UserOutlined />
+                        Hồ sơ cá nhân
+                      </Link>
+                      <Link 
+                        to="/settings" 
+                        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <SettingOutlined />
+                        Cài đặt
+                      </Link>
+                      <button 
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 w-full text-left"
+                      >
+                        <LogoutOutlined />
+                        Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    /* Mobile menu for non-authenticated users */
+                    <>
+                      <Link 
+                        to="/login" 
+                        className="block w-full text-center text-purple-600 hover:text-purple-700 border border-purple-600 hover:border-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Đăng nhập
+                      </Link>
+                      <Link 
+                        to="/register" 
+                        className="block w-full text-center bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Đăng ký
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
