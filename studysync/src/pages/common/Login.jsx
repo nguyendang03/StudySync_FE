@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -10,15 +12,26 @@ import AuthButton from '../../components/AuthButton';
 
 export default function Login() {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setIsLoaded(true);
-  }, []);
+    
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      navigate('/home');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -27,10 +40,38 @@ export default function Login() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Add login logic here
-    console.log('Login submitted:', formData, { rememberMe });
+    setLoading(true);
+    setError('');
+
+    // Basic form validation
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError('Vui lòng điền đầy đủ thông tin');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await login({
+        email: formData.email,
+        password: formData.password,
+        rememberMe
+      });
+      
+      toast.success('Đăng nhập thành công!');
+      
+      // Redirect to the page user was trying to access, or home if none
+      const from = location.state?.from?.pathname || '/home';
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error('Login error:', err);
+      const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,13 +86,21 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className={`space-y-6 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {/* Username Input */}
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-lg p-4">
+              <p className="text-red-100 text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Email Input */}
           <div className={`transition-all duration-500 delay-600 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
             <InputField
-              label="Tên người dùng"
-              id="username"
-              placeholder="Nhập tên người dùng của bạn"
-              value={formData.username}
+              label="Email"
+              type="email"
+              id="email"
+              placeholder="Nhập email của bạn"
+              value={formData.email}
               onChange={handleInputChange}
             />
           </div>
@@ -85,8 +134,18 @@ export default function Login() {
 
           {/* Login Button */}
           <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <AuthButton type="submit">
-              Đăng nhập
+            <AuthButton type="submit" disabled={loading}>
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang đăng nhập...
+                </div>
+              ) : (
+                'Đăng nhập'
+              )}
             </AuthButton>
           </div>
         </form>
