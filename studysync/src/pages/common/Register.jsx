@@ -44,31 +44,26 @@ export default function Register() {
     if (!formData.username.trim()) {
       const errorMsg = 'Vui lòng nhập họ và tên';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (!formData.email.trim()) {
       const errorMsg = 'Vui lòng nhập email';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (!formData.password) {
       const errorMsg = 'Vui lòng nhập mật khẩu';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (formData.password.length < 6) {
       const errorMsg = 'Mật khẩu phải có ít nhất 6 ký tự';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
       const errorMsg = 'Mật khẩu xác nhận không khớp';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     return true;

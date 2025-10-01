@@ -1,77 +1,36 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import authService from '../services/authService';
+import { useEffect } from 'react';
+import useAuthStore from '../stores/authStore';
 
-const AuthContext = createContext();
-
+// Provider component for initializing auth state
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const token = authService.getAccessToken();
-        if (token) {
-          // You might want to validate the token or fetch user info here
-          // For now, we'll just set the user as authenticated
-          setUser({ authenticated: true });
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        authService.logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-
     initializeAuth();
-  }, []);
+  }, [initializeAuth]);
 
-  const login = async (credentials) => {
-    try {
-      const response = await authService.login(credentials);
-      setUser(response.user || { authenticated: true });
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      const response = await authService.register(userData);
-      // Note: Don't auto-login after registration, let user login manually
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-  };
-
-  const value = {
-    user,
-    login,
-    register,
-    logout,
-    loading,
-    isAuthenticated: authService.isAuthenticated(),
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return children;
 };
 
+// Hook to use auth store
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const store = useAuthStore();
+  
+  return {
+    // State
+    user: store.user,
+    isAuthenticated: store.isAuthenticated,
+    loading: store.loading,
+    error: store.error,
+    
+    // Actions
+    login: store.login,
+    register: store.register,
+    logout: store.logout,
+    setUser: store.setUser,
+    setLoading: store.setLoading,
+    setError: store.setError,
+    clearError: store.clearError,
+    reset: store.reset,
+  };
 };
