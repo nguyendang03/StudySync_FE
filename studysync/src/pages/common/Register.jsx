@@ -87,9 +87,6 @@ export default function Register() {
 
       await register(registerData);
       
-      // Show success toast
-      toast.success('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...');
-      
       // Redirect to login after successful registration
       setTimeout(() => {
         navigate('/login');
@@ -109,7 +106,6 @@ export default function Register() {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

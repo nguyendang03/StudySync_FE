@@ -61,8 +61,6 @@ export default function Login() {
         rememberMe
       });
       
-      toast.success('Đăng nhập thành công!');
-      
       // Redirect to the page user was trying to access, or home if none
       const from = location.state?.from?.pathname || '/home';
       navigate(from, { replace: true });
@@ -70,7 +68,6 @@ export default function Login() {
       console.error('Login error:', err);
       const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
