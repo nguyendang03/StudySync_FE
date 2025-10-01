@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import FormContainer from '../../components/FormContainer';
@@ -16,8 +18,10 @@ export default function ForgotPassword() {
   };
 
   return (
-    <AuthLayout>
-      <AuthHeader />
+    <>
+      <Header />
+      <AuthLayout>
+        <AuthHeader />
       
       <FormContainer>
         <div className="text-center mb-8">
@@ -49,6 +53,8 @@ export default function ForgotPassword() {
           </div>
         </form>
       </FormContainer>
-    </AuthLayout>
+      </AuthLayout>
+      <Footer />
+    </>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -75,10 +77,12 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout>
-      <div className={`transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <AuthHeader />
-      </div>
+    <>
+      <Header />
+      <AuthLayout>
+        <div className={`transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <AuthHeader />
+        </div>
       
       <FormContainer>
         <div className={`transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -86,12 +90,6 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className={`space-y-6 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-lg p-4">
-              <p className="text-red-100 text-sm font-medium">{error}</p>
-            </div>
-          )}
 
           {/* Email Input */}
           <div className={`transition-all duration-500 delay-600 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
@@ -160,6 +158,8 @@ export default function Login() {
           </p>
         </div>
       </FormContainer>
-    </AuthLayout>
+      </AuthLayout>
+      <Footer />
+    </>
   );
 }

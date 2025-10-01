@@ -29,18 +29,21 @@ function App() {
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
             
-            {/* Protected Routes */}
+            {/* Public Routes - Anyone can access these */}
+            <Route path="/groups" element={<Layout><GroupDiscovery /></Layout>} />
+            <Route path="/groups/:id" element={<Layout><GroupDetail /></Layout>} />
+            <Route path="/faq" element={<Layout><GiaiDapThacMac /></Layout>} />
+            <Route path="/giai-dap-thac-mac" element={<Layout><GiaiDapThacMac /></Layout>} />
+            <Route path="/home" element={<Layout><Home /></Layout>} />
+            
+            {/* Protected Routes - Only authenticated users */}
             <Route path="/" element={<ProtectedRoute><Layout><Home /></Layout></ProtectedRoute>} />
-            <Route path="/home" element={<ProtectedRoute><Layout><Home /></Layout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-            <Route path="/groups" element={<ProtectedRoute><Layout><GroupDiscovery /></Layout></ProtectedRoute>} />
-            <Route path="/groups/:id" element={<ProtectedRoute><Layout><GroupDetail /></Layout></ProtectedRoute>} />
             <Route path="/my-groups" element={<ProtectedRoute><Layout><MyGroups /></Layout></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute><Layout><ChatBot /></Layout></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><Layout><Schedule /></Layout></ProtectedRoute>} />
             <Route path="/task-distribution" element={<ProtectedRoute><Layout><TaskDistribution /></Layout></ProtectedRoute>} />
-            <Route path="/faq" element={<ProtectedRoute><Layout><GiaiDapThacMac /></Layout></ProtectedRoute>} />
-            <Route path="/giai-dap-thac-mac" element={<ProtectedRoute><Layout><GiaiDapThacMac /></Layout></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Layout><div>Settings Page - Coming Soon</div></Layout></ProtectedRoute>} />
             
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/home" replace />} />

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -119,10 +121,12 @@ export default function Register() {
   };
 
   return (
-    <AuthLayout>
-      <div className={`transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <AuthHeader />
-      </div>
+    <>
+      <Header />
+      <AuthLayout>
+        <div className={`transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <AuthHeader />
+        </div>
       
       <FormContainer>
         <div className={`transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -208,6 +212,8 @@ export default function Register() {
           </p>
         </div>
       </FormContainer>
-    </AuthLayout>
+      </AuthLayout>
+      <Footer />
+    </>
   );
 }
