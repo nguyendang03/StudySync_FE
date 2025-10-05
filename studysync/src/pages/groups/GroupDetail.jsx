@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { VideoCallButton } from '../../components/videocall';
+import { useAuthStore } from '../../stores';
 
 export default function GroupDetail() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { user, isAuthenticated } = useAuthStore();
   const [isJoined, setIsJoined] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -11,9 +15,9 @@ export default function GroupDetail() {
     setIsLoaded(true);
   }, []);
 
-  // Sample group data
+  // Sample group data - enhanced with video call support
   const groupData = {
-    id: 1,
+    id: id || 1,
     name: 'Americano',
     description: 'JobBoost là nền tảng kết nối giữa người cần tuyển nhân sự với các công việc ngành hàn và sinh viên có năng lực thực hiện. Bất kỳ ai cũng có thể đăng ký tìm người làm, lộn chỉ sinh viên mà có thể ứng tuyển và thực hiện công việc.',
     subject: 'EXE101',
@@ -27,6 +31,11 @@ export default function GroupDetail() {
       { id: 6, name: 'Quynh Nhu', role: 'Thành viên', avatar: 'N', color: 'bg-gray-400' },
     ]
   };
+
+  // Check if current user is the group leader
+  const isHost = user && groupData.members.find(member => 
+    member.id === 1 && member.role === 'Nhóm trưởng'
+  );
 
   const handleJoinGroup = () => {
     setIsJoined(!isJoined);
@@ -61,9 +70,9 @@ export default function GroupDetail() {
                       </div>
                     </div>
                     
-                    {/* Member Avatars */}
+                    {/* Member Avatars and Actions */}
                     <div className="flex items-center space-x-2">
-                      {groupData.members.slice(0, 4).map((member, index) => (
+                      {groupData.members.slice(0, 3).map((member, index) => (
                         <div 
                           key={member.id}
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium ${member.color} ring-2 ring-white hover:scale-110 transition-transform duration-200 cursor-pointer`}
@@ -75,14 +84,26 @@ export default function GroupDetail() {
                           {member.avatar}
                         </div>
                       ))}
-                      {groupData.members.length > 4 && (
+                      {groupData.members.length > 3 && (
                         <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-medium ring-2 ring-white hover:scale-110 transition-transform duration-200 cursor-pointer" style={{ marginLeft: '-8px' }}>
-                          +{groupData.members.length - 4}
+                          +{groupData.members.length - 3}
                         </div>
                       )}
+                      
+                      {/* Video Call Button */}
+                      <div className="ml-4">
+                        <VideoCallButton
+                          groupId={groupData.id}
+                          groupName={groupData.name}
+                          members={groupData.members}
+                          isHost={isHost}
+                          className="text-sm"
+                        />
+                      </div>
+                      
                       <button
                         onClick={handleJoinGroup}
-                        className={`ml-4 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 ${
+                        className={`ml-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 ${
                           isJoined 
                             ? 'bg-green-100 text-green-600 hover:bg-green-200' 
                             : 'bg-green-500 text-white hover:bg-green-600'

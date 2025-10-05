@@ -22,6 +22,7 @@ import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown } from 'antd';
 import toast from 'react-hot-toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
+import { VideoCallButton } from '../../components/videocall';
 
 export default function MyGroups() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -310,14 +311,23 @@ export default function MyGroups() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        type="primary"
-                        icon={<EyeOutlined />}
-                        className="bg-pink-500 hover:bg-pink-600 border-pink-500 shrink-0"
-                        onClick={() => toast.success(`Đang vào nhóm ${group.name}`)}
-                      >
-                        VÀO XEM
-                      </Button>
+                      <div className="flex gap-2 shrink-0">
+                        <VideoCallButton
+                          groupId={group.id}
+                          groupName={group.name}
+                          members={[]}
+                          isHost={group.id === 1} // Example: first group user is host
+                          className="text-xs px-3 py-1"
+                        />
+                        <Button 
+                          type="primary"
+                          icon={<EyeOutlined />}
+                          className="bg-pink-500 hover:bg-pink-600 border-pink-500"
+                          onClick={() => toast.success(`Đang vào nhóm ${group.name}`)}
+                        >
+                          VÀO XEM
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Description */}

@@ -18,6 +18,8 @@ import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
 import ChatBot from './pages/common/ChatBot';
 import Schedule from './pages/common/Schedule';
 import TaskDistribution from './pages/groups/TaskDistribution';
+import VideoCallDemo from './pages/common/VideoCallDemo';
+import AgoraDebugTest from './pages/common/AgoraDebugTest';
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
             <Route path="/faq" element={<Layout><GiaiDapThacMac /></Layout>} />
             <Route path="/giai-dap-thac-mac" element={<Layout><GiaiDapThacMac /></Layout>} />
             <Route path="/home" element={<Layout><Home /></Layout>} />
+            <Route path="/video-call-demo" element={<Layout><VideoCallDemo /></Layout>} />
+            <Route path="/agora-debug" element={<Layout><AgoraDebugTest /></Layout>} />
             
             {/* Protected Routes - Only authenticated users */}
             <Route path="/" element={<ProtectedRoute><Layout><Home /></Layout></ProtectedRoute>} />
