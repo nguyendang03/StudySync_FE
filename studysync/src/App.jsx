@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/common/Home';
 import Login from './pages/common/Login';
 import Register from './pages/common/Register';
+import VerifyEmail from './pages/common/VerifyEmail';
 import ForgotPassword from './pages/common/ForgotPassword';
 import Profile from './pages/profile/Profile';
 import GroupDiscovery from './pages/groups/GroupDiscovery';
@@ -27,6 +28,7 @@ function App() {
             {/* Public Routes - Only accessible when not authenticated */}
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
             
             {/* Public Routes - Anyone can access these */}

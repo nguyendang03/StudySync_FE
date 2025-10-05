@@ -22,8 +22,8 @@ class AuthService {
       
       // Store tokens based on rememberMe preference
       const storage = loginData.rememberMe ? localStorage : sessionStorage;
-      storage.setItem('accessToken', data.accessToken);
-      storage.setItem('refreshToken', data.refreshToken);
+      storage.setItem('accessToken', data.access_token);
+      storage.setItem('refreshToken', data.refresh_token);
       
       // Also store in localStorage for isAuthenticated check
       if (!loginData.rememberMe) {
@@ -65,8 +65,58 @@ class AuthService {
     }
   }
 
+  async verifyEmail(verificationData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(verificationData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Email verification failed');
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error('Không thể kết nối đến server. Vui lòng thử lại.');
+      }
+      throw error;
+    }
+  }
+
+  async resendOTP(resendData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(resendData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to resend OTP');
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error('Không thể kết nối đến server. Vui lòng thử lại.');
+      }
+      throw error;
+    }
+  }
+
   async refreshToken() {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
     
     if (!refreshToken) {
       throw new Error('No refresh token');
@@ -86,7 +136,7 @@ class AuthService {
     }
 
     const data = await response.json();
-    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('accessToken', data.access_token);
     
     return data;
   }

@@ -44,31 +44,26 @@ export default function Register() {
     if (!formData.username.trim()) {
       const errorMsg = 'Vui lòng nhập họ và tên';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (!formData.email.trim()) {
       const errorMsg = 'Vui lòng nhập email';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (!formData.password) {
       const errorMsg = 'Vui lòng nhập mật khẩu';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (formData.password.length < 6) {
       const errorMsg = 'Mật khẩu phải có ít nhất 6 ký tự';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
       const errorMsg = 'Mật khẩu xác nhận không khớp';
       setError(errorMsg);
-      toast.error(errorMsg);
       return false;
     }
     return true;
@@ -90,15 +85,34 @@ export default function Register() {
         password: formData.password
       };
 
-      await register(registerData);
+      const response = await register(registerData);
       
-      // Show success toast
-      toast.success('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...');
-      
-      // Redirect to login after successful registration
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      if (response.requiresVerification) {
+        toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.');
+        
+        // Redirect to email verification page
+        setTimeout(() => {
+          navigate('/verify-email', { 
+            state: { 
+              email: formData.email,
+              message: 'Chúng tôi đã gửi mã OTP đến email của bạn. Vui lòng kiểm tra hộp thư.'
+            } 
+          });
+        }, 2000);
+      } 
+      // else {
+      //   toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
+        
+      //   // Redirect to login page
+      //   setTimeout(() => {
+      //     navigate('/login', {
+      //       state: {
+      //         email: formData.email,
+      //         message: 'Đăng ký thành công! Vui lòng đăng nhập.'
+      //       }
+      //     });
+      //   }, 2000);
+      // }
 
     } catch (err) {
       console.error('Registration error:', err);
@@ -114,7 +128,6 @@ export default function Register() {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
