@@ -34,7 +34,6 @@ export default function Header() {
   
   const handleLogout = () => {
     logout();
-    toast.success('Đăng xuất thành công!');
     navigate('/login');
   };
 
