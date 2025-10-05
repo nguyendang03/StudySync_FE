@@ -85,7 +85,6 @@ export default function VerifyEmail() {
       });
       
       setSuccess('Xác thực email thành công! Đang chuyển hướng...');
-      toast.success('Xác thực email thành công!');
       
       // Redirect to login page after successful verification
       setTimeout(() => {

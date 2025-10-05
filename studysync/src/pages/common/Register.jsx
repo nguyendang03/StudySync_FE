@@ -99,19 +99,20 @@ export default function Register() {
             } 
           });
         }, 2000);
-      } else {
-        toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
+      } 
+      // else {
+      //   toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
         
-        // Redirect to login page
-        setTimeout(() => {
-          navigate('/login', {
-            state: {
-              email: formData.email,
-              message: 'Đăng ký thành công! Vui lòng đăng nhập.'
-            }
-          });
-        }, 2000);
-      }
+      //   // Redirect to login page
+      //   setTimeout(() => {
+      //     navigate('/login', {
+      //       state: {
+      //         email: formData.email,
+      //         message: 'Đăng ký thành công! Vui lòng đăng nhập.'
+      //       }
+      //     });
+      //   }, 2000);
+      // }
 
     } catch (err) {
       console.error('Registration error:', err);
