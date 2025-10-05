@@ -26,6 +26,8 @@ export const useAuth = () => {
     // Actions
     login: store.login,
     register: store.register,
+    verifyEmail: store.verifyEmail,
+    resendOTP: store.resendOTP,
     logout: store.logout,
     setUser: store.setUser,
     setLoading: store.setLoading,

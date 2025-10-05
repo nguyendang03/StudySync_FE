@@ -120,6 +120,64 @@ const useAuthStore = create(
         }
       },
 
+      // Email verification action
+      verifyEmail: async (verificationData) => {
+        try {
+          set({ loading: true, error: null });
+          
+          const response = await authService.verifyEmail(verificationData);
+          
+          set({ 
+            loading: false,
+            error: null
+          });
+          
+          toast.success('Xác thực email thành công!');
+          return response;
+        } catch (error) {
+          let errorMessage;
+          if (error.message.includes('expired')) {
+            errorMessage = 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.';
+          } else if (error.message.includes('invalid')) {
+            errorMessage = 'Mã OTP không hợp lệ. Vui lòng kiểm tra lại.';
+          } else {
+            errorMessage = error.message || 'Xác thực thất bại. Vui lòng thử lại.';
+          }
+          
+          set({ 
+            loading: false, 
+            error: errorMessage 
+          });
+          
+          throw error;
+        }
+      },
+
+      // Resend OTP action
+      resendOTP: async (resendData) => {
+        try {
+          set({ loading: true, error: null });
+          
+          const response = await authService.resendOTP(resendData);
+          
+          set({ 
+            loading: false,
+            error: null
+          });
+          
+          return response;
+        } catch (error) {
+          const errorMessage = error.message || 'Không thể gửi lại mã OTP. Vui lòng thử lại.';
+          
+          set({ 
+            loading: false, 
+            error: errorMessage 
+          });
+          
+          throw error;
+        }
+      },
+
       // Logout action
       logout: () => {
         authService.logout();

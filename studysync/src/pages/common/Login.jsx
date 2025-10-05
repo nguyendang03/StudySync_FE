@@ -29,11 +29,23 @@ export default function Login() {
   useEffect(() => {
     setIsLoaded(true);
     
+    // Check for messages from other pages (like email verification)
+    const message = location.state?.message;
+    const emailFromState = location.state?.email;
+    
+    if (message) {
+      toast.success(message);
+    }
+    
+    if (emailFromState) {
+      setFormData(prev => ({ ...prev, email: emailFromState }));
+    }
+    
     // Redirect if already authenticated
     if (isAuthenticated) {
       navigate('/home');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location.state]);
 
   const handleInputChange = (e) => {
     setFormData({
