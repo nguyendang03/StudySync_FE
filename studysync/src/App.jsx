@@ -18,6 +18,9 @@ import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
 import ChatBot from './pages/common/ChatBot';
 import Schedule from './pages/common/Schedule';
 import TaskDistribution from './pages/groups/TaskDistribution';
+import AgoraDebugTest from './pages/common/AgoraDebugTest';
+import VideoCall from './pages/common/VideoCall';
+import JoinCall from './pages/common/JoinCall';
 import ResetPassword from './pages/common/ResetPassword'
 
 function App() {
@@ -39,7 +42,9 @@ function App() {
             <Route path="/groups/:id" element={<Layout><GroupDetail /></Layout>} />
             <Route path="/faq" element={<Layout><GiaiDapThacMac /></Layout>} />
             <Route path="/giai-dap-thac-mac" element={<Layout><GiaiDapThacMac /></Layout>} />
-            <Route path="/home" element={<Layout><Home /></Layout>} />
+            <Route path="/home" element={<Layout><Home /></Layout>} /> 
+            <Route path="/agora-debug" element={<Layout><AgoraDebugTest /></Layout>} />
+            <Route path="/join-call/:callId" element={<JoinCall />} />
             
             {/* Protected Routes - Only authenticated users */}
             <Route path="/" element={<ProtectedRoute><Layout><Home /></Layout></ProtectedRoute>} />
@@ -47,6 +52,7 @@ function App() {
             <Route path="/my-groups" element={<ProtectedRoute><Layout><MyGroups /></Layout></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute><Layout><ChatBot /></Layout></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><Layout><Schedule /></Layout></ProtectedRoute>} />
+            <Route path="/video-call" element={<ProtectedRoute><Layout><VideoCall /></Layout></ProtectedRoute>} />
             <Route path="/task-distribution" element={<ProtectedRoute><Layout><TaskDistribution /></Layout></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Layout><div>Settings Page - Coming Soon</div></Layout></ProtectedRoute>} />
             

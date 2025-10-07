@@ -19,7 +19,8 @@ import {
   MenuOutlined,
   HomeOutlined,
   AppstoreOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  VideoCameraOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
 
@@ -80,6 +81,16 @@ export default function Header() {
           <Link to="/schedule" className="flex items-center gap-3 py-1">
             <span>Thời khóa biểu</span>
             <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">New</span>
+          </Link>
+        ),
+      },
+      {
+        key: 'video-call',
+        icon: <VideoCameraOutlined className="text-red-600" />,
+        label: (
+          <Link to="/video-call" className="flex items-center gap-3 py-1">
+            <span>Cuộc gọi video</span>
+            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Hot</span>
           </Link>
         ),
       },
@@ -335,6 +346,14 @@ export default function Header() {
                 >
                   <CalendarOutlined />
                   Thời khóa biểu
+                </Link>
+                <Link 
+                  to="/video-call" 
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <VideoCameraOutlined />
+                  Cuộc gọi video
                 </Link>
                 <Link 
                   to="/faq" 
