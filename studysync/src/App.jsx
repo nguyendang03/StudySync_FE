@@ -18,6 +18,7 @@ import GiaiDapThacMac from './pages/common/GiaiDapThacMac';
 import ChatBot from './pages/common/ChatBot';
 import Schedule from './pages/common/Schedule';
 import TaskDistribution from './pages/groups/TaskDistribution';
+import ResetPassword from './pages/common/ResetPassword'
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
             
             {/* Public Routes - Anyone can access these */}
             <Route path="/groups" element={<Layout><GroupDiscovery /></Layout>} />
