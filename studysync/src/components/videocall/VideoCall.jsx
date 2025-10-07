@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, MicOff, Video, VideoOff, Phone, PhoneOff, 
-  Monitor, Users, Settings, MessageSquare, X, UserPlus 
+  Monitor, Users, Settings, MessageSquare, X, MonitorOff,
+  Maximize2, Minimize2, UserPlus
 } from 'lucide-react';
-import { Modal } from 'antd';
+import { Modal, Tooltip, Badge } from 'antd';
 import agoraService from '../../services/agoraService';
 import { useVideoCallStore } from '../../stores';
 import InvitationModal from './InvitationModal';
+import VideoCallChat from './VideoCallChat';
 import toast from 'react-hot-toast';
 
 const VideoCall = ({ 
@@ -26,9 +28,15 @@ const VideoCall = ({
   const [showSettings, setShowSettings] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [screenShareUser, setScreenShareUser] = useState(null);
+  const [isScreenShareFullscreen, setIsScreenShareFullscreen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   
   const localVideoRef = useRef(null);
+  const localScreenRef = useRef(null);
   const remoteVideoRefs = useRef({});
+  const remoteScreenRefs = useRef({});
   const callStartTime = useRef(null);
 
   const { startCall, endCall } = useVideoCallStore();
@@ -129,23 +137,53 @@ const VideoCall = ({
   useEffect(() => {
     const playLocalVideo = async () => {
       const { video } = agoraService.getLocalTracks();
-      if (video && localVideoRef.current) {
+      if (video && localVideoRef.current && !isVideoMuted) {
         video.play(localVideoRef.current);
       }
     };
 
-    if (isCallStarted && !isVideoMuted) {
+    if (isCallStarted) {
       playLocalVideo();
     }
   }, [isCallStarted, isVideoMuted]);
 
-  // Play remote videos
+  // Play local screen share
+  useEffect(() => {
+    const playLocalScreen = async () => {
+      const screenTrack = agoraService.getScreenTrack();
+      if (screenTrack && localScreenRef.current) {
+        screenTrack.play(localScreenRef.current);
+      }
+    };
+
+    if (isCallStarted && isScreenSharing) {
+      playLocalScreen();
+    }
+  }, [isCallStarted, isScreenSharing]);
+
+  // Play remote videos and screens
   useEffect(() => {
     remoteUsers.forEach(user => {
+      // Play video track
       if (user.videoTrack && remoteVideoRefs.current[user.uid]) {
         user.videoTrack.play(remoteVideoRefs.current[user.uid]);
       }
+      
+      // Play screen track
+      if (user.screenTrack && remoteScreenRefs.current[user.uid]) {
+        user.screenTrack.play(remoteScreenRefs.current[user.uid]);
+        // Set the screen share user
+        if (!screenShareUser || screenShareUser.uid !== user.uid) {
+          setScreenShareUser(user);
+        }
+      }
     });
+
+    // Check if screen share user stopped sharing
+    const stillSharing = remoteUsers.find(u => u.screenTrack);
+    if (!stillSharing && screenShareUser) {
+      setScreenShareUser(null);
+    }
   }, [remoteUsers]);
 
   const joinCall = async () => {
@@ -231,9 +269,31 @@ const VideoCall = ({
     if (isScreenSharing) {
       await agoraService.stopScreenShare();
       setIsScreenSharing(false);
+      toast.success('Đã dừng chia sẻ màn hình');
     } else {
       const success = await agoraService.startScreenShare();
-      setIsScreenSharing(success);
+      if (success) {
+        setIsScreenSharing(true);
+        toast.success('Đã bắt đầu chia sẻ màn hình');
+      }
+    }
+  };
+
+  const handleInviteSent = (invitedUsers) => {
+    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
+    setShowInviteModal(false);
+  };
+
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+    if (!isChatOpen) {
+      setUnreadMessages(0);
+    }
+  };
+
+  const handleNewMessage = () => {
+    if (!isChatOpen) {
+      setUnreadMessages(prev => prev + 1);
     }
   };
 
@@ -241,11 +301,6 @@ const VideoCall = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleInviteSent = (invitedUsers) => {
-    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
-    setShowInviteModal(false);
   };
 
   if (isConnecting) {
@@ -270,6 +325,14 @@ const VideoCall = ({
             <Users className="w-4 h-4" />
             <span>{remoteUsers.length + 1} người tham gia</span>
           </div>
+          {(isScreenSharing || screenShareUser) && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+              <Monitor className="w-4 h-4 text-blue-400" />
+              <span className="text-blue-300 text-sm font-medium">
+                {isScreenSharing ? 'Bạn đang chia sẻ màn hình' : `${screenShareUser?.uid} đang chia sẻ màn hình`}
+              </span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center space-x-4">
@@ -287,6 +350,22 @@ const VideoCall = ({
             <UserPlus className="w-4 h-4" />
             <span>Mời thêm</span>
           </motion.button>
+
+          {/* Chat Toggle */}
+          <Tooltip title={isChatOpen ? "Đóng chat" : "Mở chat"}>
+            <button
+              onClick={toggleChat}
+              className="p-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors relative"
+            >
+              <MessageSquare className="w-5 h-5" />
+              {unreadMessages > 0 && (
+                <Badge 
+                  count={unreadMessages} 
+                  className="absolute -top-1 -right-1"
+                />
+              )}
+            </button>
+          </Tooltip>
           
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -305,156 +384,313 @@ const VideoCall = ({
 
       {/* Main Video Area */}
       <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
-        {/* Main Video (Local) */}
-        <div className="absolute inset-0">
-          <div 
-            ref={localVideoRef}
-            className="w-full h-full bg-gray-800 rounded-lg overflow-hidden"
-          />
-          {isVideoMuted && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4 mx-auto">
-                  <VideoOff className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-white">Camera đã tắt</p>
-              </div>
-            </div>
-          )}
-          {/* Local user indicator */}
-          <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg">
-            <span className="text-white text-sm font-medium">Bạn</span>
-            {isHost && (
-              <span className="ml-2 px-2 py-1 bg-purple-600 text-white text-xs rounded-full">Host</span>
-            )}
-          </div>
-        </div>
-
-        {/* Remote Videos Grid */}
-        {remoteUsers.length > 0 && (
-          <div className="absolute top-4 right-4 space-y-3 max-h-96 overflow-y-auto">
-            {remoteUsers.map((user, index) => (
-              <motion.div
-                key={user.uid}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="w-52 h-40 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600 relative"
-              >
-                <div 
-                  ref={el => remoteVideoRefs.current[user.uid] = el}
-                  className="w-full h-full"
-                />
-                {!user.hasVideo && (
-                  <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                      <VideoOff className="w-6 h-6 text-white" />
+        {/* Screen Share View - Takes Priority */}
+        {(isScreenSharing || screenShareUser) && (
+          <div className="absolute inset-0 bg-black">
+            {/* Main Screen Share Display */}
+            <div className="h-full w-full flex items-center justify-center p-4">
+              <div className="relative w-full h-full max-w-7xl mx-auto">
+                {/* Screen Share Video */}
+                {isScreenSharing ? (
+                  <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border-2 border-blue-500 shadow-2xl shadow-blue-500/20">
+                    <div 
+                      ref={localScreenRef}
+                      className="w-full h-full"
+                    />
+                    {/* Screen Share Indicator */}
+                    <div className="absolute top-4 left-4 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+                      <Monitor className="w-5 h-5" />
+                      <span className="font-medium">Bạn đang chia sẻ màn hình</span>
+                      <div className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     </div>
                   </div>
+                ) : (
+                  <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border-2 border-purple-500 shadow-2xl shadow-purple-500/20">
+                    <div 
+                      ref={el => remoteScreenRefs.current[screenShareUser?.uid] = el}
+                      className="w-full h-full"
+                    />
+                    {/* Remote Screen Share Indicator */}
+                    <div className="absolute top-4 left-4 flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
+                      <Monitor className="w-5 h-5" />
+                      <span className="font-medium">Người dùng {screenShareUser?.uid} đang chia sẻ</span>
+                      <div className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    </div>
+                    
+                    {/* Fullscreen Toggle */}
+                    <Tooltip title={isScreenShareFullscreen ? "Thu nhỏ" : "Toàn màn hình"}>
+                      <button
+                        onClick={() => setIsScreenShareFullscreen(!isScreenShareFullscreen)}
+                        className="absolute top-4 right-4 p-3 bg-gray-800/80 hover:bg-gray-700 rounded-lg text-white transition-colors backdrop-blur-sm"
+                      >
+                        {isScreenShareFullscreen ? (
+                          <Minimize2 className="w-5 h-5" />
+                        ) : (
+                          <Maximize2 className="w-5 h-5" />
+                        )}
+                      </button>
+                    </Tooltip>
+                  </div>
                 )}
-                <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
-                  Người dùng {user.uid}
+              </div>
+            </div>
+
+            {/* Video Thumbnails Sidebar During Screen Share */}
+            <div className="absolute top-4 right-4 space-y-3 max-h-[calc(100%-2rem)] overflow-y-auto w-64">
+              {/* Local Video Thumbnail */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600 hover:border-purple-500 transition-colors relative group"
+              >
+                <div className="aspect-video">
+                  <div 
+                    ref={localVideoRef}
+                    className="w-full h-full bg-gray-900"
+                  />
+                  {isVideoMuted && (
+                    <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                        <VideoOff className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {/* Audio indicator */}
-                <div className="absolute top-2 right-2">
-                  <div className={`p-1 rounded-full ${user.hasAudio ? 'bg-green-600' : 'bg-red-600'}`}>
-                    {user.hasAudio ? (
-                      <Mic className="w-3 h-3 text-white" />
-                    ) : (
-                      <MicOff className="w-3 h-3 text-white" />
-                    )}
+                {/* Local User Label */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-sm font-medium">Bạn</span>
+                    <div className={`p-1 rounded-full ${isAudioMuted ? 'bg-red-600' : 'bg-green-600'}`}>
+                      {isAudioMuted ? (
+                        <MicOff className="w-3 h-3 text-white" />
+                      ) : (
+                        <Mic className="w-3 h-3 text-white" />
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
-            ))}
+
+              {/* Remote Users Thumbnails */}
+              {remoteUsers.map((user, index) => (
+                <motion.div
+                  key={user.uid}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-colors relative group"
+                >
+                  <div className="aspect-video">
+                    <div 
+                      ref={el => remoteVideoRefs.current[user.uid] = el}
+                      className="w-full h-full bg-gray-900"
+                    />
+                    {!user.hasVideo && (
+                      <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                          <VideoOff className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Remote User Label */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white text-sm font-medium truncate">
+                        Người dùng {user.uid}
+                      </span>
+                      <div className={`p-1 rounded-full ${user.hasAudio ? 'bg-green-600' : 'bg-red-600'}`}>
+                        {user.hasAudio ? (
+                          <Mic className="w-3 h-3 text-white" />
+                        ) : (
+                          <MicOff className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* No participants message */}
-        {/* {remoteUsers.length === 0 && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6">
-              <Users className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-              <p className="text-white text-lg mb-2">Đang chờ thành viên khác tham gia</p>
-              <p className="text-gray-400 text-sm">Chia sẻ link cuộc gọi để mời thêm người</p>
+        {/* Normal Video View - No Screen Share */}
+        {!isScreenSharing && !screenShareUser && (
+          <>
+            {/* Main Video (Local) */}
+            <div className="absolute inset-0">
+              <div 
+                ref={localVideoRef}
+                className="w-full h-full bg-gray-800 rounded-lg overflow-hidden"
+              />
+              {isVideoMuted && (
+                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                      <VideoOff className="w-10 h-10 text-white" />
+                    </div>
+                    <p className="text-white">Camera đã tắt</p>
+                  </div>
+                </div>
+              )}
+              {/* Local user indicator */}
+              <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg">
+                <span className="text-white text-sm font-medium">Bạn</span>
+                {isHost && (
+                  <span className="ml-2 px-2 py-1 bg-purple-600 text-white text-xs rounded-full">Host</span>
+                )}
+              </div>
             </div>
-          </div>
-        )} */}
+
+            {/* Remote Videos Grid */}
+            {remoteUsers.length > 0 && (
+              <div className="absolute top-4 right-4 space-y-3 max-h-96 overflow-y-auto">
+                {remoteUsers.map((user, index) => (
+                  <motion.div
+                    key={user.uid}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="w-52 h-40 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600 relative"
+                  >
+                    <div 
+                      ref={el => remoteVideoRefs.current[user.uid] = el}
+                      className="w-full h-full"
+                    />
+                    {!user.hasVideo && (
+                      <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                          <VideoOff className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
+                      Người dùng {user.uid}
+                    </div>
+                    {/* Audio indicator */}
+                    <div className="absolute top-2 right-2">
+                      <div className={`p-1 rounded-full ${user.hasAudio ? 'bg-green-600' : 'bg-red-600'}`}>
+                        {user.hasAudio ? (
+                          <Mic className="w-3 h-3 text-white" />
+                        ) : (
+                          <MicOff className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Controls */}
       <div className="bg-gray-900/90 backdrop-blur-sm px-6 py-4">
         <div className="flex items-center justify-center space-x-4">
           {/* Audio Toggle */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleAudio}
-            className={`p-4 rounded-full transition-all duration-200 font-medium ${
-              isAudioMuted 
-                ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25' 
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            {isAudioMuted ? (
-              <MicOff className="w-6 h-6 text-white" />
-            ) : (
-              <Mic className="w-6 h-6 text-white" />
-            )}
-          </motion.button>
+          <Tooltip title={isAudioMuted ? "Bật mic" : "Tắt mic"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleAudio}
+              className={`p-4 rounded-full transition-all duration-200 font-medium ${
+                isAudioMuted 
+                  ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25' 
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              {isAudioMuted ? (
+                <MicOff className="w-6 h-6 text-white" />
+              ) : (
+                <Mic className="w-6 h-6 text-white" />
+              )}
+            </motion.button>
+          </Tooltip>
 
           {/* Video Toggle */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleVideo}
-            className={`p-4 rounded-full transition-all duration-200 ${
-              isVideoMuted 
-                ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25' 
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            {isVideoMuted ? (
-              <VideoOff className="w-6 h-6 text-white" />
-            ) : (
-              <Video className="w-6 h-6 text-white" />
-            )}
-          </motion.button>
+          <Tooltip title={isVideoMuted ? "Bật camera" : "Tắt camera"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleVideo}
+              className={`p-4 rounded-full transition-all duration-200 ${
+                isVideoMuted 
+                  ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25' 
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              {isVideoMuted ? (
+                <VideoOff className="w-6 h-6 text-white" />
+              ) : (
+                <Video className="w-6 h-6 text-white" />
+              )}
+            </motion.button>
+          </Tooltip>
 
           {/* Screen Share */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleScreenShare}
-            className={`p-4 rounded-full transition-all duration-200 ${
-              isScreenSharing 
-                ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/25' 
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            <Monitor className="w-6 h-6 text-white" />
-          </motion.button>
+          <Tooltip title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleScreenShare}
+              className={`p-4 rounded-full transition-all duration-200 relative ${
+                isScreenSharing 
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/25' 
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              {isScreenSharing ? (
+                <>
+                  <MonitorOff className="w-6 h-6 text-white" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                </>
+              ) : (
+                <Monitor className="w-6 h-6 text-white" />
+              )}
+            </motion.button>
+          </Tooltip>
+
+          {/* Chat Toggle */}
+          <Tooltip title={isChatOpen ? "Đóng chat" : "Mở chat"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleChat}
+              className="p-4 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-600/25 relative"
+            >
+              <MessageSquare className="w-6 h-6 text-white" />
+              {unreadMessages > 0 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">
+                  {unreadMessages}
+                </div>
+              )}
+            </motion.button>
+          </Tooltip>
 
           {/* Invite Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowInviteModal(true)}
-            className="p-4 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-600/25"
-            title="Mời thêm người tham gia"
-          >
-            <UserPlus className="w-6 h-6 text-white" />
-          </motion.button>
+          <Tooltip title="Mời thêm người tham gia">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowInviteModal(true)}
+              className="p-4 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-600/25"
+            >
+              <UserPlus className="w-6 h-6 text-white" />
+            </motion.button>
+          </Tooltip>
 
           {/* End Call */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={leaveCall}
-            className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-600/25"
-          >
-            <PhoneOff className="w-6 h-6 text-white" />
-          </motion.button>
+          <Tooltip title="Kết thúc cuộc gọi">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={leaveCall}
+              className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-600/25"
+            >
+              <PhoneOff className="w-6 h-6 text-white" />
+            </motion.button>
+          </Tooltip>
         </div>
       </div>
 
@@ -518,6 +754,19 @@ const VideoCall = ({
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <VideoCallChat
+            channelName={channelName}
+            isOpen={isChatOpen}
+            onClose={toggleChat}
+            participants={[...remoteUsers.map(u => ({ uid: u.uid })), { uid: 'local' }]}
+            onNewMessage={handleNewMessage}
+          />
         )}
       </AnimatePresence>
 
