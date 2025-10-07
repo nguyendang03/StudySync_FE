@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@tailwindcss/vite": "^4.1.12",
     "antd": "^5.27.3",
+    "axios": "^1.12.2",
     "dayjs": "^1.11.18",
     "framer-motion": "^12.23.12",
     "install": "^0.13.0",
@@ -25,6 +26,7 @@
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.8.2",
+    "react-toastify": "^11.0.5",
     "tailwindcss": "^4.1.12",
     "yup": "^1.7.0",
     "zustand": "^5.0.8"
