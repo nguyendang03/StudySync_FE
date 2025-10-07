@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, MicOff, Video, VideoOff, Phone, PhoneOff, 
-  Monitor, Users, Settings, MessageSquare, X 
+  Monitor, Users, Settings, MessageSquare, X, UserPlus 
 } from 'lucide-react';
+import { Modal } from 'antd';
 import agoraService from '../../services/agoraService';
 import { useVideoCallStore } from '../../stores';
+import InvitationModal from './InvitationModal';
 import toast from 'react-hot-toast';
 
 const VideoCall = ({ 
@@ -23,6 +25,7 @@ const VideoCall = ({
   const [callDuration, setCallDuration] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef({});
@@ -240,6 +243,11 @@ const VideoCall = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleInviteSent = (invitedUsers) => {
+    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
+    setShowInviteModal(false);
+  };
+
   if (isConnecting) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
@@ -268,6 +276,18 @@ const VideoCall = ({
           <div className="text-white text-sm font-mono">
             {formatDuration(callDuration)}
           </div>
+          
+          {/* Invite Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors font-medium"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Mời thêm</span>
+          </motion.button>
+          
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="p-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors"
@@ -351,7 +371,7 @@ const VideoCall = ({
         )}
 
         {/* No participants message */}
-        {remoteUsers.length === 0 && (
+        {/* {remoteUsers.length === 0 && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
             <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6">
               <Users className="w-12 h-12 text-purple-400 mx-auto mb-3" />
@@ -359,7 +379,7 @@ const VideoCall = ({
               <p className="text-gray-400 text-sm">Chia sẻ link cuộc gọi để mời thêm người</p>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Controls */}
@@ -413,6 +433,17 @@ const VideoCall = ({
             }`}
           >
             <Monitor className="w-6 h-6 text-white" />
+          </motion.button>
+
+          {/* Invite Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowInviteModal(true)}
+            className="p-4 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-600/25"
+            title="Mời thêm người tham gia"
+          >
+            <UserPlus className="w-6 h-6 text-white" />
           </motion.button>
 
           {/* End Call */}
@@ -489,6 +520,31 @@ const VideoCall = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Invitation Modal */}
+      <Modal
+        title={null}
+        open={showInviteModal}
+        onCancel={() => setShowInviteModal(false)}
+        footer={null}
+        width={700}
+        destroyOnClose={true}
+        className="z-[60]"
+      >
+        <InvitationModal
+          groupId={channelName}
+          groupName={groupName}
+          members={groupMembers}
+          activeCall={{
+            channelName,
+            groupName,
+            participants: groupMembers,
+            isHost
+          }}
+          onInviteSent={handleInviteSent}
+          onCancel={() => setShowInviteModal(false)}
+        />
+      </Modal>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { VideoCallButton } from '../../components/videocall';
+import { VideoCallButton, VideoCallManager } from '../../components/videocall';
 import { useAuthStore } from '../../stores';
 
 export default function GroupDetail() {
@@ -127,6 +127,23 @@ export default function GroupDetail() {
                       <p className="text-gray-700 leading-relaxed">
                         {groupData.description}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Video Call Section */}
+                  <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                    <div className="flex items-center space-x-3 mb-4 hover:scale-105 transition-transform duration-200">
+                      <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM5 8a1 1 0 000 2h8a1 1 0 100-2H5z"/>
+                      </svg>
+                      <h2 className="text-lg font-bold text-purple-600">Cuộc gọi video:</h2>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <VideoCallManager
+                        groupId={groupData.id}
+                        groupName={groupData.name}
+                        members={groupData.members}
+                      />
                     </div>
                   </div>
 
