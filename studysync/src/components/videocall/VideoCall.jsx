@@ -150,9 +150,14 @@ const VideoCall = ({
   // Play local screen share
   useEffect(() => {
     const playLocalScreen = async () => {
-      const screenTrack = agoraService.getScreenTrack();
-      if (screenTrack && localScreenRef.current) {
-        screenTrack.play(localScreenRef.current);
+      try {
+        const screenTrack = agoraService.getScreenTrack();
+        if (screenTrack && localScreenRef.current) {
+          console.log('🖥️ Playing local screen share...');
+          screenTrack.play(localScreenRef.current);
+        }
+      } catch (error) {
+        console.error('❌ Failed to play local screen:', error);
       }
     };
 
@@ -164,27 +169,33 @@ const VideoCall = ({
   // Play remote videos and screens
   useEffect(() => {
     remoteUsers.forEach(user => {
-      // Play video track
-      if (user.videoTrack && remoteVideoRefs.current[user.uid]) {
-        user.videoTrack.play(remoteVideoRefs.current[user.uid]);
-      }
-      
-      // Play screen track
-      if (user.screenTrack && remoteScreenRefs.current[user.uid]) {
-        user.screenTrack.play(remoteScreenRefs.current[user.uid]);
-        // Set the screen share user
-        if (!screenShareUser || screenShareUser.uid !== user.uid) {
-          setScreenShareUser(user);
+      try {
+        // Play video track
+        if (user.videoTrack && remoteVideoRefs.current[user.uid]) {
+          user.videoTrack.play(remoteVideoRefs.current[user.uid]);
         }
+        
+        // Play screen track
+        if (user.screenTrack && remoteScreenRefs.current[user.uid]) {
+          console.log('🖥️ Playing remote screen share from user:', user.uid);
+          user.screenTrack.play(remoteScreenRefs.current[user.uid]);
+          // Set the screen share user
+          if (!screenShareUser || screenShareUser.uid !== user.uid) {
+            setScreenShareUser(user);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to play tracks for user', user.uid, error);
       }
     });
 
     // Check if screen share user stopped sharing
-    const stillSharing = remoteUsers.find(u => u.screenTrack);
+    const stillSharing = remoteUsers.find(u => u.screenTrack && u.hasScreen);
     if (!stillSharing && screenShareUser) {
+      console.log('🛑 Screen share ended');
       setScreenShareUser(null);
     }
-  }, [remoteUsers]);
+  }, [remoteUsers, screenShareUser]);
 
   const joinCall = async () => {
     try {
@@ -266,16 +277,23 @@ const VideoCall = ({
   };
 
   const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      await agoraService.stopScreenShare();
-      setIsScreenSharing(false);
-      toast.success('Đã dừng chia sẻ màn hình');
-    } else {
-      const success = await agoraService.startScreenShare();
-      if (success) {
-        setIsScreenSharing(true);
-        toast.success('Đã bắt đầu chia sẻ màn hình');
+    try {
+      if (isScreenSharing) {
+        console.log('🛑 Stopping screen share...');
+        const success = await agoraService.stopScreenShare();
+        if (success) {
+          setIsScreenSharing(false);
+        }
+      } else {
+        console.log('🖥️ Starting screen share...');
+        const success = await agoraService.startScreenShare();
+        if (success) {
+          setIsScreenSharing(true);
+        }
       }
+    } catch (error) {
+      console.error('❌ Screen share toggle failed:', error);
+      toast.error('Lỗi khi thay đổi trạng thái chia sẻ màn hình');
     }
   };
 
@@ -395,8 +413,18 @@ const VideoCall = ({
                   <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border-2 border-blue-500 shadow-2xl shadow-blue-500/20">
                     <div 
                       ref={localScreenRef}
-                      className="w-full h-full"
+                      className="w-full h-full bg-black"
                     />
+                    {!agoraService.getScreenTrack() && (
+                      <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <Monitor className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-white text-lg">Đang khởi tạo chia sẻ màn hình...</p>
+                        </div>
+                      </div>
+                    )}
                     {/* Screen Share Indicator */}
                     <div className="absolute top-4 left-4 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
                       <Monitor className="w-5 h-5" />
@@ -408,8 +436,18 @@ const VideoCall = ({
                   <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border-2 border-purple-500 shadow-2xl shadow-purple-500/20">
                     <div 
                       ref={el => remoteScreenRefs.current[screenShareUser?.uid] = el}
-                      className="w-full h-full"
+                      className="w-full h-full bg-black"
                     />
+                    {!screenShareUser?.screenTrack && (
+                      <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <Monitor className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-white text-lg">Đang tải chia sẻ màn hình...</p>
+                        </div>
+                      </div>
+                    )}
                     {/* Remote Screen Share Indicator */}
                     <div className="absolute top-4 left-4 flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
                       <Monitor className="w-5 h-5" />

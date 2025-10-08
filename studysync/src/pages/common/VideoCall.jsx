@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Card, Select, Button, Badge, Divider, Empty, Tooltip, Avatar, Progress, Statistic, Tag } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -15,9 +15,12 @@ import {
   FireOutlined
 } from '@ant-design/icons';
 import { Video, Users, Phone, Settings, TrendingUp, Calendar, Monitor, Shield, Zap, Award } from 'lucide-react';
-import VideoCallManager from '../../components/videocall/VideoCallManager';
 import { useAuthStore, useGroupsStore } from '../../stores';
+import { ComponentLoader } from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+
+// Lazy load heavy components
+const VideoCallManager = lazy(() => import('../../components/videocall/VideoCallManager'));
 
 const { Option } = Select;
 
@@ -396,11 +399,13 @@ export default function VideoCallPage() {
                 {/* Card Body */}
                 <div className="p-8 bg-gradient-to-br from-gray-50 to-white">
                   {currentGroup ? (
-                    <VideoCallManager
-                      groupId={currentGroup.id}
-                      groupName={currentGroup.name}
-                      members={currentGroup.members}
-                    />
+                    <Suspense fallback={<ComponentLoader message="Đang khởi tạo cuộc gọi..." />}>
+                      <VideoCallManager
+                        groupId={currentGroup.id}
+                        groupName={currentGroup.name}
+                        members={currentGroup.members}
+                      />
+                    </Suspense>
                   ) : (
                     <div className="text-center py-20">
                       <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
