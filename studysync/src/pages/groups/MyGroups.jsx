@@ -53,8 +53,16 @@ export default function MyGroups() {
       const response = await groupService.getMyGroups();
       console.log('📝 Groups API response:', response);
       
-      // Transform backend data to match frontend structure
-      const groupsData = response?.data || response || [];
+      // Extract data from response (axios already extracts response.data)
+      let groupsData = response?.data || response || [];
+      
+      // Convert object with numeric keys to array if needed
+      if (groupsData && typeof groupsData === 'object' && !Array.isArray(groupsData)) {
+        groupsData = Object.values(groupsData);
+      }
+      
+      console.log('📝 Groups data after extraction:', groupsData);
+      
       const transformedGroups = Array.isArray(groupsData) ? groupsData.map((group, index) => ({
         id: group.id || index + 1,
         name: group.groupName || group.name || 'Nhóm không tên',
