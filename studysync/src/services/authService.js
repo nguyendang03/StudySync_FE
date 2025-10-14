@@ -3,6 +3,7 @@ import API_BASE_URL from '../config/api.js';
 class AuthService {
     async login(loginData) {
         try {
+            console.log('🔐 Starting login process...');
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -14,16 +15,41 @@ class AuthService {
                 }),
             });
 
-            const data = await response.json();
+            const responseData = await response.json();
+            console.log('📦 Raw login response:', responseData);
 
             if (!response.ok) {
-                throw new Error(data.message || 'Đăng nhập thất bại');
+                throw new Error(responseData.message || 'Đăng nhập thất bại');
+            }
+
+            // Backend wraps response in { data: { access_token, refresh_token } }
+            const data = responseData.data || responseData;
+            
+            console.log('📦 Login tokens received:', { 
+                ok: response.ok, 
+                hasAccessToken: !!data.access_token,
+                hasRefreshToken: !!data.refresh_token,
+                accessTokenLength: data.access_token?.length,
+                refreshTokenLength: data.refresh_token?.length
+            });
+
+            // Validate tokens exist in response
+            if (!data.access_token || !data.refresh_token) {
+                console.error('❌ Missing tokens in login response:', data);
+                throw new Error('Server did not return tokens');
             }
 
             // Store tokens based on rememberMe preference
             const storage = loginData.rememberMe ? localStorage : sessionStorage;
+            console.log('💾 Storing tokens in:', loginData.rememberMe ? 'localStorage' : 'sessionStorage');
+            
             storage.setItem('accessToken', data.access_token);
             storage.setItem('refreshToken', data.refresh_token);
+
+            // Verify tokens were stored
+            console.log('✅ Tokens stored successfully:');
+            console.log('  - accessToken:', storage.getItem('accessToken')?.substring(0, 30) + '...');
+            console.log('  - refreshToken:', storage.getItem('refreshToken')?.substring(0, 30) + '...');
 
             // Also store in localStorage for isAuthenticated check
             if (!loginData.rememberMe) {
@@ -32,6 +58,7 @@ class AuthService {
 
             return data;
         } catch (error) {
+            console.error('❌ Login error:', error);
             if (error.name === 'TypeError') {
                 throw new Error('Không thể kết nối đến server. Vui lòng thử lại.');
             }
@@ -119,29 +146,68 @@ class AuthService {
     }
 
     async refreshToken() {
-        const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+        const refreshToken = this.getRefreshToken();
+
+        console.log('🔍 Looking for refresh token...');
+        console.log('  localStorage.refreshToken:', localStorage.getItem('refreshToken') ? 'exists' : 'null');
+        console.log('  sessionStorage.refreshToken:', sessionStorage.getItem('refreshToken') ? 'exists' : 'null');
+        console.log('  Final refreshToken value:', refreshToken || 'UNDEFINED');
 
         if (!refreshToken) {
-            throw new Error('No refresh token');
-        }
-
-        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken }),
-        });
-
-        if (!response.ok) {
+            console.error('❌ No refresh token found in storage');
             this.logout();
-            throw new Error('Token refresh failed');
+            throw new Error('No refresh token available');
         }
 
-        const data = await response.json();
-        localStorage.setItem('accessToken', data.access_token);
+        try {
+            console.log('🔄 Attempting token refresh...');
+            console.log('  Sending refreshToken (first 30 chars):', refreshToken.substring(0, 30) + '...');
+            
+            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ refreshToken }),
+            });
 
-        return data;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('❌ Refresh failed:', response.status, errorData);
+                this.logout();
+                throw new Error(errorData.message || 'Token refresh failed');
+            }
+
+            const responseData = await response.json();
+            
+            // Backend wraps response in { data: { access_token, refresh_token } }
+            const data = responseData.data || responseData;
+            
+            console.log('✅ Token refresh successful');
+
+            // Determine which storage was originally used
+            const wasInLocalStorage = localStorage.getItem('refreshToken');
+            const storage = wasInLocalStorage ? localStorage : sessionStorage;
+
+            // Save both new tokens to the same storage
+            storage.setItem('accessToken', data.access_token);
+            storage.setItem('refreshToken', data.refresh_token);
+
+            // Clear from the other storage to avoid confusion
+            const otherStorage = wasInLocalStorage ? sessionStorage : localStorage;
+            otherStorage.removeItem('accessToken');
+            otherStorage.removeItem('refreshToken');
+
+            return data;
+        } catch (error) {
+            console.error('❌ Token refresh error:', error);
+            this.logout();
+            throw error;
+        }
+    }
+
+    getRefreshToken() {
+        return localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
     }
 
     logout() {

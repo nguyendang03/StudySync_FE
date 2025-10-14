@@ -18,84 +18,116 @@ import {
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown } from 'antd';
+import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown, Spin } from 'antd';
 import toast from 'react-hot-toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { VideoCallButton } from '../../components/videocall';
+import groupService from '../../services/groupService';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function MyGroups() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedsubject, setSelectedsubject] = useState('all');
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedsubject, setSelectedsubject] = useState('all');  const [isLoaded, setIsLoaded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState('grid');
   const [favorites, setFavorites] = useState(new Set([1, 3]));
+  const [myGroups, setMyGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     setIsLoaded(true);
-  }, []);
-
-  // Sample groups data
-  const myGroups = [
-    {
-      id: 1,
-      name: "Tung Tung Tung Sahur",
-      description: "JavaScript B: cùng học và ôn tập ngôn ngữ lập trình nhất thế giới hiện nay và các thành viên hoạt động ban trình học hưởng.Cơ sở thiết lập phù hợp với mọi lứa tuổi và kỹ thuật từ cơ bản đến nâng cao.",
-      members: 6,
-      subject: "EXE101",
-      progress: 75,
-      isActive: true,
-      avatar: "JS",
-      bgColor: "from-yellow-400 to-orange-500",
-      lastActivity: "2 giờ trước",
-      rating: 4.8,
-      tags: ["JavaScript", "Frontend", "Beginner"]
-    },
-    {
-      id: 2,
-      name: "React Advanced Techniques",
-      description: "Học các kỹ thuật nâng cao trong React: Hooks, Context API, Performance Optimization, và các design patterns phổ biến trong thực tế.",
-      members: 5,
-      subject: "WDP301",
-      progress: 60,
-      isActive: false,
-      avatar: "RT",
-      bgColor: "from-blue-400 to-purple-500",
-      lastActivity: "1 ngày trước",
-      rating: 4.6,
-      tags: ["React", "Advanced", "Hooks"]
-    },
-    {
-      id: 3,
-      name: "UI/UX Design Fundamentals",
-      description: "Khóa học thiết kế giao diện và trải nghiệm người dùng từ cơ bản đến nâng cao. Học cách sử dụng Figma, Adobe XD và các nguyên tắc thiết kế.",
-      members: 7,
-      subject: "SWP391",
-      progress: 45,
-      isActive: true,
-      avatar: "UI",
-      bgColor: "from-pink-400 to-red-500",
-      lastActivity: "30 phút trước",
-      rating: 4.9,
-      tags: ["Design", "Figma", "UI/UX"]
-    },
-    {
-      id: 4,
-      name: "Data Science with Python",
-      description: "Khám phá thế giới khoa học dữ liệu với Python. Học pandas, numpy, matplotlib và machine learning basics.",
-      members: 6,
-      subject: "SWD392",
-      progress: 30,
-      isActive: true,
-      avatar: "DS",
-      bgColor: "from-green-400 to-blue-500",
-      lastActivity: "15 phút trước",
-      rating: 4.7,
-      tags: ["Python", "Data Science", "ML"]
+    if (isAuthenticated) {
+      fetchMyGroups();
     }
-  ];
+  }, [isAuthenticated]);
+
+  const fetchMyGroups = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching groups for authenticated user...');
+      
+      const response = await groupService.getMyGroups();
+      console.log('📝 Groups API response:', response);
+      
+      // Transform backend data to match frontend structure
+      const groupsData = response?.data || response || [];
+      const transformedGroups = Array.isArray(groupsData) ? groupsData.map((group, index) => ({
+        id: group.id || index + 1,
+        name: group.groupName || group.name || 'Nhóm không tên',
+        description: group.description || 'Không có mô tả',
+        members: group.memberCount || group.members || 0,
+        subject: group.subject || 'Chưa xác định',
+        progress: Math.floor(Math.random() * 100), // Mock progress for now
+        isActive: true,
+        avatar: (group.groupName || group.name || 'GR').substring(0, 2).toUpperCase(),
+        bgColor: getRandomGradient(),
+        lastActivity: formatLastActivity(group.updatedAt || group.createdAt),
+        rating: 4.5 + Math.random() * 0.5,
+        tags: ['Học tập', 'Nhóm']
+      })) : [];
+
+      setMyGroups(transformedGroups);
+      
+      if (transformedGroups.length > 0) {
+        toast.success(`✅ Đã tải ${transformedGroups.length} nhóm của bạn`);
+      } else {
+        toast('Bạn chưa tham gia nhóm nào. Hãy tạo nhóm mới!', {
+          icon: 'ℹ️',
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching groups:', error);
+      
+      // Show specific error messages
+      if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+        toast.error('🔌 Không thể kết nối đến server. Vui lòng kiểm tra backend.');
+      } else if (error.message?.includes('Authentication required') || error.message?.includes('Session expired')) {
+        toast.error('🔑 Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+      } else {
+        toast.error(`❌ Lỗi tải nhóm: ${error.message}`);
+      }
+      
+      // Fallback to empty array on error
+      setMyGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Utility functions
+  const getRandomGradient = () => {
+    const gradients = [
+      "from-yellow-400 to-orange-500",
+      "from-blue-400 to-purple-500", 
+      "from-pink-400 to-red-500",
+      "from-green-400 to-blue-500",
+      "from-purple-400 to-pink-500",
+      "from-indigo-400 to-blue-500"
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
+  };
+
+  const formatLastActivity = (dateString) => {
+    if (!dateString) return 'Chưa có hoạt động';
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) return 'Hôm qua';
+      if (diffDays < 7) return `${diffDays} ngày trước`;
+      return date.toLocaleDateString('vi-VN');
+    } catch {
+      return 'Không xác định';
+    }
+  };
+
+
 
   const categories = [
     { id: 'all', name: 'Tất cả nhóm', count: myGroups.length },
@@ -120,6 +152,14 @@ export default function MyGroups() {
 
   const handleCreateGroup = () => {
     toast.success('Chức năng tạo nhóm đang được phát triển!');
+  };
+
+  const handleRefreshGroups = () => {
+    if (isAuthenticated) {
+      fetchMyGroups();
+    } else {
+      toast.error('Vui lòng đăng nhập để tải danh sách nhóm');
+    }
   };
 
   const sortItems = [
