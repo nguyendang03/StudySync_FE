@@ -1,202 +1,222 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import authService from '../services/authService';
+import authService from '../services/authService.js';
 import toast from 'react-hot-toast';
 
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      // State
       user: null,
       isAuthenticated: false,
-      loading: true,
+      loading: false,
       error: null,
+            isInitialized: false,
 
-      // Actions
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      
-      setLoading: (loading) => set({ loading }),
-      
-      setError: (error) => set({ error }),
-      
-      clearError: () => set({ error: null }),
-
-      // Initialize authentication state
+      // Initialize authentication state on app start
       initializeAuth: async () => {
-        try {
-          set({ loading: true, error: null });
-          const token = authService.getAccessToken();
-          
-          if (token) {
-            // Validate token or fetch user info
-            const user = { authenticated: true }; // Replace with actual user data
-            set({ 
-              user, 
-              isAuthenticated: true, 
-              loading: false 
-            });
-          } else {
-            set({ 
-              user: null, 
-              isAuthenticated: false, 
-              loading: false 
-            });
-          }
-        } catch (error) {
-          console.error('Error initializing auth:', error);
-          authService.logout();
+        if (get().isInitialized) {
+          console.log('⏭️ Auth already initialized, skipping');
+          return;
+        }
+
+        const token = authService.getAccessToken();
+        console.log('🔍 Auth initialization - Token found:', !!token);
+        
+        if (token) {
+          // Trust the token exists and set authenticated immediately
+          // Don't verify with backend to avoid wasting refresh tokens
+          console.log('✅ Token found, setting authenticated state');
           set({ 
-            user: null, 
+            isAuthenticated: true, 
+            loading: false,
+            isInitialized: true
+          });
+
+          // Fetch user profile in background (non-blocking)
+          // If this fails, it won't affect authentication state
+          get().fetchUserProfile().then(userProfile => {
+            if (userProfile) {
+              set({ user: userProfile });
+              console.log('✅ User profile loaded');
+            }
+          }).catch(error => {
+            console.log('⚠️ Could not load user profile, but auth is still valid:', error.message);
+          });
+        } else {
+          console.log('❌ No token found, setting as unauthenticated');
+          set({ 
             isAuthenticated: false, 
-            loading: false, 
-            error: error.message 
+            loading: false,
+            isInitialized: true
           });
         }
       },
 
       // Login action
       login: async (credentials) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
-          
+          console.log('🔄 Attempting login...');
           const response = await authService.login(credentials);
-          const user = response.user || { authenticated: true };
           
-          set({ 
-            user, 
-            isAuthenticated: true, 
+          // Fetch user profile after successful login
+          const userProfile = await get().fetchUserProfile();
+          
+          set({
+            user: userProfile || response.user,
+            isAuthenticated: true,
             loading: false,
-            error: null
+            error: null,
           });
-          
+
+          console.log('✅ Login successful');
           toast.success('Đăng nhập thành công!');
           return response;
         } catch (error) {
-          const errorMessage = error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
-          
-          set({ 
-            loading: false, 
-            error: errorMessage,
+          console.error('❌ Login failed:', error.message);
+          set({
             user: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            loading: false,
+            error: error.message,
           });
-          
-          toast.error(errorMessage);
+          toast.error(error.message);
           throw error;
         }
       },
 
       // Register action
       register: async (userData) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
-          
+          console.log('🔄 Attempting registration...');
           const response = await authService.register(userData);
           
-          set({ 
-            loading: false,
-            error: null
-          });
-          
-          toast.success('Đăng ký thành công! Vui lòng đăng nhập.');
+          set({ loading: false, error: null });
+          console.log('✅ Registration successful');
+          toast.success('Đăng ký thành công!');
           return response;
         } catch (error) {
-          let errorMessage;
-          if (error.message.includes('email')) {
-            errorMessage = 'Email này đã được sử dụng';
-          } else if (error.message.includes('username')) {
-            errorMessage = 'Tên người dùng này đã được sử dụng';
-          } else {
-            errorMessage = error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
-          }
-          
-          set({ 
-            loading: false, 
-            error: errorMessage 
-          });
-          
-          toast.error(errorMessage);
+          console.error('❌ Registration failed:', error.message);
+          set({ loading: false, error: error.message });
+          toast.error(error.message);
           throw error;
         }
       },
 
-      // Email verification action
+      // Verify email action
       verifyEmail: async (verificationData) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
-          
+          console.log('🔄 Verifying email...');
           const response = await authService.verifyEmail(verificationData);
           
-          set({ 
-            loading: false,
-            error: null
-          });
-          
-          toast.success('Xác thực email thành công!');
+          set({ loading: false, error: null });
+          console.log('✅ Email verification successful');
+          toast.success('Email đã được xác thực thành công!');
           return response;
         } catch (error) {
-          let errorMessage;
-          if (error.message.includes('expired')) {
-            errorMessage = 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.';
-          } else if (error.message.includes('invalid')) {
-            errorMessage = 'Mã OTP không hợp lệ. Vui lòng kiểm tra lại.';
-          } else {
-            errorMessage = error.message || 'Xác thực thất bại. Vui lòng thử lại.';
-          }
-          
-          set({ 
-            loading: false, 
-            error: errorMessage 
-          });
-          
+          console.error('❌ Email verification failed:', error.message);
+          set({ loading: false, error: error.message });
+          toast.error(error.message);
           throw error;
         }
       },
 
       // Resend OTP action
       resendOTP: async (resendData) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
-          
+          console.log('🔄 Resending OTP...');
           const response = await authService.resendOTP(resendData);
           
-          set({ 
-            loading: false,
-            error: null
-          });
-          
+          set({ loading: false, error: null });
+          console.log('✅ OTP resent successfully');
+          toast.success('Mã OTP đã được gửi lại!');
           return response;
         } catch (error) {
-          const errorMessage = error.message || 'Không thể gửi lại mã OTP. Vui lòng thử lại.';
+          console.error('❌ Resend OTP failed:', error.message);
+          set({ loading: false, error: error.message });
+          toast.error(error.message);
+          throw error;
+        }
+      },
+
+      // Fetch user profile
+      fetchUserProfile: async () => {
+        try {
+          const token = authService.getAccessToken();
+          const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
           
-          set({ 
-            loading: false, 
-            error: errorMessage 
+          console.log('🔍 fetchUserProfile - Checking tokens...');
+          console.log('  Access token:', token ? 'exists' : 'MISSING');
+          console.log('  Refresh token:', refreshToken ? 'exists' : 'MISSING');
+
+          if (!token || !refreshToken) {
+            console.error('❌ Missing tokens, cannot fetch profile');
+            return null;
+          }
+
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/users/me/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           });
+
+          if (response.ok) {
+            const userProfile = await response.json();
+            return userProfile;
+          }
           
+          console.log('⚠️ Profile fetch returned:', response.status);
+          return null;
+        } catch (error) {
+          console.error('❌ Fetch user profile failed:', error.message);
+          return null;
+        }
+      },
+
+      // Refresh token
+      refreshToken: async () => {
+        try {
+          console.log('🔄 Refreshing token...');
+          const response = await authService.refreshToken();
+          
+          // Fetch updated user profile
+          const userProfile = await get().fetchUserProfile();
+          
+          set({
+            user: userProfile,
+            isAuthenticated: true,
+            loading: false,
+          });
+
+          console.log('✅ Token refreshed successfully');
+          return response;
+        } catch (error) {
+          console.error('❌ Token refresh failed:', error.message);
+          get().logout();
           throw error;
         }
       },
 
       // Logout action
       logout: () => {
+        console.log('🔄 Logging out...');
         authService.logout();
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
+        set({
+          user: null,
+          isAuthenticated: false,
           loading: false,
-          error: null
+          error: null,
         });
+        console.log('✅ Logout successful');
         toast.success('Đăng xuất thành công!');
       },
 
-      // Reset auth state
-      reset: () => set({ 
-        user: null, 
-        isAuthenticated: false, 
-        loading: false, 
-        error: null 
-      }),
+      // Clear error
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'auth-storage',

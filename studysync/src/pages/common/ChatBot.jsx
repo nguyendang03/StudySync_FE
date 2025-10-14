@@ -12,9 +12,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Avatar, Tooltip, Badge, Dropdown, Card, Tag, Divider } from 'antd';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, Zap, Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Sparkles, Brain, Zap, Copy, ThumbsUp, ThumbsDown, Settings, Mic, MicOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Sidebar from '../../components/layout/Sidebar';
+import aiService from '../../services/aiService';
 
 export default function ChatBot() {
   const [messages, setMessages] = useState([
@@ -28,6 +29,9 @@ export default function ChatBot() {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [aiProvider, setAiProvider] = useState('openai');
+  const [conversationHistory, setConversationHistory] = useState([]);
   const [conversations, setConversations] = useState([
     { 
       id: 1, 
@@ -68,7 +72,7 @@ export default function ChatBot() {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isTyping) return;
 
     const userMessage = {
       id: messages.length + 1,
@@ -78,29 +82,32 @@ export default function ChatBot() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    
+    // Add to conversation history for context
+    const newHistory = [...conversationHistory, { role: 'user', content: inputMessage }];
+    setConversationHistory(newHistory);
+    
     setInputMessage('');
     setIsTyping(true);
 
-    // Enhanced AI responses with more variety
-    const aiResponses = [
-      "🎯 Tôi hiểu bạn cần hỗ trợ về vấn đề này. Để tôi phân tích và đưa ra giải pháp tốt nhất cho bạn.\n\n💡 **Gợi ý của tôi:**\n• Bước 1: Xác định rõ mục tiêu\n• Bước 2: Lập kế hoạch chi tiết\n• Bước 3: Thực hiện và theo dõi",
-      "🚀 Đây là một câu hỏi rất hay! Dựa trên kinh nghiệm từ hàng ngàn học sinh, tôi khuyên bạn nên:\n\n📚 **Phương pháp hiệu quả:**\n• Áp dụng kỹ thuật Pomodoro\n• Tạo nhóm học cùng bạn bè\n• Sử dụng flashcards để ghi nhớ",
-      "🎓 Tôi có thể giúp bạn với điều đó! Hãy cùng tôi phân tích từng bước một cách chi tiết.\n\n🔍 **Phân tích vấn đề:**\n• Nguyên nhân gốc rễ\n• Các giải pháp khả thi\n• Kế hoạch thực hiện cụ thể",
-      "📊 Theo dữ liệu từ StudySync, đây là những phương pháp được đánh giá cao nhất:\n\n⭐ **Top 3 phương pháp:**\n1. Học nhóm tương tác (95% hiệu quả)\n2. AI hỗ trợ cá nhân hóa (92% hiệu quả)\n3. Gamification học tập (88% hiệu quả)"
-    ];
-
-    // Simulate typing delay
-    setTimeout(() => {
+    try {
+      console.log('🤖 Sending message to AI service...');
+      
+      // Get AI response using the AI service
+      const aiResponse = await aiService.getChatResponse(inputMessage, newHistory);
+      
       const aiMessage = {
         id: messages.length + 2,
-        text: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        text: aiResponse,
         sender: "ai",
         timestamp: new Date(),
         reactions: { thumbsUp: 0, thumbsDown: 0 }
       };
 
       setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
+      
+      // Update conversation history
+      setConversationHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       
       // Show success toast
       toast.success('AI đã trả lời!', {
@@ -110,7 +117,28 @@ export default function ChatBot() {
           color: 'white',
         },
       });
-    }, Math.random() * 1000 + 1500);
+      
+    } catch (error) {
+      console.error('❌ Error getting AI response:', error);
+      
+      // Fallback response on error
+      const errorMessage = {
+        id: messages.length + 2,
+        text: "😅 Xin lỗi, tôi đang gặp một chút vấn đề kỹ thuật. Hãy thử lại sau một chút nhé!\n\nTrong thời gian chờ đợi, bạn có thể:\n• Kiểm tra kết nối internet\n• Thử đặt câu hỏi khác\n• Liên hệ support nếu vấn đề tiếp tục",
+        sender: "ai",
+        timestamp: new Date(),
+        reactions: { thumbsUp: 0, thumbsDown: 0 }
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast.error('Có lỗi xảy ra khi kết nối AI', {
+        icon: '⚠️',
+        duration: 4000,
+      });
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const startNewChat = () => {
@@ -121,11 +149,86 @@ export default function ChatBot() {
       timestamp: new Date(),
       type: "welcome"
     }]);
+    
+    // Reset conversation history
+    setConversationHistory([]);
+    
     toast.success('Đã tạo cuộc trò chuyện mới!', {
       icon: '✨',
       duration: 2000,
     });
   };
+
+  // Voice input functionality
+  const startVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Trình duyệt không hỗ trợ nhận diện giọng nói', {
+        icon: '🎤',
+        duration: 3000,
+      });
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'vi-VN';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      toast.success('Đang nghe... Hãy nói điều bạn muốn hỏi!', {
+        icon: '🎤',
+        duration: 2000,
+      });
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInputMessage(transcript);
+      toast.success('Đã nhận diện giọng nói!', {
+        icon: '✅',
+        duration: 2000,
+      });
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      toast.error('Lỗi nhận diện giọng nói. Hãy thử lại!', {
+        icon: '❌',
+        duration: 3000,
+      });
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
+  // AI Settings
+  const aiSettings = [
+    {
+      key: 'openai',
+      label: 'OpenAI GPT',
+      icon: '🧠',
+      description: 'Mạnh về lý luận và sáng tạo'
+    },
+    {
+      key: 'gemini',
+      label: 'Google Gemini',
+      icon: '✨',
+      description: 'Tốt cho phân tích và tìm kiếm'
+    },
+    {
+      key: 'local',
+      label: 'Local AI',
+      icon: '🏠',
+      description: 'AI riêng của StudySync'
+    }
+  ];
 
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text);
@@ -145,6 +248,34 @@ export default function ChatBot() {
       icon: reaction === 'thumbsUp' ? '👍' : '👎',
       duration: 2000,
     });
+  };
+
+  // Quick action buttons
+  const quickActions = [
+    {
+      icon: '📚',
+      text: 'Phương pháp học tập',
+      message: 'Bạn có thể gợi ý một số phương pháp học tập hiệu quả không?'
+    },
+    {
+      icon: '🎯',
+      text: 'Lập kế hoạch học',
+      message: 'Hướng dẫn tôi cách lập kế hoạch học tập hiệu quả'
+    },
+    {
+      icon: '👥',
+      text: 'Học nhóm',
+      message: 'Làm thế nào để tạo và tham gia nhóm học hiệu quả?'
+    },
+    {
+      icon: '🧮',
+      text: 'Giải toán',
+      message: 'Tôi cần hỗ trợ giải bài tập toán'
+    }
+  ];
+
+  const handleQuickAction = (action) => {
+    setInputMessage(action.message);
   };
 
   return (
@@ -234,9 +365,38 @@ export default function ChatBot() {
                 <p className="text-sm text-white/80">Trợ lý học tập thông minh</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span className="text-sm text-white/80">Đang hoạt động</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="text-sm text-white/80">Đang hoạt động</span>
+              </div>
+              
+              {/* AI Provider Selector */}
+              <Dropdown 
+                menu={{ 
+                  items: aiSettings.map(setting => ({
+                    key: setting.key,
+                    label: (
+                      <div className="flex items-center gap-2">
+                        <span>{setting.icon}</span>
+                        <div>
+                          <div className="font-medium">{setting.label}</div>
+                          <div className="text-xs text-gray-500">{setting.description}</div>
+                        </div>
+                      </div>
+                    ),
+                    onClick: () => setAiProvider(setting.key)
+                  }))
+                }}
+                placement="bottomRight"
+              >
+                <Button 
+                  type="text" 
+                  size="small"
+                  className="text-white/80 hover:text-white"
+                  icon={<Settings className="w-4 h-4" />}
+                />
+              </Dropdown>
             </div>
           </div>
         </div>
@@ -397,12 +557,36 @@ export default function ChatBot() {
             {/* Input Area */}
             <div className="bg-white/10 backdrop-blur-lg border-t border-white/20 p-4">
             <div className="max-w-4xl mx-auto">
+              {/* Quick Actions */}
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  {quickActions.map((action, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleQuickAction(action)}
+                      className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors duration-200 border border-white/20"
+                    >
+                      <span>{action.icon}</span>
+                      <span>{action.text}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
               <div className="relative">
                 <textarea
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Hỏi AI về bất kỳ điều gì..."
-                    className="w-full bg-white/10 border border-white/30 rounded-2xl px-4 py-3 pr-12 text-white placeholder-white/60 focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-white/20 resize-none transition-all duration-200 backdrop-blur-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Hỏi AI về bất kỳ điều gì... (Enter để gửi, Shift+Enter để xuống dòng)"
+                    className="w-full bg-white/10 border border-white/30 rounded-2xl px-4 py-3 pr-20 text-white placeholder-white/60 focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-white/20 resize-none transition-all duration-200 backdrop-blur-sm"
                   rows={1}
                   style={{ 
                     minHeight: '48px',
@@ -413,6 +597,21 @@ export default function ChatBot() {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                   }}
                 />
+                
+                {/* Voice Input Button */}
+                <button
+                  onClick={startVoiceInput}
+                  disabled={isListening || isTyping}
+                  className={`absolute right-12 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 backdrop-blur-sm border border-white/30 ${
+                    isListening 
+                      ? 'bg-red-500/30 text-red-300 animate-pulse' 
+                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+
+                {/* Send Button */}
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isTyping}
@@ -422,8 +621,9 @@ export default function ChatBot() {
                 </button>
               </div>
               
-              <div className="mt-2 text-xs text-white/50 text-center">
-                AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
+              <div className="mt-2 flex items-center justify-between text-xs text-white/50">
+                <span>AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.</span>
+                <span>Powered by {aiSettings.find(s => s.key === aiProvider)?.label || 'StudySync AI'}</span>
               </div>
             </div>
           </div>

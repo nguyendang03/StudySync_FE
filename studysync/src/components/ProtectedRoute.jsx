@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  console.log(isAuthenticated)
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -21,10 +22,12 @@ const ProtectedRoute = ({ children }) => {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    console.log('❌ ProtectedRoute: Not authenticated, redirecting to login');
     // Save the attempted location for redirecting after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  console.log('✅ ProtectedRoute: Authenticated, rendering protected content');
   // Render the protected component if authenticated
   return children;
 };
