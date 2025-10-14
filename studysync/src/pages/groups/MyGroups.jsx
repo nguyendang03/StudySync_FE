@@ -23,6 +23,7 @@ import toast from 'react-hot-toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { VideoCallButton } from '../../components/videocall';
+import CreateGroupModal from '../../components/groups/CreateGroupModal';
 import groupService from '../../services/groupService';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -35,12 +36,13 @@ export default function MyGroups() {
   const [favorites, setFavorites] = useState(new Set([1, 3]));
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     setIsLoaded(true);
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasFetched) {
       fetchMyGroups();
     }
   }, [isAuthenticated]);
@@ -79,13 +81,17 @@ export default function MyGroups() {
       })) : [];
 
       setMyGroups(transformedGroups);
+      setHasFetched(true);
       
-      if (transformedGroups.length > 0) {
-        toast.success(`✅ Đã tải ${transformedGroups.length} nhóm của bạn`);
-      } else {
-        toast('Bạn chưa tham gia nhóm nào. Hãy tạo nhóm mới!', {
-          icon: 'ℹ️',
-        });
+      // Only show toast if we haven't shown it before
+      if (!hasFetched) {
+        if (transformedGroups.length > 0) {
+          toast.success(`✅ Đã tải ${transformedGroups.length} nhóm của bạn`);
+        } else {
+          toast('Bạn chưa tham gia nhóm nào. Hãy tạo nhóm mới!', {
+            icon: 'ℹ️',
+          });
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching groups:', error);
@@ -158,12 +164,44 @@ export default function MyGroups() {
     setFavorites(newFavorites);
   };
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
   const handleCreateGroup = () => {
-    toast.success('Chức năng tạo nhóm đang được phát triển!');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleCreateGroupSubmit = async (groupData) => {
+    try {
+      console.log('🔄 Creating new group:', groupData);
+      
+      // Call backend API to create group
+      const response = await groupService.createGroup({
+        groupName: groupData.groupName,
+        description: groupData.description
+      });
+      
+      console.log('✅ Group created successfully:', response);
+      
+      toast.success(`✅ Đã tạo nhóm "${groupData.groupName}" thành công!`);
+      
+      // Refresh the groups list
+      setHasFetched(false);
+      await fetchMyGroups();
+      
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('❌ Error creating group:', error);
+      toast.error(`❌ Lỗi tạo nhóm: ${error.message || 'Không thể tạo nhóm'}`);
+    }
   };
 
   const handleRefreshGroups = () => {
     if (isAuthenticated) {
+      setHasFetched(false); // Allow toast on manual refresh
       fetchMyGroups();
     } else {
       toast.error('Vui lòng đăng nhập để tải danh sách nhóm');
@@ -199,6 +237,13 @@ export default function MyGroups() {
 
   return (
     <>
+    {/* Create Group Modal */}
+    <CreateGroupModal 
+      isOpen={isCreateModalOpen}
+      onClose={handleCloseModal}
+      onCreateGroup={handleCreateGroupSubmit}
+    />
+
     <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
       <Sidebar />
 

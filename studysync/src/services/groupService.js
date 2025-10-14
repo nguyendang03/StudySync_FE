@@ -68,17 +68,14 @@ class GroupService {
    */
   async createGroup(groupData) {
     try {
-      const response = await httpClient.post('/groups', groupData);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create group');
-      }
-      
-      return data;
+      console.log('📤 Sending create group request:', groupData);
+      const response = await axiosInstance.post('/groups', groupData);
+      console.log('📥 Create group response:', response.data);
+      return response.data;
     } catch (error) {
-      console.error('Error creating group:', error);
-      throw error;
+      console.error('❌ Error creating group:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create group';
+      throw new Error(errorMessage);
     }
   }
 
