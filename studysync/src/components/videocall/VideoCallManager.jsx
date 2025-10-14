@@ -9,6 +9,7 @@ import VideoCall from './VideoCall';
 import CallInitiator from './CallInitiator';
 import InvitationModal from './InvitationModal';
 import { useAuthStore, useVideoCallStore, useGroupsStore } from '../../stores';
+import videoCallService from '../../services/videoCallService';
 import toast from 'react-hot-toast';
 
 const VideoCallManager = ({ 
@@ -22,9 +23,11 @@ const VideoCallManager = ({
   const [isInitiatorModalOpen, setIsInitiatorModalOpen] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [callLink, setCallLink] = useState('');
+  const [currentCallId, setCurrentCallId] = useState(null);
+  const [isStartingCall, setIsStartingCall] = useState(false);
   
   const { user, isAuthenticated } = useAuthStore();
-  const { activeCall, isInCall, startCall } = useVideoCallStore();
+  const { activeCall, isInCall, startCall, endCall: endStoreCall } = useVideoCallStore();
   const { currentGroup } = useGroupsStore();
 
   // Generate unique call link
@@ -60,39 +63,104 @@ const VideoCallManager = ({
     }
   }, [isAuthenticated]);
 
-  const handleStartCall = (callData) => {
-    const channelName = `group_${groupId}_${Date.now()}`;
+  const handleStartCall = async (callData) => {
+    if (isStartingCall) return;
     
-    startCall({
-      channelName,
-      groupId,
-      groupName,
-      participants: members,
-      isHost: true,
-      callLink: `${window.location.origin}/join-call/${channelName}`
-    });
-    
-    setIsCallActive(true);
-    setIsInitiatorModalOpen(false);
-    
-    toast.success('Cuộc gọi đã được khởi tạo!');
+    setIsStartingCall(true);
+    try {
+      console.log('🎬 Starting video call via API...', { groupId, groupName });
+      
+      // Ensure groupId is a number (backend expects integer)
+      const numericGroupId = typeof groupId === 'string' ? parseInt(groupId, 10) : groupId;
+      
+      if (!numericGroupId || isNaN(numericGroupId)) {
+        throw new Error('Invalid group ID');
+      }
+      
+      // Call backend API to start the call
+      const response = await videoCallService.startCall({
+        groupId: numericGroupId,
+        callTitle: callData?.title || `Cuộc gọi ${groupName}`
+      });
+      
+      // Extract call data from response
+      const callDetails = response?.data || response;
+      const callId = callDetails?.id || callDetails?.callId;
+      
+      if (!callId) {
+        throw new Error('Không nhận được call ID từ server');
+      }
+      
+      setCurrentCallId(callId);
+      const channelName = `group_${groupId}_call_${callId}`;
+      
+      // Update local store
+      startCall({
+        callId,
+        channelName,
+        groupId,
+        groupName,
+        participants: members,
+        isHost: true,
+        callLink: `${window.location.origin}/join-call/${callId}`
+      });
+      
+      setIsCallActive(true);
+      setIsInitiatorModalOpen(false);
+      
+      toast.success('Cuộc gọi đã được khởi tạo!');
+      console.log('✅ Call started with ID:', callId);
+    } catch (error) {
+      console.error('❌ Failed to start call:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || 'Không thể khởi tạo cuộc gọi. Vui lòng thử lại!';
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsStartingCall(false);
+    }
   };
 
-  const handleJoinCall = (invitation) => {
-    startCall({
-      channelName: invitation.channelName,
-      groupId,
-      groupName: invitation.groupName,
-      participants: members,
-      isHost: false
-    });
-    
-    setIsCallActive(true);
-    
-    // Remove the invitation after joining
-    setPendingInvitations(prev => prev.filter(inv => inv.id !== invitation.id));
-    
-    toast.success(`Đã tham gia cuộc gọi từ ${invitation.from.name}`);
+  const handleJoinCall = async (invitation) => {
+    try {
+      console.log('👋 Joining call via API:', invitation.callId);
+      
+      // Generate a peer ID (in real app, this would come from WebRTC setup)
+      const peerId = `peer_${user.id}_${Date.now()}`;
+      
+      // Call backend API to join
+      const response = await videoCallService.joinCall(invitation.callId, {
+        peerId: peerId
+      });
+      
+      console.log('✅ Joined call:', response);
+      
+      // Update local store
+      const channelName = invitation.channelName || `group_${groupId}_call_${invitation.callId}`;
+      startCall({
+        callId: invitation.callId,
+        channelName,
+        groupId,
+        groupName: invitation.groupName,
+        participants: members,
+        isHost: false
+      });
+      
+      setCurrentCallId(invitation.callId);
+      setIsCallActive(true);
+      
+      // Remove the invitation after joining
+      setPendingInvitations(prev => prev.filter(inv => inv.id !== invitation.id));
+      
+      toast.success(`Đã tham gia cuộc gọi từ ${invitation.from.name}`);
+    } catch (error) {
+      console.error('❌ Failed to join call:', error);
+      toast.error('Không thể tham gia cuộc gọi. Vui lòng thử lại!');
+    }
   };
 
   const handleDeclineInvitation = (invitationId) => {
@@ -100,9 +168,29 @@ const VideoCallManager = ({
     toast.success('Đã từ chối lời mời');
   };
 
-  const handleCallEnd = () => {
-    setIsCallActive(false);
-    toast.success('Cuộc gọi đã kết thúc');
+  const handleCallEnd = async () => {
+    try {
+      // If user is host and we have a callId, end the call via API
+      if (activeCall?.isHost && currentCallId) {
+        console.log('🛑 Ending call via API:', currentCallId);
+        await videoCallService.endCall(currentCallId);
+        console.log('✅ Call ended successfully');
+      } else if (currentCallId) {
+        // If not host, just leave the call
+        console.log('👋 Leaving call via API:', currentCallId);
+        await videoCallService.leaveCall(currentCallId);
+        console.log('✅ Left call successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error ending/leaving call:', error);
+      // Continue anyway to clean up UI
+    } finally {
+      // Clean up local state
+      setIsCallActive(false);
+      setCurrentCallId(null);
+      endStoreCall();
+      toast.success(activeCall?.isHost ? 'Cuộc gọi đã kết thúc' : 'Đã rời khỏi cuộc gọi');
+    }
   };
 
   const handleInviteSent = (invitedUsers) => {
@@ -209,10 +297,11 @@ const VideoCallManager = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsInitiatorModalOpen(true)}
-              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              disabled={isStartingCall}
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Video className="w-5 h-5" />
-              <span>Bắt đầu cuộc gọi</span>
+              <span>{isStartingCall ? 'Đang khởi tạo...' : 'Bắt đầu cuộc gọi'}</span>
             </motion.button>
 
             {/* Invite Members */}
@@ -355,6 +444,7 @@ const VideoCallManager = ({
         {activeCall && (
           <VideoCall
             channelName={activeCall.channelName}
+            groupId={groupId}
             onCallEnd={handleCallEnd}
             isHost={activeCall.isHost}
             groupMembers={activeCall.participants}

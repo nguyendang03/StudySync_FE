@@ -6,6 +6,8 @@ class AgoraService {
     this.client = null;
     this.localVideoTrack = null;
     this.localAudioTrack = null;
+    this.localScreenTrack = null;
+    this.isScreenSharing = false;
     this.remoteUsers = new Map();
     this.appId = import.meta.env.VITE_AGORA_APP_ID;
     this.useToken = import.meta.env.VITE_AGORA_USE_TOKEN === 'true';
@@ -168,6 +170,12 @@ class AgoraService {
         this.localAudioTrack = null;
       }
 
+      if (this.localScreenTrack) {
+        this.localScreenTrack.stop();
+        this.localScreenTrack.close();
+        this.localScreenTrack = null;
+      }
+
       // Leave the channel
       if (this.client && this.client.connectionState !== 'DISCONNECTED') {
         await this.client.leave();
@@ -178,6 +186,7 @@ class AgoraService {
       
       // Reset flags
       this.isJoining = false;
+      this.isScreenSharing = false;
       
       console.log('Cleanup completed');
     } catch (error) {
@@ -277,12 +286,25 @@ class AgoraService {
     try {
       await this.client.subscribe(user, mediaType);
       
+      const existingUser = this.remoteUsers.get(user.uid) || { uid: user.uid };
+      
       if (mediaType === 'video') {
-        this.remoteUsers.set(user.uid, { ...user, hasVideo: true });
+        // Check if this is a screen share track
+        const isScreenTrack = user.videoTrack && user.videoTrack.getMediaStreamTrack().label.includes('screen');
+        
+        if (isScreenTrack) {
+          existingUser.screenTrack = user.videoTrack;
+          existingUser.hasScreen = true;
+        } else {
+          existingUser.videoTrack = user.videoTrack;
+          existingUser.hasVideo = true;
+        }
       } else if (mediaType === 'audio') {
-        const existingUser = this.remoteUsers.get(user.uid) || {};
-        this.remoteUsers.set(user.uid, { ...existingUser, ...user, hasAudio: true });
+        existingUser.audioTrack = user.audioTrack;
+        existingUser.hasAudio = true;
       }
+      
+      this.remoteUsers.set(user.uid, existingUser);
       
       // Trigger custom event for UI updates
       window.dispatchEvent(new CustomEvent('agoraUserUpdated', { 
@@ -299,8 +321,14 @@ class AgoraService {
     const existingUser = this.remoteUsers.get(user.uid);
     if (existingUser) {
       if (mediaType === 'video') {
-        existingUser.hasVideo = false;
-        existingUser.videoTrack = null;
+        // Check if it was a screen track
+        if (existingUser.screenTrack) {
+          existingUser.hasScreen = false;
+          existingUser.screenTrack = null;
+        } else {
+          existingUser.hasVideo = false;
+          existingUser.videoTrack = null;
+        }
       } else if (mediaType === 'audio') {
         existingUser.hasAudio = false;
         existingUser.audioTrack = null;
@@ -329,7 +357,8 @@ class AgoraService {
   getLocalTracks() {
     return {
       audio: this.localAudioTrack,
-      video: this.localVideoTrack
+      video: this.localVideoTrack,
+      screen: this.localScreenTrack
     };
   }
 
@@ -338,26 +367,51 @@ class AgoraService {
     return Array.from(this.remoteUsers.values());
   }
 
-  // Screen sharing
+  // Screen sharing - improved implementation
   async startScreenShare() {
     try {
-      const screenTrack = await AgoraRTC.createScreenVideoTrack();
+      console.log('🖥️ Starting screen share...');
       
-      // Replace video track with screen share
+      // Create screen video track
+      this.localScreenTrack = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: {
+          width: 1920,
+          height: 1080,
+          frameRate: 15,
+          bitrateMin: 1000,
+          bitrateMax: 3000,
+        },
+      });
+      
+      // Unpublish current video track (keep it for later)
       if (this.localVideoTrack) {
         await this.client.unpublish(this.localVideoTrack);
-        this.localVideoTrack.stop();
-        this.localVideoTrack.close();
+        console.log('📹 Unpublished camera track');
       }
       
-      this.localVideoTrack = screenTrack;
-      await this.client.publish(screenTrack);
+      // Publish screen track
+      await this.client.publish(this.localScreenTrack);
+      this.isScreenSharing = true;
       
+      // Listen for screen share end (when user stops sharing via browser)
+      this.localScreenTrack.on('track-ended', () => {
+        console.log('🖥️ Screen share ended by user');
+        this.stopScreenShare().catch(console.error);
+      });
+      
+      console.log('✅ Screen share started successfully');
       toast.success('Đã bắt đầu chia sẻ màn hình');
       return true;
     } catch (error) {
-      console.error('Failed to start screen share:', error);
-      toast.error('Không thể chia sẻ màn hình');
+      console.error('❌ Failed to start screen share:', error);
+      
+      if (error.message.includes('Permission denied') || error.message.includes('NotAllowedError')) {
+        toast.error('Bạn đã từ chối chia sẻ màn hình');
+      } else if (error.message.includes('NotSupportedError')) {
+        toast.error('Trình duyệt không hỗ trợ chia sẻ màn hình');
+      } else {
+        toast.error('Không thể chia sẻ màn hình: ' + error.message);
+      }
       return false;
     }
   }
@@ -365,23 +419,56 @@ class AgoraService {
   // Stop screen sharing
   async stopScreenShare() {
     try {
-      if (this.localVideoTrack) {
-        await this.client.unpublish(this.localVideoTrack);
-        this.localVideoTrack.stop();
-        this.localVideoTrack.close();
+      console.log('🛑 Stopping screen share...');
+      
+      // Unpublish and close screen track
+      if (this.localScreenTrack) {
+        await this.client.unpublish(this.localScreenTrack);
+        this.localScreenTrack.stop();
+        this.localScreenTrack.close();
+        this.localScreenTrack = null;
       }
       
-      // Create new camera track
-      this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
-      await this.client.publish(this.localVideoTrack);
+      // Republish camera track if it exists
+      if (this.localVideoTrack) {
+        await this.client.publish(this.localVideoTrack);
+        console.log('📹 Republished camera track');
+      } else {
+        // Create new camera track if needed
+        try {
+          this.localVideoTrack = await AgoraRTC.createCameraVideoTrack({
+            encoderConfig: {
+              width: 640,
+              height: 480,
+              frameRate: 15,
+            },
+          });
+          await this.client.publish(this.localVideoTrack);
+          console.log('📹 Created and published new camera track');
+        } catch (cameraError) {
+          console.warn('⚠️ Could not create camera track:', cameraError.message);
+        }
+      }
       
+      this.isScreenSharing = false;
+      console.log('✅ Screen share stopped successfully');
       toast.success('Đã dừng chia sẻ màn hình');
       return true;
     } catch (error) {
-      console.error('Failed to stop screen share:', error);
-      toast.error('Lỗi khi dừng chia sẻ màn hình');
+      console.error('❌ Failed to stop screen share:', error);
+      toast.error('Lỗi khi dừng chia sẻ màn hình: ' + error.message);
       return false;
     }
+  }
+
+  // Get screen track
+  getScreenTrack() {
+    return this.localScreenTrack;
+  }
+
+  // Check if currently screen sharing
+  isCurrentlyScreenSharing() {
+    return this.isScreenSharing && !!this.localScreenTrack;
   }
 
   // Add method to check if service is ready

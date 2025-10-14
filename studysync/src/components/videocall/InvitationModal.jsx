@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Search, Send, X, UserPlus, Mail, 
   Phone, MessageCircle, Copy, Link as LinkIcon,
-  Check, Clock, ExternalLink
+  Check, Clock, ExternalLink, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import groupService from '../../services/groupService';
 
 const InvitationModal = ({ 
   groupId, 
@@ -15,32 +16,13 @@ const InvitationModal = ({
   onInviteSent, 
   onCancel 
 }) => {
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [emailList, setEmailList] = useState([]);
   const [invitationMessage, setInvitationMessage] = useState('');
-  const [inviteMethod, setInviteMethod] = useState('in-app'); // 'in-app', 'email', 'link'
+  const [inviteMethod, setInviteMethod] = useState('email'); // 'email', 'link'
   const [isSending, setIsSending] = useState(false);
   const [sentInvitations, setSentInvitations] = useState([]);
-
-  // Mock data for available users to invite
-  const availableUsers = useMemo(() => [
-    { id: 'user_1', name: 'Nguyễn Văn A', email: 'a.nguyen@email.com', avatar: '/avatar1.jpg', online: true },
-    { id: 'user_2', name: 'Trần Thị B', email: 'b.tran@email.com', avatar: '/avatar2.jpg', online: false },
-    { id: 'user_3', name: 'Lê Văn C', email: 'c.le@email.com', avatar: '/avatar3.jpg', online: true },
-    { id: 'user_4', name: 'Phạm Thị D', email: 'd.pham@email.com', avatar: '/avatar4.jpg', online: true },
-    { id: 'user_5', name: 'Hoàng Văn E', email: 'e.hoang@email.com', avatar: '/avatar5.jpg', online: false },
-  ], []);
-
-  // Filter users based on search term and exclude current members
-  const filteredUsers = useMemo(() => {
-    const memberIds = members.map(m => m.id);
-    return availableUsers
-      .filter(user => !memberIds.includes(user.id))
-      .filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-  }, [availableUsers, members, searchTerm]);
+  const [emailError, setEmailError] = useState('');
 
   // Generate invitation link
   const invitationLink = useMemo(() => {
@@ -49,64 +31,106 @@ const InvitationModal = ({
     return `${baseUrl}/join-call/${callId}?group=${groupName}`;
   }, [activeCall, groupId, groupName]);
 
-  const handleUserSelect = (user) => {
-    setSelectedUsers(prev => {
-      const exists = prev.find(u => u.id === user.id);
-      if (exists) {
-        return prev.filter(u => u.id !== user.id);
-      } else {
-        return [...prev, user];
-      }
-    });
+  // Validate email format
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Add email to list
+  const handleAddEmail = () => {
+    const trimmedEmail = emailInput.trim();
+    
+    if (!trimmedEmail) {
+      setEmailError('Vui lòng nhập email');
+      return;
+    }
+    
+    if (!isValidEmail(trimmedEmail)) {
+      setEmailError('Email không hợp lệ');
+      return;
+    }
+    
+    if (emailList.includes(trimmedEmail)) {
+      setEmailError('Email đã được thêm');
+      return;
+    }
+    
+    setEmailList(prev => [...prev, trimmedEmail]);
+    setEmailInput('');
+    setEmailError('');
+  };
+
+  // Remove email from list
+  const handleRemoveEmail = (emailToRemove) => {
+    setEmailList(prev => prev.filter(email => email !== emailToRemove));
+  };
+
+  // Handle Enter key press
+  const handleEmailKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddEmail();
+    }
   };
 
   const handleSendInvitations = async () => {
-    if (inviteMethod === 'in-app' && selectedUsers.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một người để mời');
+    if (inviteMethod === 'email' && emailList.length === 0) {
+      toast.error('Vui lòng thêm ít nhất một email');
       return;
     }
 
     setIsSending(true);
 
     try {
-      // Simulate sending invitations
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (inviteMethod === 'email') {
+        // Send invitations to all emails using real backend API
+        console.log('📤 Sending invitations to:', emailList);
+        
+        const results = await Promise.allSettled(
+          emailList.map(email => 
+            groupService.inviteMember(groupId, {
+              memberEmail: email,
+              message: invitationMessage || undefined
+            })
+          )
+        );
 
-      const invitationData = {
-        method: inviteMethod,
-        groupId,
-        groupName,
-        message: invitationMessage,
-        callId: activeCall ? activeCall.channelName : `group_${groupId}_${Date.now()}`,
-        link: invitationLink
-      };
+        // Count successes and failures
+        const successful = results.filter(r => r.status === 'fulfilled');
+        const failed = results.filter(r => r.status === 'rejected');
 
-      if (inviteMethod === 'in-app') {
-        // Send in-app invitations
-        const newInvitations = selectedUsers.map(user => ({
-          id: `inv_${Date.now()}_${user.id}`,
-          userId: user.id,
-          userName: user.name,
-          userEmail: user.email,
+        // Track sent invitations
+        const newInvitations = successful.map((result, index) => ({
+          id: `inv_${Date.now()}_${index}`,
+          email: emailList[index],
           sentAt: new Date().toISOString(),
           status: 'sent'
         }));
         
         setSentInvitations(prev => [...prev, ...newInvitations]);
-        toast.success(`Đã gửi lời mời đến ${selectedUsers.length} người`);
+
+        // Show results
+        if (successful.length > 0) {
+          toast.success(`Đã gửi lời mời đến ${successful.length} người`);
+        }
         
-        setTimeout(() => {
-          onInviteSent(selectedUsers);
-        }, 1000);
-        
-      } else if (inviteMethod === 'email') {
-        // Send email invitations
-        const emailList = selectedUsers.map(u => u.email).join(', ');
-        toast.success(`Đã gửi email mời đến: ${emailList}`);
-        
-        setTimeout(() => {
-          onInviteSent(selectedUsers);
-        }, 1000);
+        if (failed.length > 0) {
+          const failedEmails = failed.map((r, i) => {
+            const failedIndex = results.findIndex(result => result === r);
+            return emailList[failedIndex];
+          });
+          console.error('❌ Failed to send to:', failedEmails);
+          toast.error(`Không thể gửi đến ${failed.length} email. Vui lòng kiểm tra lại.`);
+        }
+
+        // Clear email list after sending
+        if (successful.length === emailList.length) {
+          setEmailList([]);
+          setTimeout(() => {
+            onInviteSent(successful.map((_, i) => ({ email: emailList[i] })));
+          }, 1000);
+        }
         
       } else if (inviteMethod === 'link') {
         // Copy link to clipboard
@@ -119,8 +143,9 @@ const InvitationModal = ({
       }
 
     } catch (error) {
-      console.error('Failed to send invitations:', error);
-      toast.error('Không thể gửi lời mời');
+      console.error('❌ Failed to send invitations:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể gửi lời mời';
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }
@@ -165,21 +190,7 @@ const InvitationModal = ({
       {/* Invitation Methods */}
       <div className="mb-6">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Phương thức mời</h3>
-        <div className="grid grid-cols-3 gap-3">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setInviteMethod('in-app')}
-            className={`p-4 rounded-lg border-2 text-center transition-all ${
-              inviteMethod === 'in-app'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 hover:border-gray-300 text-gray-600'
-            }`}
-          >
-            <Phone className="w-6 h-6 mx-auto mb-2" />
-            <span className="text-sm font-medium">Trong ứng dụng</span>
-          </motion.button>
-
+        <div className="grid grid-cols-2 gap-3">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -191,7 +202,7 @@ const InvitationModal = ({
             }`}
           >
             <Mail className="w-6 h-6 mx-auto mb-2" />
-            <span className="text-sm font-medium">Gửi Email</span>
+            <span className="text-sm font-medium">Mời qua Email</span>
           </motion.button>
 
           <motion.button
@@ -247,112 +258,77 @@ const InvitationModal = ({
         </div>
       )}
 
-      {/* User Selection (for in-app and email methods) */}
-      {(inviteMethod === 'in-app' || inviteMethod === 'email') && (
+      {/* Email Input (for email method) */}
+      {inviteMethod === 'email' && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-gray-700">
-              {inviteMethod === 'email' ? 'Chọn người nhận email' : 'Chọn người để mời'}
+              Nhập email người nhận
             </h3>
             <span className="text-xs text-gray-500">
-              {selectedUsers.length} đã chọn
+              {emailList.length} email đã thêm
             </span>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên hoặc email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+          {/* Email Input */}
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="email"
+                  placeholder="Nhập email (ví dụ: user@example.com)"
+                  value={emailInput}
+                  onChange={(e) => {
+                    setEmailInput(e.target.value);
+                    setEmailError('');
+                  }}
+                  onKeyPress={handleEmailKeyPress}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    emailError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {emailError && (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{emailError}</span>
+                  </div>
+                )}
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleAddEmail}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                Thêm
+              </motion.button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Nhập email và nhấn "Thêm" hoặc Enter để thêm vào danh sách
+            </p>
           </div>
 
-          {/* User List */}
-          <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
-            {filteredUsers.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">Không tìm thấy người dùng nào</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {filteredUsers.map((user) => {
-                  const isSelected = selectedUsers.find(u => u.id === user.id);
-                  return (
-                    <motion.div
-                      key={user.id}
-                      whileHover={{ backgroundColor: 'rgba(243, 244, 246, 0.5)' }}
-                      onClick={() => handleUserSelect(user)}
-                      className={`p-4 cursor-pointer transition-colors ${
-                        isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="relative">
-                            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                              <span className="text-white font-medium text-sm">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            {user.online && (
-                              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <div className={`w-2 h-2 rounded-full ${user.online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                              <span className="text-xs text-gray-500">
-                                {user.online ? 'Đang trực tuyến' : 'Không trực tuyến'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          isSelected 
-                            ? 'bg-blue-500 border-blue-500' 
-                            : 'border-gray-300'
-                        }`}>
-                          {isSelected && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Selected Users Summary */}
-          {selectedUsers.length > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          {/* Email List */}
+          {emailList.length > 0 && (
+            <div className="p-3 bg-blue-50 rounded-lg">
               <h4 className="text-sm font-medium text-blue-900 mb-2">
-                Đã chọn {selectedUsers.length} người:
+                Danh sách email ({emailList.length}):
               </h4>
-              <div className="flex flex-wrap gap-2">
-                {selectedUsers.map((user) => (
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                {emailList.map((email, index) => (
                   <motion.span
-                    key={user.id}
+                    key={index}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 bg-white border border-blue-200 text-blue-800 rounded-full text-sm"
                   >
-                    <span>{user.name}</span>
+                    <Mail className="w-3 h-3" />
+                    <span>{email}</span>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUserSelect(user);
-                      }}
-                      className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                      onClick={() => handleRemoveEmail(email)}
+                      className="ml-1 hover:bg-blue-100 rounded-full p-0.5 transition-colors"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -381,15 +357,15 @@ const InvitationModal = ({
       {/* Recent Invitations */}
       {sentInvitations.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Lời mời đã gửi</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Lời mời đã gửi thành công</h4>
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {sentInvitations.map((invitation) => (
               <div key={invitation.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-800">{invitation.userName}</span>
+                  <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-sm text-green-800 truncate">{invitation.email}</span>
                 </div>
-                <div className="flex items-center space-x-1 text-xs text-green-600">
+                <div className="flex items-center space-x-1 text-xs text-green-600 flex-shrink-0">
                   <Clock className="w-3 h-3" />
                   <span>Vừa gửi</span>
                 </div>
@@ -414,10 +390,10 @@ const InvitationModal = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSendInvitations}
-          disabled={isSending || (inviteMethod !== 'link' && selectedUsers.length === 0)}
+          disabled={isSending || (inviteMethod === 'email' && emailList.length === 0)}
           className={`
             px-8 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2
-            ${isSending || (inviteMethod !== 'link' && selectedUsers.length === 0)
+            ${isSending || (inviteMethod === 'email' && emailList.length === 0)
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl'
             }
@@ -434,7 +410,7 @@ const InvitationModal = ({
               <span>
                 {inviteMethod === 'link' 
                   ? 'Sao chép link' 
-                  : `Gửi lời mời${selectedUsers.length > 0 ? ` (${selectedUsers.length})` : ''}`
+                  : `Gửi lời mời${emailList.length > 0 ? ` (${emailList.length})` : ''}`
                 }
               </span>
             </>
