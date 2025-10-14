@@ -127,11 +127,12 @@ ${conversationHistory.length > 0 ? `LỊCH SỬ TRƯỚC ĐÓ:\n${conversationHi
     try {
       console.log('📤 Sending request to Gemini API...');
       
-      // Try different Gemini models in order of preference
+      // Try different Gemini models in order of preference (removed deprecated gemini-pro)
       const models = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro', 
-        'gemini-pro'
+        'gemini-1.5-flash',    // Fastest, recommended for most use cases
+        'gemini-1.5-pro',      // Most capable, use for complex tasks
+        'gemini-pro-vision',
+        'gemini-2.0-flash'    // Alternative if others fail
       ];
       
       let response;

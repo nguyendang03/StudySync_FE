@@ -17,6 +17,7 @@ import {
 import { Video, Users, Phone, Settings, TrendingUp, Calendar, Monitor, Shield, Zap, Award } from 'lucide-react';
 import { useAuthStore, useGroupsStore } from '../../stores';
 import { ComponentLoader } from '../../components/LoadingSpinner';
+import groupService from '../../services/groupService';
 import toast from 'react-hot-toast';
 
 // Lazy load heavy components
@@ -27,68 +28,134 @@ const { Option } = Select;
 export default function VideoCallPage() {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [myGroups, setMyGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasFetchedGroups, setHasFetchedGroups] = useState(false);
   
   const { user, isAuthenticated } = useAuthStore();
-  const { myGroups } = useGroupsStore();
 
-  // Mock data for groups with enhanced video call info
-  const mockGroups = [
-    {
-      id: 'group_1',
-      name: 'Nhóm Toán Cao Cấp A1',
-      subject: 'Toán học',
-      description: 'Nhóm học tập môn Toán Cao Cấp, tập trung vào giải tích và đại số tuyến tính',
-      members: [
-        { id: 'member_1', name: 'Nguyễn Văn A', online: true, avatar: 'A' },
-        { id: 'member_2', name: 'Trần Thị B', online: false, avatar: 'B' },
-        { id: 'member_3', name: 'Lê Văn C', online: true, avatar: 'C' },
-        { id: 'member_4', name: 'Phạm Thị D', online: true, avatar: 'D' },
-        { id: 'member_5', name: 'Hoàng Văn E', online: false, avatar: 'E' },
-      ],
-      memberCount: 12,
-      activeMembers: 8,
-      lastCall: Date.now() - 86400000, // 1 day ago
-      totalCalls: 15,
-      color: 'purple'
-    },
-    {
-      id: 'group_2',
-      name: 'Lập Trình Web React',
-      subject: 'Công nghệ thông tin',
-      description: 'Nhóm học React.js và các công nghệ web hiện đại',
-      members: [
-        { id: 'member_6', name: 'Vũ Thị F', online: true, avatar: 'F' },
-        { id: 'member_7', name: 'Đặng Văn G', online: false, avatar: 'G' },
-        { id: 'member_8', name: 'Ngô Thị H', online: true, avatar: 'H' },
-      ],
-      memberCount: 15,
-      activeMembers: 11,
-      lastCall: Date.now() - 3600000, // 1 hour ago
-      totalCalls: 23,
-      color: 'blue'
-    },
-    {
-      id: 'group_3',
-      name: 'Tiếng Anh TOEIC',
-      subject: 'Ngoại ngữ',
-      description: 'Luyện thi TOEIC và cải thiện kỹ năng tiếng Anh',
-      members: [
-        { id: 'member_9', name: 'Bùi Văn I', online: false, avatar: 'I' },
-        { id: 'member_10', name: 'Cao Thị J', online: true, avatar: 'J' },
-      ],
-      memberCount: 8,
-      activeMembers: 5,
-      lastCall: Date.now() - 7200000, // 2 hours ago
-      totalCalls: 8,
-      color: 'green'
+  // Fetch groups from API
+  useEffect(() => {
+    if (isAuthenticated && !hasFetchedGroups) {
+      fetchMyGroups();
     }
-  ];
+  }, [isAuthenticated]);
 
-  const currentGroup = mockGroups.find(g => g.id === selectedGroup) || mockGroups[0];
+  const fetchMyGroups = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching groups for video call page...');
+      
+      const response = await groupService.getMyGroups();
+      console.log('📝 Groups API response:', response);
+      
+      // Extract data from response
+      let groupsData = response?.data || response || [];
+      
+      // Convert object with numeric keys to array if needed
+      if (groupsData && typeof groupsData === 'object' && !Array.isArray(groupsData)) {
+        groupsData = Object.values(groupsData);
+      }
+      
+      console.log('📝 Groups data after extraction:', groupsData);
+      
+      // Transform groups for video call page
+      const transformedGroups = Array.isArray(groupsData) ? groupsData.map((group) => ({
+        id: group.id,
+        name: group.groupName || group.name || 'Nhóm không tên',
+        subject: group.subject || 'Chưa xác định',
+        description: group.description || 'Không có mô tả',
+        members: [], // Will be populated when fetching members
+        memberCount: group.memberCount || 0,
+        activeMembers: Math.floor((group.memberCount || 0) * 0.6), // Mock 60% online
+        lastCall: Date.now() - Math.random() * 86400000 * 2, // Random within 2 days
+        totalCalls: Math.floor(Math.random() * 30),
+        color: ['purple', 'blue', 'green', 'pink', 'indigo'][Math.floor(Math.random() * 5)]
+      })) : [];
+
+      setMyGroups(transformedGroups);
+      setHasFetchedGroups(true);
+      
+      // Auto-select first group
+      if (transformedGroups.length > 0 && !selectedGroup) {
+        setSelectedGroup(transformedGroups[0].id);
+        // Fetch members for the first group
+        fetchGroupMembers(transformedGroups[0].id);
+      }
+      
+      // Only show toast on first fetch
+      if (!hasFetchedGroups) {
+        if (transformedGroups.length > 0) {
+          toast.success(`✅ Đã tải ${transformedGroups.length} nhóm`);
+        } else {
+          toast('Bạn chưa tham gia nhóm nào', {
+            icon: 'ℹ️',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error fetching groups:', error);
+      
+      if (!hasFetchedGroups) {
+        if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+          toast.error('🔌 Không thể kết nối đến server');
+        } else {
+          toast.error(`❌ Lỗi tải nhóm: ${error.message}`);
+        }
+      }
+      
+      setMyGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGroupMembers = async (groupId) => {
+    try {
+      console.log('🔄 Fetching members for group:', groupId);
+      const response = await groupService.getGroupMembers(groupId);
+      console.log('📝 Members response:', response);
+      
+      const data = response?.data || response;
+      const membersData = data?.members || [];
+      
+      // Transform members
+      const transformedMembers = membersData.map((member, index) => {
+        const userData = member.user || member;
+        const displayName = userData.username || userData.name || userData.email?.split('@')[0] || 'User';
+        
+        return {
+          id: userData.id || member.userId,
+          name: displayName,
+          online: Math.random() > 0.5, // Mock online status
+          avatar: displayName.substring(0, 2).toUpperCase(),
+          isLeader: member.isLeader || member.role === 'leader'
+        };
+      });
+      
+      // Update the specific group with members
+      setMyGroups(prev => prev.map(group => 
+        group.id === groupId 
+          ? { ...group, members: transformedMembers }
+          : group
+      ));
+    } catch (error) {
+      console.error('❌ Error fetching members:', error);
+      // Don't show error toast to avoid spam
+    }
+  };
+
+  const currentGroup = myGroups.find(g => g.id === selectedGroup) || myGroups[0];
+
+  // Fetch members when group changes
+  useEffect(() => {
+    if (selectedGroup && currentGroup && currentGroup.members.length === 0) {
+      fetchGroupMembers(selectedGroup);
+    }
+  }, [selectedGroup]);
 
   useEffect(() => {
     setIsLoaded(true);
-    setSelectedGroup(mockGroups[0]?.id);
   }, []);
 
   const formatLastCall = (timestamp) => {
@@ -189,13 +256,23 @@ export default function VideoCallPage() {
               >
                 <Select
                   value={selectedGroup}
-                  onChange={setSelectedGroup}
+                  onChange={(value) => {
+                    setSelectedGroup(value);
+                    // Fetch members when group is selected
+                    const group = myGroups.find(g => g.id === value);
+                    if (group && group.members.length === 0) {
+                      fetchGroupMembers(value);
+                    }
+                  }}
                   className="w-full mb-4"
                   size="large"
-                  placeholder="Chọn nhóm để gọi video"
+                  placeholder={loading ? "Đang tải nhóm..." : "Chọn nhóm để gọi video"}
                   suffixIcon={<TeamOutlined className="text-purple-600" />}
+                  loading={loading}
+                  disabled={loading || myGroups.length === 0}
+                  notFoundContent={loading ? "Đang tải..." : "Không có nhóm"}
                 >
-                  {mockGroups.map(group => (
+                  {myGroups.map(group => (
                     <Option key={group.id} value={group.id}>
                       <div className="flex items-center justify-between py-1">
                         <span className="font-medium text-gray-900">{group.name}</span>
@@ -398,12 +475,37 @@ export default function VideoCallPage() {
 
                 {/* Card Body */}
                 <div className="p-8 bg-gradient-to-br from-gray-50 to-white">
-                  {currentGroup ? (
+                  {loading ? (
+                    <div className="text-center py-20">
+                      <ComponentLoader message="Đang tải nhóm..." />
+                    </div>
+                  ) : myGroups.length === 0 ? (
+                    <div className="text-center py-20">
+                      <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <TeamOutlined className="text-6xl text-purple-400" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                        Chưa có nhóm
+                      </h3>
+                      <p className="text-gray-500 max-w-md mx-auto mb-6">
+                        Bạn chưa tham gia nhóm nào. Hãy tạo hoặc tham gia một nhóm để sử dụng tính năng gọi video
+                      </p>
+                      <Button 
+                        type="primary"
+                        size="large"
+                        icon={<PlusOutlined />}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 border-none shadow-lg hover:shadow-xl"
+                        onClick={() => window.location.href = '/groups'}
+                      >
+                        Đi đến trang nhóm
+                      </Button>
+                    </div>
+                  ) : currentGroup ? (
                     <Suspense fallback={<ComponentLoader message="Đang khởi tạo cuộc gọi..." />}>
                       <VideoCallManager
                         groupId={currentGroup.id}
                         groupName={currentGroup.name}
-                        members={currentGroup.members}
+                        members={currentGroup.members || []}
                       />
                     </Suspense>
                   ) : (
@@ -417,14 +519,6 @@ export default function VideoCallPage() {
                       <p className="text-gray-500 max-w-md mx-auto mb-6">
                         Vui lòng chọn một nhóm từ danh sách bên trái để bắt đầu cuộc gọi video và kết nối với các thành viên
                       </p>
-                      <Button 
-                        type="primary"
-                        size="large"
-                        icon={<TeamOutlined />}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 border-none shadow-lg hover:shadow-xl"
-                      >
-                        Chọn nhóm ngay
-                      </Button>
                     </div>
                   )}
                 </div>

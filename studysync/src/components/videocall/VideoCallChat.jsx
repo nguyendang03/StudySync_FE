@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { MessageCircle } from 'lucide-react';
 import socketService from '../../services/socketService';
+import chatService from '../../services/chatService';
 import { useAuthStore } from '../../stores';
 
 const { TextArea } = Input;
@@ -18,7 +19,8 @@ export default function VideoCallChat({
   isOpen, 
   onClose,
   participants = [],
-  onNewMessage 
+  onNewMessage,
+  groupId // Add groupId prop for REST API
 }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -26,10 +28,73 @@ export default function VideoCallChat({
   const [typingUsers, setTypingUsers] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const { user } = useAuthStore();
+  const { user, fetchUserProfile } = useAuthStore();
+
+  // Ensure user profile is loaded
+  useEffect(() => {
+    const ensureUserProfile = async () => {
+      if (!user) {
+        console.log('⚠️ User not loaded, attempting to fetch profile...');
+        await fetchUserProfile();
+      }
+    };
+    
+    if (isOpen) {
+      ensureUserProfile();
+    }
+  }, [isOpen, user, fetchUserProfile]);
+
+  // Load message history on mount using REST API
+  useEffect(() => {
+    const loadMessageHistory = async () => {
+      if (!groupId || !isOpen) return;
+      
+      setIsLoadingMessages(true);
+      try {
+        console.log('📥 Loading chat history for group:', groupId);
+        const response = await chatService.getMessages(groupId, { 
+          page: 1,  // Backend uses page, not offset
+          limit: 50
+        });
+        
+        // Extract messages from response - backend returns { data: { messages, total, ... } }
+        const responseData = response?.data || response;
+        const messageList = responseData?.messages || [];
+        
+        console.log('📝 Raw messages from API:', messageList);
+        
+        // Transform API messages to match UI format
+        // Backend returns messages with sender relation
+        const formattedMessages = messageList.map(msg => ({
+          id: msg.id,
+          userId: msg.senderId || msg.sender?.id,
+          userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
+          message: msg.content,
+          timestamp: new Date(msg.createdAt).getTime(),
+          type: msg.type === 'system' ? 'system' : 'message',
+          isEdited: msg.isEdited
+        }));
+        
+        setMessages(formattedMessages);
+        console.log('✅ Loaded', formattedMessages.length, 'messages from history');
+        
+        // Scroll to bottom after loading
+        setTimeout(() => scrollToBottom(), 100);
+      } catch (error) {
+        console.error('❌ Failed to load message history:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        // Don't show error to user, just continue with empty messages
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    loadMessageHistory();
+  }, [groupId, isOpen]);
 
   useEffect(() => {
     if (!channelName || !user || !isOpen) return;
@@ -47,8 +112,8 @@ export default function VideoCallChat({
           console.log('✅ Socket connected successfully');
         } else {
           setIsConnected(false);
-          setConnectionError(true);
-          console.warn('⚠️ Socket not connected - chat server may not be running');
+          setConnectionError(false); // Don't show error if we have REST API fallback
+          console.warn('⚠️ Socket not connected - using REST API fallback');
         }
       }, 1000);
 
@@ -63,7 +128,7 @@ export default function VideoCallChat({
 
       // Listen for typing indicators
       socketService.onTyping((data) => {
-        if (data.userId !== user.id) {
+        if (user && data.userId !== user.id) {
           if (data.isTyping) {
             setTypingUsers(prev => {
               if (!prev.find(u => u.userId === data.userId)) {
@@ -118,21 +183,86 @@ export default function VideoCallChat({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim() || !isConnected) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+    if (!user) {
+      console.error('❌ No user available to send message');
+      setConnectionError('Vui lòng đăng nhập lại để gửi tin nhắn');
+      return;
+    }
 
-    // Send message via socket
-    socketService.sendMessage(
-      channelName,
-      inputMessage,
-      user.id,
-      user.username || user.email
-    );
+    const messageContent = inputMessage;
+    setInputMessage(''); // Clear immediately for better UX
 
-    // Clear input
-    setInputMessage('');
-    setIsTyping(false);
-    socketService.sendTyping(channelName, user.id, user.username, false);
+    // Try WebSocket first, fallback to REST API
+    if (isConnected) {
+      try {
+        socketService.sendMessage(
+          channelName,
+          messageContent,
+          user.id,
+          user.username || user.email
+        );
+        setIsTyping(false);
+        socketService.sendTyping(channelName, user.id, user.username, false);
+      } catch (error) {
+        console.error('❌ Socket send failed, trying REST API:', error);
+        await sendViaRestAPI(messageContent);
+      }
+    } else {
+      // Use REST API when socket not connected
+      await sendViaRestAPI(messageContent);
+    }
+  };
+
+  const sendViaRestAPI = async (messageContent) => {
+    if (!groupId) {
+      console.error('❌ No groupId available for REST API');
+      return;
+    }
+
+    try {
+      console.log('📤 Sending message via REST API');
+      // Send just the content string - chatService will wrap it properly
+      const response = await chatService.sendMessage(groupId, messageContent);
+
+      console.log('📦 Full response:', response);
+      
+      // Add message to local state
+      const responseData = response?.data || response;
+      console.log('📦 Response data:', responseData);
+      
+      const sentMessage = responseData?.data || responseData;
+      console.log('📝 Sent message:', sentMessage);
+      
+      // Validate we have a valid message object
+      if (!sentMessage || !sentMessage.id) {
+        console.error('❌ Invalid message response:', sentMessage);
+        throw new Error('Invalid message response from server');
+      }
+      
+      // Use sender info from response if available, otherwise use current user info
+      const senderInfo = sentMessage.sender || {};
+      const newMessage = {
+        id: sentMessage.id,
+        userId: sentMessage.senderId || (user && user.id),
+        userName: senderInfo.username || senderInfo.name || senderInfo.email?.split('@')[0] || (user && (user.username || user.name || user.email?.split('@')[0])) || 'You',
+        message: sentMessage.content || messageContent,
+        timestamp: sentMessage.createdAt ? new Date(sentMessage.createdAt).getTime() : Date.now(),
+        type: 'message',
+        isEdited: sentMessage.isEdited || false
+      };
+      
+      console.log('📝 Adding message to UI:', newMessage);
+      setMessages(prev => [...prev, newMessage]);
+      scrollToBottom();
+      console.log('✅ Message sent via REST API');
+    } catch (error) {
+      console.error('❌ Failed to send message via REST API:', error);
+      // Re-add message to input if send failed
+      setInputMessage(messageContent);
+      alert('Không thể gửi tin nhắn. Vui lòng thử lại.');
+    }
   };
 
   const handleInputChange = (e) => {
@@ -211,18 +341,12 @@ export default function VideoCallChat({
         />
       </div>
 
-      {/* Connection Error Alert */}
-      {connectionError && (
+      {/* Connection Status Info */}
+      {!isConnected && !connectionError && !isLoadingMessages && (
         <Alert
-          message="Không thể kết nối chat server"
-          description={
-            <div className="text-xs">
-              <p>Chat server chưa được khởi động.</p>
-              <p className="mt-1">Vui lòng khởi động backend server tại: <code>http://localhost:3000</code></p>
-              <p className="mt-1">Xem file <code>SOCKET_SERVER_EXAMPLE.md</code> để biết cách setup.</p>
-            </div>
-          }
-          type="warning"
+          message="Chế độ REST API"
+          description="Chat server chưa kết nối. Tin nhắn sẽ được gửi qua REST API (có thể chậm hơn)."
+          type="info"
           showIcon
           closable
           className="m-4"
@@ -231,16 +355,16 @@ export default function VideoCallChat({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3">
-        {!isConnected && !connectionError && (
+        {isLoadingMessages && (
           <div className="text-center py-8 text-gray-500">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-            <p className="text-sm">Đang kết nối chat...</p>
+            <p className="text-sm">Đang tải tin nhắn...</p>
           </div>
         )}
 
         <AnimatePresence>
-          {messages.map((msg) => {
-            const isOwnMessage = msg.userId === user.id;
+          {messages.filter(msg => msg && msg.id).map((msg) => {
+            const isOwnMessage = user && msg.userId === user.id;
             const isSystemMessage = msg.type === 'system';
 
             if (isSystemMessage) {
@@ -320,6 +444,14 @@ export default function VideoCallChat({
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-gray-200">
+        {!user && (
+          <Alert
+            message="Đang tải thông tin người dùng..."
+            type="warning"
+            showIcon
+            className="mb-2"
+          />
+        )}
         <div className="flex gap-2">
           <TextArea
             value={inputMessage}
@@ -330,16 +462,16 @@ export default function VideoCallChat({
                 handleSendMessage();
               }
             }}
-            placeholder={isConnected ? "Nhập tin nhắn..." : "Chat server chưa kết nối..."}
+            placeholder={!user ? "Đang tải..." : groupId ? "Nhập tin nhắn..." : "Chọn nhóm để chat..."}
             autoSize={{ minRows: 1, maxRows: 3 }}
             className="flex-1"
-            disabled={!isConnected}
+            disabled={!groupId || isLoadingMessages || !user}
           />
           <Button
             type="primary"
             icon={<SendOutlined />}
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || !isConnected}
+            disabled={!inputMessage.trim() || !groupId || isLoadingMessages || !user}
             className="bg-gradient-to-r from-purple-600 to-blue-600 border-none self-end"
           />
         </div>
@@ -352,7 +484,7 @@ export default function VideoCallChat({
               size="small"
               icon={<SmileOutlined />}
               className="text-gray-500"
-              disabled={!isConnected}
+              disabled={!groupId || isLoadingMessages}
             />
           </Tooltip>
           <Tooltip title="Gửi ảnh">
@@ -361,7 +493,7 @@ export default function VideoCallChat({
               size="small"
               icon={<PictureOutlined />}
               className="text-gray-500"
-              disabled={!isConnected}
+              disabled={!groupId || isLoadingMessages}
             />
           </Tooltip>
         </div>

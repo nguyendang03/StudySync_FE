@@ -16,7 +16,7 @@ import {
   HeartFilled,
   StarFilled
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown, Spin } from 'antd';
 import toast from 'react-hot-toast';
@@ -33,12 +33,12 @@ export default function MyGroups() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState('grid');
-  const [favorites, setFavorites] = useState(new Set([1, 3]));
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsLoaded(true);
@@ -47,7 +47,7 @@ export default function MyGroups() {
     }
   }, [isAuthenticated]);
 
-  const fetchMyGroups = async () => {
+  const fetchMyGroups = async (showToast = true) => {
     try {
       setLoading(true);
       console.log('🔄 Fetching groups for authenticated user...');
@@ -76,15 +76,15 @@ export default function MyGroups() {
         avatar: (group.groupName || group.name || 'GR').substring(0, 2).toUpperCase(),
         bgColor: getRandomGradient(),
         lastActivity: formatLastActivity(group.updatedAt || group.createdAt),
-        rating: 4.5 + Math.random() * 0.5,
+        rating: Number((4.5 + Math.random() * 0.5).toFixed(1)), // Fixed to 1 decimal place
         tags: ['Học tập', 'Nhóm']
       })) : [];
 
       setMyGroups(transformedGroups);
       setHasFetched(true);
       
-      // Only show toast if we haven't shown it before
-      if (!hasFetched) {
+      // Only show toast if we haven't shown it before AND showToast is true
+      if (!hasFetched && showToast) {
         if (transformedGroups.length > 0) {
           toast.success(`✅ Đã tải ${transformedGroups.length} nhóm của bạn`);
         } else {
@@ -96,13 +96,15 @@ export default function MyGroups() {
     } catch (error) {
       console.error('❌ Error fetching groups:', error);
       
-      // Show specific error messages
-      if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
-        toast.error('🔌 Không thể kết nối đến server. Vui lòng kiểm tra backend.');
-      } else if (error.message?.includes('Authentication required') || error.message?.includes('Session expired')) {
-        toast.error('🔑 Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
-      } else {
-        toast.error(`❌ Lỗi tải nhóm: ${error.message}`);
+      // Only show error toasts if showToast is true
+      if (showToast) {
+        if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+          toast.error('🔌 Không thể kết nối đến server. Vui lòng kiểm tra backend.');
+        } else if (error.message?.includes('Authentication required') || error.message?.includes('Session expired')) {
+          toast.error('🔑 Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+        } else {
+          toast.error(`❌ Lỗi tải nhóm: ${error.message}`);
+        }
       }
       
       // Fallback to empty array on error
@@ -150,20 +152,6 @@ export default function MyGroups() {
     { id: 'design', name: 'Thiết kế', count: myGroups.filter(g => g.subject === 'Thiết kế').length },
     { id: 'data', name: 'Khoa học dữ liệu', count: myGroups.filter(g => g.subject === 'Khoa học dữ liệu').length }
   ];
-
-  // Utility functions
-  const toggleFavorite = (groupId) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(groupId)) {
-      newFavorites.delete(groupId);
-      toast.success('Đã xóa khỏi yêu thích');
-    } else {
-      newFavorites.add(groupId);
-      toast.success('Đã thêm vào yêu thích');
-    }
-    setFavorites(newFavorites);
-  };
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleCreateGroup = () => {
@@ -188,9 +176,9 @@ export default function MyGroups() {
       
       toast.success(`✅ Đã tạo nhóm "${groupData.groupName}" thành công!`);
       
-      // Refresh the groups list
+      // Refresh the groups list (without showing toast to avoid duplicates)
       setHasFetched(false);
-      await fetchMyGroups();
+      await fetchMyGroups(false);
       
       setIsCreateModalOpen(false);
     } catch (error) {
@@ -290,37 +278,44 @@ export default function MyGroups() {
                   title: 'Tổng nhóm', 
                   value: myGroups.length, 
                   icon: <Users className="w-6 h-6" />,
+                  color: 'from-blue-500 to-blue-600',
+                  iconBg: 'bg-blue-500/20'
                 },
                 { 
                   title: 'Đang hoạt động', 
                   value: myGroups.filter(g => g.isActive).length, 
                   icon: <Activity className="w-6 h-6" />,
+                  color: 'from-green-500 to-green-600',
+                  iconBg: 'bg-green-500/20'
                 },
                 { 
                   title: 'Thành viên', 
                   value: myGroups.reduce((sum, g) => sum + g.members, 0), 
                   icon: <UserOutlined className="text-xl" />,
+                  color: 'from-purple-500 to-purple-600',
+                  iconBg: 'bg-purple-500/20'
                 },
                 { 
                   title: 'Tiến độ trung bình', 
-                  value: `${Math.round(myGroups.reduce((sum, g) => sum + g.progress, 0) / myGroups.length)}%`, 
+                  value: myGroups.length > 0 ? `${Math.round(myGroups.reduce((sum, g) => sum + g.progress, 0) / myGroups.length)}%` : '0%', 
                   icon: <Award className="w-6 h-6" />,
+                  color: 'from-pink-500 to-pink-600',
+                  iconBg: 'bg-pink-500/20'
                 }
               ].map((stat, index) => (
                 <motion.div
                   key={stat.title}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30 hover:bg-white/25 transition-all cursor-pointer"
+                  transition={{ duration: 0.4, delay: index * 0.08 }}
+                  className="bg-white/25 backdrop-blur-md rounded-2xl p-6 border border-white/40 hover:bg-white/30 hover:border-white/50 hover:shadow-xl transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-white/80 text-sm mb-1">{stat.title}</p>
-                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                      <p className="text-white/90 text-sm mb-2 font-medium tracking-wide">{stat.title}</p>
+                      <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
                     </div>
-                    <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-lg flex items-center justify-center text-white`}>
+                    <div className={`w-14 h-14 ${stat.iconBg} backdrop-blur-sm rounded-xl flex items-center justify-center text-white shadow-lg border border-white/20`}>
                       {stat.icon}
                     </div>
                   </div>
@@ -341,63 +336,46 @@ export default function MyGroups() {
                 {filteredGroups.map((group, index) => (
                   <motion.div
                     key={group.id}
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    whileHover={{ 
-                      scale: 1.02, 
-                      y: -5,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 hover:bg-white/25 hover:border-white/40 transition-all duration-300 hover:shadow-2xl cursor-pointer group"
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="bg-white/25 backdrop-blur-md rounded-2xl p-6 border border-white/40 hover:bg-white/30 hover:border-white/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
                   >
                     {/* Group Header */}
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-5">
                       <div className="flex items-center gap-4 flex-1">
-                        <Avatar
-                          size={60}
-                          className={`bg-gradient-to-r ${group.bgColor} flex items-center justify-center text-white font-bold text-lg`}
-                        >
-                          {group.avatar}
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar
+                            size={64}
+                            className={`bg-gradient-to-br ${group.bgColor} flex items-center justify-center text-white font-bold text-xl shadow-lg border-4 border-white/30`}
+                          >
+                            {group.avatar}
+                          </Avatar>
+                        </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-bold text-white group-hover:text-yellow-200 transition-colors">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-xl font-bold text-white tracking-tight line-clamp-1">
                               {group.name}
                             </h3>
-                            <Tooltip title={favorites.has(group.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
-                              <motion.button
-                                whileHover={{ scale: 1.2 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => toggleFavorite(group.id)}
-                                className="text-white/60 hover:text-red-400 transition-colors"
-                              >
-                                <HeartFilled 
-                                  className={`text-sm ${
-                                    favorites.has(group.id) ? 'text-red-400' : 'text-white/40'
-                                  }`} 
-                                />
-                              </motion.button>
-                            </Tooltip>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-white/70 mb-2">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />
-                              {group.members} thành viên
+                          <div className="flex items-center gap-3 text-sm text-white/90 mb-3">
+                            <span className="flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full font-medium">
+                              <Users className="w-3.5 h-3.5" />
+                              {group.members}
                             </span>
-                            <div className="flex items-center gap-1">
-                              <StarFilled className="text-yellow-400 text-xs" />
-                              <span>{group.rating}</span>
-                            </div>
+                            <span className="flex items-center gap-1.5 bg-yellow-500/20 px-3 py-1 rounded-full font-semibold">
+                              <StarFilled className="text-yellow-400 text-sm" />
+                              {group.rating}
+                            </span>
                           </div>
-                          <div className="flex gap-1 flex-wrap">
+                          <div className="flex gap-2 flex-wrap">
                             {group.tags.slice(0, 2).map(tag => (
-                              <Tag key={tag} size="small" className="bg-white/20 text-white border-white/30">
+                              <Tag key={tag} className="bg-white/20 text-white border-white/40 font-medium px-3 py-0.5 rounded-full">
                                 {tag}
                               </Tag>
                             ))}
                             {group.tags.length > 2 && (
-                              <Tag size="small" className="bg-white/20 text-white border-white/30">
+                              <Tag className="bg-purple-500/30 text-white border-white/40 font-medium px-3 py-0.5 rounded-full">
                                 +{group.tags.length - 2}
                               </Tag>
                             )}
@@ -405,18 +383,11 @@ export default function MyGroups() {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <VideoCallButton
-                          groupId={group.id}
-                          groupName={group.name}
-                          members={[]}
-                          isHost={group.id === 1} // Example: first group user is host
-                          className="text-xs px-3 py-1"
-                        />
                         <Button 
                           type="primary"
                           icon={<EyeOutlined />}
                           className="bg-pink-500 hover:bg-pink-600 border-pink-500"
-                          onClick={() => toast.success(`Đang vào nhóm ${group.name}`)}
+                          onClick={() => navigate(`/groups/${group.id}`)}
                         >
                           VÀO XEM
                         </Button>
@@ -424,44 +395,61 @@ export default function MyGroups() {
                     </div>
 
                     {/* Description */}
-                    <p className="text-white/80 text-sm leading-relaxed mb-4 overflow-hidden" style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
-                    }}>
-                      {group.description}
-                    </p>
+                    <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/25">
+                      <p className="text-white/95 text-sm leading-relaxed overflow-hidden" style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
+                      }}>
+                        {group.description}
+                      </p>
+                    </div>
 
                     {/* Progress with Ant Design Progress */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-white/80 text-sm">Tiến độ học tập</span>
-                        <span className="text-white font-semibold text-sm">{group.progress}%</span>
+                    <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/25">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-white/95 text-sm font-medium flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" />
+                          Tiến độ học tập
+                        </span>
+                        <span className="text-white font-bold text-base bg-white/25 px-3 py-1 rounded-full">
+                          {group.progress}%
+                        </span>
                       </div>
                       <Progress 
                         percent={group.progress} 
                         showInfo={false}
                         strokeColor={{
-                          '0%': '#ffffff',
-                          '100%': '#f472b6',
+                          '0%': '#60a5fa',
+                          '50%': '#a78bfa',
+                          '100%': '#ec4899',
                         }}
                         trailColor="rgba(255, 255, 255, 0.2)"
-                        size="small"
+                        strokeWidth={10}
                       />
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center pt-2">
                       <div className="flex items-center gap-3">
                         <Tag 
-                          color={group.isActive ? 'green' : 'default'}
-                          className="border-0"
+                          className={`border-0 font-medium px-4 py-1 rounded-full ${
+                            group.isActive 
+                              ? 'bg-green-500/30 text-green-100' 
+                              : 'bg-gray-400/30 text-gray-200'
+                          }`}
                         >
+                          <span className="mr-1">{group.isActive ? '●' : '○'}</span>
                           {group.isActive ? 'Đang hoạt động' : 'Tạm nghỉ'}
                         </Tag>
-                        <span className="text-white/60 text-xs">{group.subject}</span>
+                        <span className="text-white/80 text-sm font-medium bg-white/15 px-3 py-1 rounded-full">
+                          {group.subject}
+                        </span>
                       </div>
-                      <span className="text-white/50 text-xs">{group.lastActivity}</span>
+                      <span className="text-white/70 text-xs font-medium bg-white/15 px-3 py-1 rounded-full flex items-center gap-1">
+                        <span>⏰</span>
+                        {group.lastActivity}
+                      </span>
                     </div>
                   </motion.div>
                 ))}

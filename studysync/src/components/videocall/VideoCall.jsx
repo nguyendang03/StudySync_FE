@@ -17,7 +17,8 @@ const VideoCall = ({
   onCallEnd, 
   isHost = false, 
   groupMembers = [],
-  groupName = ''
+  groupName = '',
+  groupId // Add groupId prop for chat API
 }) => {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
@@ -800,6 +801,7 @@ const VideoCall = ({
         {isChatOpen && (
           <VideoCallChat
             channelName={channelName}
+            groupId={groupId}
             isOpen={isChatOpen}
             onClose={toggleChat}
             participants={[...remoteUsers.map(u => ({ uid: u.uid })), { uid: 'local' }]}
