@@ -145,33 +145,148 @@ class GroupService {
   }
 
   /**
-   * Get received invitations
+   * Get received invitations (for invitee/member)
    * @returns {Promise<Array>} List of received invitations
    */
   async getReceivedInvitations() {
     try {
+      console.log('📥 Fetching received invitations...');
       const response = await axiosInstance.get('/groups/invitations');
+      console.log('✅ Received invitations:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching invitations:', error);
-      throw error;
+      console.error('❌ Error fetching received invitations:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch invitations';
+      throw new Error(errorMessage);
     }
   }
 
   /**
-   * Respond to an invitation
+   * Get sent invitations (for leader who sent invites)
+   * @returns {Promise<Array>} List of sent invitations
+   */
+  async getSentInvitations() {
+    try {
+      console.log('📥 Fetching sent invitations...');
+      const response = await axiosInstance.get('/groups/invitations/sent');
+      console.log('✅ Sent invitations:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching sent invitations:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch sent invitations';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Respond to an invitation (for invitee/member)
    * @param {number} invitationId - Invitation ID
    * @param {Object} responseData - Response data
-   * @param {string} responseData.status - Response status ('accept' or 'decline')
+   * @param {string} responseData.status - Response status ('accepted' or 'declined')
    * @returns {Promise<Object>} Response result
    */
   async respondToInvitation(invitationId, responseData) {
     try {
+      console.log('📤 Responding to invitation:', invitationId, responseData);
       const response = await axiosInstance.post(`/groups/invitations/${invitationId}/respond`, responseData);
+      console.log('✅ Response sent:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error responding to invitation:', error);
-      throw error;
+      console.error('❌ Error responding to invitation:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to respond to invitation';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Accept an invitation (shorthand for invitee)
+   * @param {number} invitationId - Invitation ID
+   * @returns {Promise<Object>} Accept result
+   */
+  async acceptInvitation(invitationId) {
+    return this.respondToInvitation(invitationId, { status: 'accepted' });
+  }
+
+  /**
+   * Decline an invitation (shorthand for invitee)
+   * @param {number} invitationId - Invitation ID
+   * @returns {Promise<Object>} Decline result
+   */
+  async declineInvitation(invitationId) {
+    return this.respondToInvitation(invitationId, { status: 'declined' });
+  }
+
+  /**
+   * Request to join a group (for member)
+   * @param {number} groupId - Group ID
+   * @param {Object} requestData - Request data
+   * @param {string} requestData.message - Optional message to the leader
+   * @returns {Promise<Object>} Request result
+   */
+  async requestJoinGroup(groupId, requestData = {}) {
+    try {
+      console.log('📤 Sending join request:', groupId, requestData);
+      const response = await axiosInstance.post(`/groups/${groupId}/join-request`, requestData);
+      console.log('✅ Join request sent:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error requesting to join group:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send join request';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Get join requests for a group (for leader)
+   * @param {number} groupId - Group ID
+   * @returns {Promise<Array>} List of join requests
+   */
+  async getJoinRequests(groupId) {
+    try {
+      console.log('📥 Fetching join requests for group:', groupId);
+      const response = await axiosInstance.get(`/groups/${groupId}/join-requests`);
+      console.log('✅ Join requests:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching join requests:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch join requests';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Approve a join request (for leader)
+   * @param {number} requestId - Join request ID
+   * @returns {Promise<Object>} Approval result
+   */
+  async approveJoinRequest(requestId) {
+    try {
+      console.log('✅ Approving join request:', requestId);
+      const response = await axiosInstance.post(`/groups/join-requests/${requestId}/approve`);
+      console.log('✅ Join request approved:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error approving join request:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to approve join request';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Deny a join request (for leader)
+   * @param {number} requestId - Join request ID
+   * @returns {Promise<Object>} Denial result
+   */
+  async denyJoinRequest(requestId) {
+    try {
+      console.log('❌ Denying join request:', requestId);
+      const response = await axiosInstance.post(`/groups/join-requests/${requestId}/deny`);
+      console.log('✅ Join request denied:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error denying join request:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to deny join request';
+      throw new Error(errorMessage);
     }
   }
 
@@ -191,17 +306,78 @@ class GroupService {
   }
 
   /**
+   * Remove a member from group (for leader)
+   * @param {number} groupId - Group ID
+   * @param {string} userId - User ID to remove
+   * @returns {Promise<Object>} Remove result
+   */
+  async removeMember(groupId, userId) {
+    try {
+      console.log('🚫 Removing member:', groupId, userId);
+      const response = await axiosInstance.delete(`/groups/${groupId}/members/${userId}`);
+      console.log('✅ Member removed:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error removing member:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove member';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Transfer leadership to another member (for leader)
+   * @param {number} groupId - Group ID
+   * @param {string} newLeaderId - User ID of new leader
+   * @returns {Promise<Object>} Transfer result
+   */
+  async transferLeadership(groupId, newLeaderId) {
+    try {
+      console.log('👑 Transferring leadership:', groupId, newLeaderId);
+      const response = await axiosInstance.post(`/groups/${groupId}/transfer-leadership`, {
+        newLeaderId
+      });
+      console.log('✅ Leadership transferred:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error transferring leadership:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to transfer leadership';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Leave a group
    * @param {number} groupId - Group ID
    * @returns {Promise<Object>} Leave result
    */
   async leaveGroup(groupId) {
     try {
+      console.log('👋 Leaving group:', groupId);
       const response = await axiosInstance.post(`/groups/${groupId}/leave`);
+      console.log('✅ Left group:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error leaving group:', error);
-      throw error;
+      console.error('❌ Error leaving group:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to leave group';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Delete a group (for leader)
+   * @param {number} groupId - Group ID
+   * @returns {Promise<Object>} Delete result
+   */
+  async deleteGroup(groupId) {
+    try {
+      console.log('🗑️ Deleting group:', groupId);
+      const response = await axiosInstance.delete(`/groups/${groupId}`);
+      console.log('✅ Group deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting group:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete group';
+      throw new Error(errorMessage);
     }
   }
 }
