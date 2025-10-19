@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Spin } from 'antd';
+import { Spin, Button } from 'antd';
 import toast from 'react-hot-toast';
 import { VideoCallButton, VideoCallManager } from '../../components/videocall';
 import { useAuthStore } from '../../stores';
 import groupService from '../../services/groupService';
+import GroupInvitationsManager from '../../components/groups/GroupInvitationsManager';
+import InviteMemberModal from '../../components/groups/InviteMemberModal';
 
 export default function GroupDetail() {
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function GroupDetail() {
   const [groupData, setGroupData] = useState(null);
   const [error, setError] = useState(null);
   const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
     if (id && isAuthenticated && !hasFetchedDetail) {
@@ -69,7 +72,30 @@ export default function GroupDetail() {
   };
 
   // Check if current user is the group leader
-  const isHost = user && groupData?.leaderId === user.id;
+  // Use user.id from the user object, fallback to checking members array
+  const currentUserId = user?.data?.id;
+  const leaderId = groupData?.leaderId;
+  
+  // If user.id is undefined, try to find it in the members array
+  const userInGroup = !currentUserId && groupData?.members?.find(m => 
+    m.user?.email === user?.email || m.userId === user?.userId
+  );
+  
+  const effectiveUserId = currentUserId || userInGroup?.user?.id || userInGroup?.userId;
+  
+  const isHost = effectiveUserId && leaderId && (
+    leaderId === effectiveUserId || 
+    String(leaderId) === String(effectiveUserId)
+  );
+  
+  console.log('🔍 Leader check:', {
+    userObject: user,
+    currentUserId,
+    effectiveUserId,
+    leaderId,
+    isHost,
+    userInGroup
+  });
 
   // Transform members data from backend format to display format
   const getAvatarColor = (index) => {
@@ -184,6 +210,19 @@ export default function GroupDetail() {
                           +{transformedMembers.length - 3}
                         </div>
                       )}
+                      
+                      {/* Invite Member Button - Only for Leaders */}
+                      {isHost && (
+                        <Button
+                          type="primary"
+                          icon={<UserAddOutlined />}
+                          onClick={() => setShowInviteModal(true)}
+                          className="ml-4 bg-gradient-to-r from-purple-500 to-blue-500 border-0 rounded-full shadow-lg hover:shadow-xl"
+                          size="small"
+                        >
+                          Mời thành viên
+                        </Button>
+                      )}
                                            
                       <div className="ml-2 px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-600">
                         ✓ Đã tham gia
@@ -223,6 +262,13 @@ export default function GroupDetail() {
                       />
                     </div>
                   </div>
+
+                  {/* Group Invitations Manager - Only for Leaders */}
+                  
+                    <div className={`transition-all duration-500 delay-1200 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                      <GroupInvitationsManager groupId={groupData.id} />
+                    </div>
+                  
 
                   {/* Subject Section */}
                   {groupData.subject && (
@@ -322,6 +368,18 @@ export default function GroupDetail() {
             </div>
           </div>
         </div>
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        open={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        groupId={groupData?.id}
+        groupName={groupData?.groupName || groupData?.name}
+        onSuccess={() => {
+          // Optionally refresh group data to update member count
+          fetchGroupDetail();
+        }}
+      />
     </div>
   );
 }

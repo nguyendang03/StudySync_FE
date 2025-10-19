@@ -6,6 +6,7 @@ import ProfileInfoForm from '../../components/profile/ProfileInfoForm';
 import ChangePassword from '../../components/profile/ChangePassword';
 import GroupList from '../../components/profile/GroupList';
 import InvitationList from '../../components/profile/InvitationList';
+import GroupInvitationsManager from '../../components/groups/GroupInvitationsManager';
 
 export default function Profile() {
   const [activeView, setActiveView] = useState('profile');
@@ -99,6 +100,20 @@ export default function Profile() {
             className="w-full"
           >
             <InvitationList />
+          </motion.div>
+        );
+      
+      case 'manage-invitations':
+        return (
+          <motion.div 
+            key={contentKey} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6 }}
+            className="w-full"
+          >
+            <GroupInvitationsManager />
           </motion.div>
         );
       

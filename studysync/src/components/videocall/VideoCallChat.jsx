@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Avatar, Badge, Tooltip, Button, Alert } from 'antd';
 import { 
@@ -8,7 +8,6 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { MessageCircle } from 'lucide-react';
-import socketService from '../../services/socketService';
 import chatService from '../../services/chatService';
 import { useAuthStore } from '../../stores';
 
@@ -48,65 +47,74 @@ export default function VideoCallChat({
     }
   }, [isOpen, user, fetchUserProfile]);
 
-  // Load message history on mount using REST API
-  useEffect(() => {
-    const loadMessageHistory = async () => {
-      if (!groupId || !isOpen) return;
-      
+  // Function to load message history - using useCallback to stabilize reference
+  // showLoading parameter controls whether to show spinner (true for initial load, false for refresh after send)
+  const loadMessageHistory = useCallback(async (showLoading = true) => {
+    if (!groupId || !isOpen) return;
+    
+    if (showLoading) {
       setIsLoadingMessages(true);
-      try {
-        console.log('📥 Loading chat history for group:', groupId);
-        const response = await chatService.getMessages(groupId, { 
-          page: 1,  // Backend uses page, not offset
-          limit: 50
-        });
-        
-        // Extract messages from response - backend returns { data: { messages, total, ... } }
-        const responseData = response?.data || response;
-        const messageList = responseData?.messages || [];
-        
-        console.log('📝 Raw messages from API:', messageList);
-        
-        // Transform API messages to match UI format
-        // Backend returns messages with sender relation
-        const formattedMessages = messageList.map(msg => ({
-          id: msg.id,
-          userId: msg.senderId || msg.sender?.id,
-          userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
-          message: msg.content,
-          timestamp: new Date(msg.createdAt).getTime(),
-          type: msg.type === 'system' ? 'system' : 'message',
-          isEdited: msg.isEdited
-        }));
-        
-        setMessages(formattedMessages);
-        console.log('✅ Loaded', formattedMessages.length, 'messages from history');
-        
-        // Scroll to bottom after loading
-        setTimeout(() => scrollToBottom(), 100);
-      } catch (error) {
-        console.error('❌ Failed to load message history:', error);
-        console.error('Error details:', error.response?.data || error.message);
-        // Don't show error to user, just continue with empty messages
-      } finally {
+    }
+    
+    try {
+      console.log('📥 Loading chat history for group:', groupId);
+      const response = await chatService.getMessages(groupId, { 
+        page: 1,
+        limit: 50
+      });
+      
+      // Extract messages from response
+      console.log('📦 Full API response:', response);
+      const responseData = response?.data?.data || response?.data || response;
+      const messageList = responseData?.messages || [];
+      
+      console.log('📝 Extracted messages:', messageList);
+      
+      // Transform API messages to match UI format
+      const formattedMessages = messageList.map(msg => ({
+        id: msg.id,
+        userId: msg.senderId || msg.sender?.id,
+        userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
+        message: msg.content,
+        timestamp: new Date(msg.createdAt).getTime(),
+        type: msg.type === 'system' ? 'system' : 'message',
+        isEdited: msg.isEdited
+      }));
+      
+      setMessages(formattedMessages);
+      console.log('✅ Loaded', formattedMessages.length, 'messages from history');
+      
+      // Scroll to bottom after loading
+      setTimeout(() => scrollToBottom(), 100);
+    } catch (error) {
+      console.error('❌ Failed to load message history:', error);
+      console.error('Error details:', error.response?.data || error.message);
+    } finally {
+      if (showLoading) {
         setIsLoadingMessages(false);
       }
-    };
-
-    loadMessageHistory();
+    }
   }, [groupId, isOpen]);
 
+  // Load message history on mount using REST API
   useEffect(() => {
-    if (!channelName || !user || !isOpen) return;
+    loadMessageHistory();
+  }, [loadMessageHistory]);
+
+  useEffect(() => {
+    if (!groupId || !user || !isOpen) {
+      console.log('⚠️ Missing required data for socket connection:', { groupId, user: !!user, isOpen });
+      return;
+    }
 
     // Try to connect to socket
     try {
-      console.log('🔌 Attempting to connect to chat for channel:', channelName);
-      const socket = socketService.connect(user.id, channelName);
+      console.log('🔌 Attempting to connect to chat for group:', groupId);
+      const socket = chatService.connect(user.id, groupId);
       
       // Check connection after a delay
       setTimeout(() => {
-        if (socketService.isSocketConnected()) {
+        if (chatService.isSocketConnected()) {
           setIsConnected(true);
           setConnectionError(false);
           console.log('✅ Socket connected successfully');
@@ -117,9 +125,17 @@ export default function VideoCallChat({
         }
       }, 1000);
 
-      // Listen for messages
-      socketService.onMessage((messageData) => {
-        setMessages(prev => [...prev, messageData]);
+      // Listen for messages - includes duplicate check
+      chatService.onMessage((messageData) => {
+        console.log('📨 New message received in component:', messageData);
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          if (prev.find(m => m.id === messageData.id)) {
+            console.log('⚠️ Duplicate message, skipping:', messageData.id);
+            return prev;
+          }
+          return [...prev, messageData];
+        });
         scrollToBottom();
         if (onNewMessage) {
           onNewMessage();
@@ -127,7 +143,7 @@ export default function VideoCallChat({
       });
 
       // Listen for typing indicators
-      socketService.onTyping((data) => {
+      chatService.onTyping((data) => {
         if (user && data.userId !== user.id) {
           if (data.isTyping) {
             setTypingUsers(prev => {
@@ -143,7 +159,7 @@ export default function VideoCallChat({
       });
 
       // Listen for user joined
-      socketService.onUserJoined((data) => {
+      chatService.onUserJoined((data) => {
         const systemMessage = {
           id: `system_${Date.now()}`,
           type: 'system',
@@ -155,7 +171,7 @@ export default function VideoCallChat({
       });
 
       // Listen for user left
-      socketService.onUserLeft((data) => {
+      chatService.onUserLeft((data) => {
         const systemMessage = {
           id: `system_${Date.now()}`,
           type: 'system',
@@ -173,11 +189,11 @@ export default function VideoCallChat({
     }
 
     return () => {
-      if (channelName) {
-        socketService.leaveChannel(channelName);
+      if (groupId) {
+        chatService.leaveGroup(groupId);
       }
     };
-  }, [channelName, user, isOpen]);
+  }, [groupId, user, isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -194,24 +210,14 @@ export default function VideoCallChat({
     const messageContent = inputMessage;
     setInputMessage(''); // Clear immediately for better UX
 
-    // Try WebSocket first, fallback to REST API
+    // Always use REST API first for reliability
+    console.log('📤 Sending message via REST API');
+    await sendViaRestAPI(messageContent);
+    
+    // Clear typing indicator if socket is connected
     if (isConnected) {
-      try {
-        socketService.sendMessage(
-          channelName,
-          messageContent,
-          user.id,
-          user.username || user.email
-        );
-        setIsTyping(false);
-        socketService.sendTyping(channelName, user.id, user.username, false);
-      } catch (error) {
-        console.error('❌ Socket send failed, trying REST API:', error);
-        await sendViaRestAPI(messageContent);
-      }
-    } else {
-      // Use REST API when socket not connected
-      await sendViaRestAPI(messageContent);
+      setIsTyping(false);
+      chatService.sendTyping(groupId, user.id, user.username, false);
     }
   };
 
@@ -223,42 +229,21 @@ export default function VideoCallChat({
 
     try {
       console.log('📤 Sending message via REST API');
-      // Send just the content string - chatService will wrap it properly
-      const response = await chatService.sendMessage(groupId, messageContent);
-
-      console.log('📦 Full response:', response);
+      console.log('📤 GroupId:', groupId);
+      console.log('📤 Content:', messageContent);
       
-      // Add message to local state
-      const responseData = response?.data || response;
-      console.log('📦 Response data:', responseData);
+      // Send the message
+      await chatService.sendMessage(groupId, messageContent);
+      console.log('✅ Message sent successfully to server');
       
-      const sentMessage = responseData?.data || responseData;
-      console.log('📝 Sent message:', sentMessage);
+      // Reload message history WITHOUT showing loading spinner (false parameter)
+      console.log('🔄 Reloading message history silently...');
+      await loadMessageHistory(false);
+      console.log('✅ History reloaded successfully');
       
-      // Validate we have a valid message object
-      if (!sentMessage || !sentMessage.id) {
-        console.error('❌ Invalid message response:', sentMessage);
-        throw new Error('Invalid message response from server');
-      }
-      
-      // Use sender info from response if available, otherwise use current user info
-      const senderInfo = sentMessage.sender || {};
-      const newMessage = {
-        id: sentMessage.id,
-        userId: sentMessage.senderId || (user && user.id),
-        userName: senderInfo.username || senderInfo.name || senderInfo.email?.split('@')[0] || (user && (user.username || user.name || user.email?.split('@')[0])) || 'You',
-        message: sentMessage.content || messageContent,
-        timestamp: sentMessage.createdAt ? new Date(sentMessage.createdAt).getTime() : Date.now(),
-        type: 'message',
-        isEdited: sentMessage.isEdited || false
-      };
-      
-      console.log('📝 Adding message to UI:', newMessage);
-      setMessages(prev => [...prev, newMessage]);
-      scrollToBottom();
-      console.log('✅ Message sent via REST API');
     } catch (error) {
       console.error('❌ Failed to send message via REST API:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
       // Re-add message to input if send failed
       setInputMessage(messageContent);
       alert('Không thể gửi tin nhắn. Vui lòng thử lại.');
@@ -274,10 +259,10 @@ export default function VideoCallChat({
     // Handle typing indicator
     if (value.trim() && !isTyping) {
       setIsTyping(true);
-      socketService.sendTyping(channelName, user.id, user.username, true);
+      chatService.sendTyping(groupId, user.id, user.username, true);
     } else if (!value.trim() && isTyping) {
       setIsTyping(false);
-      socketService.sendTyping(channelName, user.id, user.username, false);
+      chatService.sendTyping(groupId, user.id, user.username, false);
     }
 
     // Clear typing indicator after 2 seconds of no typing
@@ -286,7 +271,7 @@ export default function VideoCallChat({
     }
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socketService.sendTyping(channelName, user.id, user.username, false);
+      chatService.sendTyping(groupId, user.id, user.username, false);
     }, 2000);
   };
 
