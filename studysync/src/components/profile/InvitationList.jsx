@@ -10,7 +10,7 @@ export default function InvitationList() {
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(3); // Changed from 5 to 3 for better demonstration
 
   // Fetch invitations on mount
   useEffect(() => {
@@ -23,7 +23,11 @@ export default function InvitationList() {
       const response = await groupService.getReceivedInvitations();
       const invitationData = response?.data || response;
       console.log('📥 Fetched invitations:', invitationData);
-      setInvitations(Array.isArray(invitationData) ? invitationData : []);
+      console.log('📊 Response structure:', { response, data: response?.data, isArray: Array.isArray(invitationData) });
+      
+      const processedInvitations = Array.isArray(invitationData) ? invitationData : [];
+      console.log('✅ Processed invitations:', invitationData);
+      setInvitations(invitationData);
     } catch (error) {
       console.error('❌ Error fetching invitations:', error);
       toast.error(
@@ -99,7 +103,10 @@ export default function InvitationList() {
           // Refresh invitations list and reset to first page if needed
           await fetchInvitations();
           // If current page becomes empty after deletion, go to previous page
-          const remainingInvitations = invitations.length - 1;
+          const updatedInvitations = Array.isArray(invitations) 
+            ? invitations 
+            : Object.values(invitations || {});
+          const remainingInvitations = updatedInvitations.length - 1;
           const maxPage = Math.ceil(remainingInvitations / pageSize);
           if (currentPage > maxPage && maxPage > 0) {
             setCurrentPage(maxPage);
@@ -178,7 +185,10 @@ export default function InvitationList() {
           );
           // Refresh invitations list and adjust page if needed
           await fetchInvitations();
-          const remainingInvitations = invitations.length - 1;
+          const updatedInvitations = Array.isArray(invitations) 
+            ? invitations 
+            : Object.values(invitations || {});
+          const remainingInvitations = updatedInvitations.length - 1;
           const maxPage = Math.ceil(remainingInvitations / pageSize);
           if (currentPage > maxPage && maxPage > 0) {
             setCurrentPage(maxPage);
@@ -234,10 +244,24 @@ export default function InvitationList() {
     return date.toLocaleDateString('vi-VN');
   };
 
-  // Calculate paginated data
+  // Calculate paginated data - handle both array and object
+  const invitationsArray = Array.isArray(invitations) ? invitations : Object.values(invitations || {});
+  const invitationsCount = invitationsArray.length;
+  
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedInvitations = invitations.slice(startIndex, endIndex);
+  const paginatedInvitations = invitationsArray.slice(startIndex, endIndex);
+
+  console.log('🔍 Pagination Debug:', {
+    invitationsType: Array.isArray(invitations) ? 'array' : 'object',
+    invitationsCount,
+    currentPage,
+    pageSize,
+    startIndex,
+    endIndex,
+    paginatedCount: paginatedInvitations.length,
+    paginatedData: paginatedInvitations
+  });
 
   const handlePageChange = (page, newPageSize) => {
     setCurrentPage(page);
@@ -261,9 +285,9 @@ export default function InvitationList() {
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">Các lời mời từ nhóm trưởng</p>
           </div>
-          {invitations.length > 0 && (
+          {invitationsCount > 0 && (
             <Badge 
-              count={invitations.length} 
+              count={invitationsCount} 
               showZero={false}
               style={{ 
                 backgroundColor: '#7c3aed',
@@ -289,7 +313,7 @@ export default function InvitationList() {
           <Spin size="large" />
           <p className="mt-4 text-gray-500">Đang tải lời mời...</p>
         </div>
-      ) : invitations.length === 0 ? (
+      ) : invitationsCount === 0 ? (
         /* Empty State */
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -334,11 +358,11 @@ export default function InvitationList() {
                         </div>
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 hover:text-purple-600 transition-colors">
-                            {invitation.group?.groupName || 'N/A'}
+                            {invitation.groupName || 'N/A'}
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                             <ClockCircleOutlined className="text-purple-500" />
-                            <span>{formatDate(invitation.createdAt)}</span>
+                            <span>{formatDate(invitation.invitedAt)}</span>
                           </div>
                         </div>
                       </div>
@@ -361,10 +385,10 @@ export default function InvitationList() {
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Người mời</p>
                           <p className="font-semibold text-gray-900 text-base">
-                            {invitation.inviter?.username || invitation.inviter?.email?.split('@')[0] || 'N/A'}
+                            {invitation.invitedBy || 'N/A'}
                           </p>
-                          {invitation.inviter?.email && (
-                            <p className="text-xs text-gray-500">{invitation.inviter.email}</p>
+                          {invitation.inviteEmail && (
+                            <p className="text-xs text-gray-500">{invitation.inviteEmail}</p>
                           )}
                         </div>
                       </div>
@@ -390,17 +414,12 @@ export default function InvitationList() {
 
                       {/* Group Info Tags */}
                       <div className="flex items-center gap-3 flex-wrap">
-                        {invitation.group?.memberCount && (
+                        {invitation.groupDescription && (
                           <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
                             <TeamOutlined className="text-gray-600" />
                             <span className="text-sm font-medium text-gray-700">
-                              {invitation.group.memberCount} thành viên
+                              {invitation.groupDescription}
                             </span>
-                          </div>
-                        )}
-                        {invitation.group?.subject && (
-                          <div className="px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-sm font-medium shadow-md">
-                            📚 {invitation.group.subject}
                           </div>
                         )}
                       </div>
@@ -413,7 +432,7 @@ export default function InvitationList() {
                       <Button
                         type="primary"
                         icon={<CheckOutlined />}
-                        onClick={() => handleAccept(invitation.id, invitation.group?.groupName)}
+                        onClick={() => handleAccept(invitation.id, invitation.groupName)}
                         loading={processingId === invitation.id}
                         disabled={processingId && processingId !== invitation.id}
                         className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 rounded-xl shadow-lg hover:shadow-xl font-semibold text-base transition-all"
@@ -424,7 +443,7 @@ export default function InvitationList() {
                       <Button
                         danger
                         icon={<CloseOutlined />}
-                        onClick={() => handleDecline(invitation.id, invitation.group?.groupName)}
+                        onClick={() => handleDecline(invitation.id, invitation.groupName)}
                         loading={processingId === invitation.id}
                         disabled={processingId && processingId !== invitation.id}
                         className="flex-1 h-12 rounded-xl shadow-lg hover:shadow-xl font-semibold text-base transition-all"
@@ -440,7 +459,7 @@ export default function InvitationList() {
           </div>
 
           {/* Pagination */}
-          {invitations.length > pageSize && (
+          {invitationsCount > 0 && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -450,7 +469,7 @@ export default function InvitationList() {
               <div className="bg-white rounded-2xl shadow-lg px-6 py-4 border-2 border-gray-100">
                 <Pagination
                   current={currentPage}
-                  total={invitations.length}
+                  total={invitationsCount}
                   pageSize={pageSize}
                   onChange={handlePageChange}
                   showSizeChanger
@@ -459,7 +478,7 @@ export default function InvitationList() {
                       Hiển thị {range[0]}-{range[1]} trong tổng số {total} lời mời
                     </span>
                   )}
-                  pageSizeOptions={['5', '10', '20', '50']}
+                  pageSizeOptions={['3', '5', '10', '20']}
                   className="custom-pagination"
                   itemRender={(page, type, originalElement) => {
                     if (type === 'prev') {
