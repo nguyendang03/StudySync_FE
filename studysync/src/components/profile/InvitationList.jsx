@@ -11,6 +11,8 @@ export default function InvitationList() {
   const [processingId, setProcessingId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(3); // Changed from 5 to 3 for better demonstration
+  const [declineModalVisible, setDeclineModalVisible] = useState(false);
+  const [selectedInvitation, setSelectedInvitation] = useState(null);
 
   // Fetch invitations on mount
   useEffect(() => {
@@ -56,170 +58,152 @@ export default function InvitationList() {
   };
 
   const handleAccept = async (invitationId, groupName) => {
-    Modal.confirm({
-      title: (
-        <div className="flex items-center gap-2">
-          <CheckOutlined className="text-green-500" />
-          <span>Chấp nhận lời mời</span>
-        </div>
-      ),
-      content: (
-        <div className="mt-4">
-          <p>Bạn có chắc muốn tham gia nhóm</p>
-          <p className="font-semibold text-purple-600 mt-2">"{groupName}"?</p>
-        </div>
-      ),
-      okText: 'Chấp nhận',
-      cancelText: 'Hủy',
-      okButtonProps: {
-        className: 'bg-green-500 hover:bg-green-600',
-      },
-      onOk: async () => {
-        setProcessingId(invitationId);
-        try {
-          await groupService.acceptInvitation(invitationId);
-          toast.success(
-            (t) => (
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckOutlined className="text-white text-lg" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Đã tham gia nhóm! 🎉</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Chào mừng bạn đến với nhóm <span className="font-medium text-purple-600">"{groupName}"</span>
-                  </p>
-                </div>
-              </div>
-            ),
-            {
-              duration: 4000,
-              style: {
-                padding: '16px',
-                maxWidth: '500px',
-              },
-            }
-          );
-          // Refresh invitations list and reset to first page if needed
-          await fetchInvitations();
-          // If current page becomes empty after deletion, go to previous page
-          const updatedInvitations = Array.isArray(invitations) 
-            ? invitations 
-            : Object.values(invitations || {});
-          const remainingInvitations = updatedInvitations.length - 1;
-          const maxPage = Math.ceil(remainingInvitations / pageSize);
-          if (currentPage > maxPage && maxPage > 0) {
-            setCurrentPage(maxPage);
-          }
-        } catch (error) {
-          console.error('❌ Error accepting invitation:', error);
-          toast.error(
-            (t) => (
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CloseOutlined className="text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Không thể chấp nhận lời mời</p>
-                  <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
-                </div>
-              </div>
-            ),
-            {
-              duration: 3000,
-              style: {
-                padding: '16px',
-                maxWidth: '400px',
-              },
-            }
-          );
-        } finally {
-          setProcessingId(null);
+    setProcessingId(invitationId);
+    try {
+      await groupService.acceptInvitation(invitationId);
+      toast.success(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckOutlined className="text-white text-lg" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Đã tham gia nhóm! 🎉</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Chào mừng bạn đến với nhóm <span className="font-medium text-purple-600">"{groupName}"</span>
+              </p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 4000,
+          style: {
+            padding: '16px',
+            maxWidth: '500px',
+          },
         }
+      );
+      // Refresh invitations list and reset to first page if needed
+      await fetchInvitations();
+      // If current page becomes empty after deletion, go to previous page
+      const updatedInvitations = Array.isArray(invitations) 
+        ? invitations 
+        : Object.values(invitations || {});
+      const remainingInvitations = updatedInvitations.length - 1;
+      const maxPage = Math.ceil(remainingInvitations / pageSize);
+      if (currentPage > maxPage && maxPage > 0) {
+        setCurrentPage(maxPage);
       }
-    });
+    } catch (error) {
+      console.error('❌ Error accepting invitation:', error);
+      toast.error(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <CloseOutlined className="text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Không thể chấp nhận lời mời</p>
+              <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 3000,
+          style: {
+            padding: '16px',
+            maxWidth: '400px',
+          },
+        }
+      );
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleDecline = async (invitationId, groupName) => {
-    Modal.confirm({
-      title: (
-        <div className="flex items-center gap-2">
-          <CloseOutlined className="text-red-500" />
-          <span>Từ chối lời mời</span>
-        </div>
-      ),
-      content: (
-        <div className="mt-4">
-          <p>Bạn có chắc muốn từ chối lời mời tham gia nhóm</p>
-          <p className="font-semibold text-purple-600 mt-2">"{groupName}"?</p>
-        </div>
-      ),
-      okText: 'Từ chối',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        setProcessingId(invitationId);
-        try {
-          await groupService.declineInvitation(invitationId);
-          toast.success(
-            (t) => (
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CloseOutlined className="text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Đã từ chối lời mời</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Lời mời tham gia nhóm <span className="font-medium">"{groupName}"</span> đã bị từ chối
-                  </p>
-                </div>
-              </div>
-            ),
-            {
-              duration: 3000,
-              style: {
-                padding: '16px',
-                maxWidth: '450px',
-              },
-            }
-          );
-          // Refresh invitations list and adjust page if needed
-          await fetchInvitations();
-          const updatedInvitations = Array.isArray(invitations) 
-            ? invitations 
-            : Object.values(invitations || {});
-          const remainingInvitations = updatedInvitations.length - 1;
-          const maxPage = Math.ceil(remainingInvitations / pageSize);
-          if (currentPage > maxPage && maxPage > 0) {
-            setCurrentPage(maxPage);
-          }
-        } catch (error) {
-          console.error('❌ Error declining invitation:', error);
-          toast.error(
-            (t) => (
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CloseOutlined className="text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Không thể từ chối lời mời</p>
-                  <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
-                </div>
-              </div>
-            ),
-            {
-              duration: 3000,
-              style: {
-                padding: '16px',
-                maxWidth: '400px',
-              },
-            }
-          );
-        } finally {
-          setProcessingId(null);
+    console.log('🔴 handleDecline called:', { invitationId, groupName });
+    setSelectedInvitation({ id: invitationId, name: groupName });
+    setDeclineModalVisible(true);
+  };
+
+  const confirmDecline = async () => {
+    if (!selectedInvitation) return;
+    
+    console.log('✅ User confirmed decline');
+    setProcessingId(selectedInvitation.id);
+    setDeclineModalVisible(false);
+    
+    try {
+      console.log('📤 Calling declineInvitation API...');
+      const response = await groupService.declineInvitation(selectedInvitation.id);
+      console.log('✅ Decline response:', response);
+      
+      toast.success(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <CloseOutlined className="text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Đã từ chối lời mời</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Lời mời tham gia nhóm <span className="font-medium">"{selectedInvitation.name}"</span> đã bị từ chối
+              </p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 3000,
+          style: {
+            padding: '16px',
+            maxWidth: '450px',
+          },
         }
+      );
+      
+      // Refresh invitations list and adjust page if needed
+      await fetchInvitations();
+      const updatedInvitations = Array.isArray(invitations) 
+        ? invitations 
+        : Object.values(invitations || {});
+      const remainingInvitations = updatedInvitations.length - 1;
+      const maxPage = Math.ceil(remainingInvitations / pageSize);
+      if (currentPage > maxPage && maxPage > 0) {
+        setCurrentPage(maxPage);
       }
-    });
+    } catch (error) {
+      console.error('❌ Error declining invitation:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      toast.error(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <CloseOutlined className="text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Không thể từ chối lời mời</p>
+              <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 3000,
+          style: {
+            padding: '16px',
+            maxWidth: '400px',
+          },
+        }
+      );
+    } finally {
+      setProcessingId(null);
+      setSelectedInvitation(null);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -280,7 +264,7 @@ export default function InvitationList() {
             <MailOutlined className="text-white text-xl" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold text-gray-900">
               Lời mời tham gia nhóm
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">Các lời mời từ nhóm trưởng</p>
@@ -290,8 +274,7 @@ export default function InvitationList() {
               count={invitationsCount} 
               showZero={false}
               style={{ 
-                backgroundColor: '#7c3aed',
-                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
+                backgroundColor: '#7c3aed'
               }}
               className="ml-2"
             />
@@ -301,7 +284,7 @@ export default function InvitationList() {
           icon={<ReloadOutlined />} 
           onClick={fetchInvitations}
           loading={loading}
-          className="flex items-center gap-2 h-10 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:text-purple-600 transition-all shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 h-10 rounded-lg border border-gray-300 hover:border-purple-500 hover:text-purple-600"
         >
           Làm mới
         </Button>
@@ -309,7 +292,7 @@ export default function InvitationList() {
       
       {loading ? (
         /* Loading State */
-        <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+        <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <Spin size="large" />
           <p className="mt-4 text-gray-500">Đang tải lời mời...</p>
         </div>
@@ -318,12 +301,12 @@ export default function InvitationList() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg p-12"
+          className="bg-white rounded-xl shadow-md p-12"
         >
           <Empty
             image={
-              <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                <MailOutlined className="text-6xl text-purple-400" />
+              <div className="w-24 h-24 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+                <MailOutlined className="text-5xl text-purple-400" />
               </div>
             }
             description={
@@ -347,17 +330,17 @@ export default function InvitationList() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05, duration: 0.3 }}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-purple-200"
+                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200"
                 >
-                  {/* Card Header with Gradient */}
-                  <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 px-6 py-4 border-b-2 border-purple-100">
+                  {/* Card Header */}
+                  <div className="bg-purple-50 px-6 py-4 border-b border-purple-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 via-purple-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
-                          <TeamOutlined className="text-white text-2xl" />
+                        <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                          <TeamOutlined className="text-white text-xl" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900 hover:text-purple-600 transition-colors">
+                          <h3 className="text-lg font-bold text-gray-900">
                             {invitation.groupName || 'N/A'}
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
@@ -378,13 +361,13 @@ export default function InvitationList() {
                   <div className="p-6">
                     <div className="space-y-4">
                       {/* Inviter Info */}
-                      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                          <UserOutlined className="text-white text-lg" />
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                          <UserOutlined className="text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Người mời</p>
-                          <p className="font-semibold text-gray-900 text-base">
+                          <p className="text-xs text-gray-500 font-medium uppercase">Người mời</p>
+                          <p className="font-semibold text-gray-900">
                             {invitation.invitedBy || 'N/A'}
                           </p>
                           {invitation.inviteEmail && (
@@ -398,14 +381,14 @@ export default function InvitationList() {
                         <motion.div 
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100"
+                          className="p-4 bg-blue-50 rounded-lg border border-blue-200"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
                               <MailOutlined className="text-white text-sm" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Lời nhắn</p>
+                              <p className="text-xs text-gray-500 font-medium uppercase mb-1">Lời nhắn</p>
                               <p className="text-gray-700 leading-relaxed">{invitation.message}</p>
                             </div>
                           </div>
@@ -427,7 +410,7 @@ export default function InvitationList() {
                   </div>
 
                   {/* Card Footer with Actions */}
-                  <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-100">
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                     <div className="flex gap-3">
                       <Button
                         type="primary"
@@ -435,7 +418,7 @@ export default function InvitationList() {
                         onClick={() => handleAccept(invitation.id, invitation.groupName)}
                         loading={processingId === invitation.id}
                         disabled={processingId && processingId !== invitation.id}
-                        className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 rounded-xl shadow-lg hover:shadow-xl font-semibold text-base transition-all"
+                        className="flex-1 h-11 bg-green-500 hover:bg-green-600 border-0 rounded-lg font-semibold"
                         size="large"
                       >
                         Chấp nhận
@@ -443,10 +426,15 @@ export default function InvitationList() {
                       <Button
                         danger
                         icon={<CloseOutlined />}
-                        onClick={() => handleDecline(invitation.id, invitation.groupName)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🔴 BUTTON CLICKED - Decline button pressed!');
+                          handleDecline(invitation.id, invitation.groupName);
+                        }}
                         loading={processingId === invitation.id}
                         disabled={processingId && processingId !== invitation.id}
-                        className="flex-1 h-12 rounded-xl shadow-lg hover:shadow-xl font-semibold text-base transition-all"
+                        className="flex-1 h-11 rounded-lg font-semibold"
                         size="large"
                       >
                         Từ chối
@@ -464,9 +452,9 @@ export default function InvitationList() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-8 flex justify-center"
+              className="mt-6 flex justify-center"
             >
-              <div className="bg-white rounded-2xl shadow-lg px-6 py-4 border-2 border-gray-100">
+              <div className="bg-white rounded-lg shadow-md px-6 py-4 border border-gray-200">
                 <Pagination
                   current={currentPage}
                   total={invitationsCount}
@@ -474,41 +462,36 @@ export default function InvitationList() {
                   onChange={handlePageChange}
                   showSizeChanger
                   showTotal={(total, range) => (
-                    <span className="text-sm text-gray-600 font-medium">
-                      Hiển thị {range[0]}-{range[1]} trong tổng số {total} lời mời
+                    <span className="text-sm text-gray-600">
+                      Hiển thị {range[0]}-{range[1]} / {total} lời mời
                     </span>
                   )}
                   pageSizeOptions={['3', '5', '10', '20']}
-                  className="custom-pagination"
-                  itemRender={(page, type, originalElement) => {
-                    if (type === 'prev') {
-                      return (
-                        <Button 
-                          className="flex items-center gap-1 rounded-lg border-purple-200 hover:border-purple-400 hover:text-purple-600"
-                          icon={<LeftOutlined />}
-                        >
-                          Trước
-                        </Button>
-                      );
-                    }
-                    if (type === 'next') {
-                      return (
-                        <Button 
-                          className="flex items-center gap-1 rounded-lg border-purple-200 hover:border-purple-400 hover:text-purple-600"
-                        >
-                          Sau
-                          <RightOutlined />
-                        </Button>
-                      );
-                    }
-                    return originalElement;
-                  }}
                 />
               </div>
             </motion.div>
           )}
         </>
       )}
+      
+      {/* Decline Confirmation Modal */}
+      <Modal
+        title="Từ chối lời mời"
+        open={declineModalVisible}
+        onOk={confirmDecline}
+        onCancel={() => {
+          console.log('❌ User cancelled decline');
+          setDeclineModalVisible(false);
+          setSelectedInvitation(null);
+        }}
+        okText="Từ chối"
+        cancelText="Hủy"
+        okType="danger"
+        centered
+        confirmLoading={processingId === selectedInvitation?.id}
+      >
+        <p>Bạn có chắc muốn từ chối lời mời tham gia nhóm <strong>"{selectedInvitation?.name}"</strong>?</p>
+      </Modal>
     </div>
   );
 }
