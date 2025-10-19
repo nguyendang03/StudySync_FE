@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, message } from 'antd';
-import { UserAddOutlined, MailOutlined, MessageOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Button } from 'antd';
+import { UserAddOutlined, MailOutlined, MessageOutlined, SendOutlined, CloseOutlined } from '@ant-design/icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import groupService from '../../services/groupService';
 
 const { TextArea } = Input;
@@ -16,10 +18,32 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
       
       await groupService.inviteMember(groupId, {
         memberEmail: values.email,
-        message: values.message || `Tôi muốn mời bạn tham gia nhóm "${groupName}"`
+        message: values.message || undefined // Send undefined if empty
       });
 
-      message.success(`Đã gửi lời mời đến ${values.email}`);
+      toast.success(
+        (t) => (
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <UserAddOutlined className="text-white text-lg" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Lời mời đã được gửi! 🎉</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Đã gửi lời mời tham gia nhóm đến <span className="font-medium text-purple-600">{values.email}</span>
+              </p>
+            </div>
+          </div>
+        ),
+        {
+          duration: 4000,
+          style: {
+            padding: '16px',
+            maxWidth: '500px',
+          },
+        }
+      );
+
       form.resetFields();
       onClose();
       
@@ -31,11 +55,71 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
       console.error('❌ Error sending invitation:', error);
       
       if (error.response?.status === 404) {
-        message.error('Không tìm thấy người dùng với email này');
+        toast.error(
+          (t) => (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CloseOutlined className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Không tìm thấy người dùng</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Không tìm thấy tài khoản với email <span className="font-medium">{values.email}</span>
+                </p>
+              </div>
+            </div>
+          ),
+          {
+            duration: 4000,
+            style: {
+              padding: '16px',
+              maxWidth: '500px',
+            },
+          }
+        );
       } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.message || 'Người dùng đã là thành viên hoặc đã được mời');
+        const errorMsg = error.response?.data?.message || 'Người dùng đã là thành viên hoặc đã được mời';
+        toast.error(
+          (t) => (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <MailOutlined className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Không thể gửi lời mời</p>
+                <p className="text-sm text-gray-600 mt-1">{errorMsg}</p>
+              </div>
+            </div>
+          ),
+          {
+            duration: 4000,
+            style: {
+              padding: '16px',
+              maxWidth: '500px',
+            },
+          }
+        );
       } else {
-        message.error(error.message || 'Không thể gửi lời mời');
+        toast.error(
+          (t) => (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CloseOutlined className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Lỗi gửi lời mời</p>
+                <p className="text-sm text-gray-600 mt-1">{error.message || 'Có lỗi xảy ra, vui lòng thử lại'}</p>
+              </div>
+            </div>
+          ),
+          {
+            duration: 4000,
+            style: {
+              padding: '16px',
+              maxWidth: '500px',
+            },
+          }
+        );
       }
     } finally {
       setLoading(false);
@@ -48,104 +132,166 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
   };
 
   return (
-    <Modal
-      title={
-        <div className="flex items-center gap-3 text-xl font-bold">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-            <UserAddOutlined className="text-white text-xl" />
-          </div>
-          <div>
-            <div>Mời thành viên</div>
-            <div className="text-sm font-normal text-gray-500 mt-1">
-              Nhóm: {groupName}
-            </div>
-          </div>
-        </div>
-      }
-      open={open}
-      onCancel={handleCancel}
-      footer={null}
-      width={500}
-      centered
-      destroyOnClose
-      styles={{
-        content: {
-          borderRadius: '16px',
-          overflow: 'hidden'
-        },
-        header: {
-          background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(59, 130, 246, 0.05))',
-          borderBottom: '1px solid rgba(147, 51, 234, 0.1)',
-          padding: '20px 24px'
-        }
-      }}
-    >
-      <div className="pt-6">
-        <Form
-          form={form}
-          onFinish={handleSubmit}
-          layout="vertical"
-          size="large"
+    <AnimatePresence>
+      {open && (
+        <Modal
+          title={null}
+          open={open}
+          onCancel={handleCancel}
+          footer={null}
+          width={560}
+          centered
+          destroyOnClose
+          closeIcon={null}
+          styles={{
+            content: {
+              borderRadius: '24px',
+              overflow: 'hidden',
+              padding: 0,
+            },
+            body: {
+              padding: 0,
+            }
+          }}
         >
-          <Form.Item
-            name="email"
-            label={
-              <span className="text-gray-700 font-medium flex items-center gap-2">
-                <MailOutlined className="text-purple-500" />
-                Email người dùng
-              </span>
-            }
-            rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không hợp lệ!' }
-            ]}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
           >
-            <Input
-              placeholder="example@email.com"
-              className="rounded-xl border-gray-200 hover:border-purple-400 focus:border-purple-500"
-              prefix={<MailOutlined className="text-gray-400" />}
-            />
-          </Form.Item>
+            {/* Header with gradient */}
+            <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 p-8 pb-12">
+              <button
+                onClick={handleCancel}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm"
+              >
+                <CloseOutlined className="text-white text-sm" />
+              </button>
+              
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg">
+                  <UserAddOutlined className="text-white text-2xl" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Mời thành viên mới</h2>
+                  <p className="text-purple-100 text-sm">Gửi lời mời tham gia nhóm học tập</p>
+                </div>
+              </div>
+            </div>
 
-          <Form.Item
-            name="message"
-            label={
-              <span className="text-gray-700 font-medium flex items-center gap-2">
-                <MessageOutlined className="text-blue-500" />
-                Lời nhắn (tùy chọn)
-              </span>
-            }
-          >
-            <TextArea
-              placeholder={`Hãy tham gia nhóm "${groupName}" của chúng tôi để cùng học tập!`}
-              className="rounded-xl border-gray-200 hover:border-blue-400 focus:border-blue-500"
-              rows={4}
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
+            {/* Group Info Banner */}
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-8 py-4 border-b border-purple-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
+                <span className="text-sm text-gray-600">Nhóm:</span>
+                <span className="text-sm font-semibold text-purple-700">{groupName}</span>
+              </div>
+            </div>
 
-          <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
-            <Button
-              onClick={handleCancel}
-              className="flex-1 h-12 rounded-xl border-gray-300 hover:border-gray-400"
-              size="large"
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl shadow-lg hover:shadow-xl"
-              size="large"
-              icon={<UserAddOutlined />}
-            >
-              {loading ? 'Đang gửi...' : 'Gửi lời mời'}
-            </Button>
-          </div>
-        </Form>
-      </div>
-    </Modal>
+            {/* Form Content */}
+            <div className="p-8 bg-white">
+              <Form
+                form={form}
+                onFinish={handleSubmit}
+                layout="vertical"
+                size="large"
+              >
+                {/* Email Input with enhanced styling */}
+                <Form.Item
+                  name="email"
+                  label={
+                    <span className="text-gray-800 font-semibold flex items-center gap-2 text-base">
+                      <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <MailOutlined className="text-purple-600 text-sm" />
+                      </div>
+                      Email người dùng
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập email!' },
+                    { 
+                      type: 'email', 
+                      message: 'Email không hợp lệ!' 
+                    },
+                    {
+                      pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                      message: 'Email không đúng định dạng!'
+                    }
+                  ]}
+                  className="mb-6"
+                >
+                  <Input
+                    placeholder="Ví dụ: student@fpt.edu.vn"
+                    className="h-12 rounded-xl border-2 border-gray-200 hover:border-purple-300 focus:border-purple-500 transition-colors"
+                    prefix={
+                      <div className="mr-2 text-gray-400">
+                        <MailOutlined />
+                      </div>
+                    }
+                  />
+                </Form.Item>
+
+                {/* Optional Message Input */}
+                <Form.Item
+                  name="message"
+                  label={
+                    <span className="text-gray-800 font-semibold flex items-center gap-2 text-base">
+                      <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <MessageOutlined className="text-blue-600 text-sm" />
+                      </div>
+                      Lời nhắn
+                      <span className="text-xs font-normal text-gray-400 ml-1">(tùy chọn)</span>
+                    </span>
+                  }
+                >
+                  <TextArea
+                    placeholder={`Hãy tham gia nhóm "${groupName}" cùng học tập nhé! 📚`}
+                    className="rounded-xl border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 transition-colors"
+                    rows={4}
+                    maxLength={500}
+                    showCount={{
+                      formatter: ({ count, maxLength }) => (
+                        <span className="text-xs text-gray-400">
+                          {count}/{maxLength}
+                        </span>
+                      )
+                    }}
+                  />
+                </Form.Item>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-8">
+                  <Button
+                    onClick={handleCancel}
+                    className="flex-1 h-12 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 font-semibold transition-all"
+                    size="large"
+                  >
+                    Hủy bỏ
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 rounded-xl shadow-lg hover:shadow-xl font-semibold transition-all"
+                    size="large"
+                    icon={loading ? null : <SendOutlined />}
+                  >
+                    {loading ? 'Đang gửi...' : 'Gửi lời mời'}
+                  </Button>
+                </div>
+
+                {/* Info Text */}
+                <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                  <p className="text-xs text-gray-600 text-center leading-relaxed">
+                    💡 <span className="font-medium">Mẹo:</span> Người dùng sẽ nhận được thông báo qua email và có thể chấp nhận lời mời trong phần Hồ sơ
+                  </p>
+                </div>
+              </Form>
+            </div>
+          </motion.div>
+        </Modal>
+      )}
+    </AnimatePresence>
   );
 }
