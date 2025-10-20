@@ -299,7 +299,7 @@ const VideoCall = ({
   };
 
   const handleInviteSent = (invitedUsers) => {
-    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
+    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người 📧`);
     setShowInviteModal(false);
   };
 

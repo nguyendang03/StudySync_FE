@@ -90,7 +90,7 @@ const JoinCall = () => {
       });
       
       setIsCallActive(true);
-      toast.success('Đã tham gia cuộc gọi!');
+      toast.success('Đã tham gia cuộc gọi! 🎥');
     } catch (error) {
       console.error('Failed to join call:', error);
       toast.error('Không thể tham gia cuộc gọi');
@@ -101,7 +101,7 @@ const JoinCall = () => {
 
   const handleDeclineCall = () => {
     navigate('/');
-    toast.success('Đã từ chối tham gia cuộc gọi');
+    toast.success('Đã từ chối tham gia cuộc gọi ✋');
   };
 
   const handleCallEnd = () => {

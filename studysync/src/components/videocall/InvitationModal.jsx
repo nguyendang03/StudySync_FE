@@ -112,7 +112,7 @@ const InvitationModal = ({
 
         // Show results
         if (successful.length > 0) {
-          toast.success(`Đã gửi lời mời đến ${successful.length} người`);
+          toast.success(`Đã gửi lời mời đến ${successful.length} người 📧`);
         }
         
         if (failed.length > 0) {
@@ -135,7 +135,7 @@ const InvitationModal = ({
       } else if (inviteMethod === 'link') {
         // Copy link to clipboard
         navigator.clipboard.writeText(invitationLink);
-        toast.success('Đã sao chép link mời vào clipboard!');
+        toast.success('Đã sao chép link mời vào clipboard! 📋');
         
         setTimeout(() => {
           onInviteSent([]);
@@ -153,7 +153,7 @@ const InvitationModal = ({
 
   const copyInvitationLink = () => {
     navigator.clipboard.writeText(invitationLink);
-    toast.success('Đã sao chép link!');
+    toast.success('Đã sao chép link! 📋');
   };
 
   const shareInvitationLink = () => {

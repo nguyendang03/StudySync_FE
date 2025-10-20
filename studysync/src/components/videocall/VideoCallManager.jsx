@@ -108,7 +108,7 @@ const VideoCallManager = ({
       setIsCallActive(true);
       setIsInitiatorModalOpen(false);
       
-      toast.success('Cuộc gọi đã được khởi tạo!');
+      toast.success('Cuộc gọi đã được khởi tạo! 📞');
       console.log('✅ Call started with ID:', callId);
     } catch (error) {
       console.error('❌ Failed to start call:', error);
@@ -156,7 +156,7 @@ const VideoCallManager = ({
       // Remove the invitation after joining
       setPendingInvitations(prev => prev.filter(inv => inv.id !== invitation.id));
       
-      toast.success(`Đã tham gia cuộc gọi từ ${invitation.from.name}`);
+      toast.success(`Đã tham gia cuộc gọi từ ${invitation.from.name} 🎥`);
     } catch (error) {
       console.error('❌ Failed to join call:', error);
       toast.error('Không thể tham gia cuộc gọi. Vui lòng thử lại!');
@@ -165,7 +165,7 @@ const VideoCallManager = ({
 
   const handleDeclineInvitation = (invitationId) => {
     setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId));
-    toast.success('Đã từ chối lời mời');
+    toast.success('Đã từ chối lời mời ✋');
   };
 
   const handleCallEnd = async () => {
@@ -189,18 +189,18 @@ const VideoCallManager = ({
       setIsCallActive(false);
       setCurrentCallId(null);
       endStoreCall();
-      toast.success(activeCall?.isHost ? 'Cuộc gọi đã kết thúc' : 'Đã rời khỏi cuộc gọi');
+      toast.success(activeCall?.isHost ? 'Cuộc gọi đã kết thúc 📞' : 'Đã rời khỏi cuộc gọi 👋');
     }
   };
 
   const handleInviteSent = (invitedUsers) => {
-    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
+    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người 📧`);
     setIsInviteModalOpen(false);
   };
 
   const copyCallLink = () => {
     navigator.clipboard.writeText(callLink);
-    toast.success('Đã sao chép link cuộc gọi!');
+    toast.success('Đã sao chép link cuộc gọi! 📋');
   };
 
   const shareCallLink = () => {

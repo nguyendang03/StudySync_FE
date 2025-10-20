@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Spin, Button } from 'antd';
+import { Spin, Button, Badge } from 'antd';
 import toast from 'react-hot-toast';
 import { VideoCallButton, VideoCallManager } from '../../components/videocall';
 import { useAuthStore } from '../../stores';
 import groupService from '../../services/groupService';
+import videoCallService from '../../services/videoCallService';
 import GroupInvitationsManager from '../../components/groups/GroupInvitationsManager';
 import InviteMemberModal from '../../components/groups/InviteMemberModal';
 
@@ -20,6 +21,9 @@ export default function GroupDetail() {
   const [error, setError] = useState(null);
   const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isLeavingGroup, setIsLeavingGroup] = useState(false);
+  const [activeCalls, setActiveCalls] = useState([]);
+  const [isJoiningCall, setIsJoiningCall] = useState(false);
 
   useEffect(() => {
     if (id && isAuthenticated && !hasFetchedDetail) {
@@ -27,6 +31,34 @@ export default function GroupDetail() {
     }
   }, [id, isAuthenticated]);
 
+  // Check if current user is the group leader
+  // Use user.id from the user object, fallback to checking members array
+  const currentUserId = user?.data?.id;
+  const leaderId = groupData?.leaderId;
+  
+  // If user.id is undefined, try to find it in the members array
+  const userInGroup = !currentUserId && groupData?.members?.find(m => 
+    m.user?.email === user?.email || m.userId === user?.userId
+  );
+  
+  const effectiveUserId = currentUserId || userInGroup?.user?.id || userInGroup?.userId;
+  
+  const isHost = effectiveUserId && leaderId && (
+    leaderId === effectiveUserId || 
+    String(leaderId) === String(effectiveUserId)
+  );
+  
+
+  // Poll for active calls every 10 seconds
+  useEffect(() => {
+    if (groupData?.id && !isHost) {
+      fetchActiveCalls();
+      const interval = setInterval(fetchActiveCalls, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [groupData?.id, isHost]);
+
+  
   const fetchGroupDetail = async () => {
     try {
       setLoading(true);
@@ -71,22 +103,57 @@ export default function GroupDetail() {
     }
   };
 
-  // Check if current user is the group leader
-  // Use user.id from the user object, fallback to checking members array
-  const currentUserId = user?.data?.id;
-  const leaderId = groupData?.leaderId;
-  
-  // If user.id is undefined, try to find it in the members array
-  const userInGroup = !currentUserId && groupData?.members?.find(m => 
-    m.user?.email === user?.email || m.userId === user?.userId
-  );
-  
-  const effectiveUserId = currentUserId || userInGroup?.user?.id || userInGroup?.userId;
-  
-  const isHost = effectiveUserId && leaderId && (
-    leaderId === effectiveUserId || 
-    String(leaderId) === String(effectiveUserId)
-  );
+  const fetchActiveCalls = async () => {
+    try {
+      console.log('🔍 Fetching active calls for group:', id);
+      const response = await videoCallService.getGroupActiveCalls(id);
+      console.log('📥 Active calls response:', response);
+      
+      // Backend transforms response to: { data: VideoCall[], statusCode, message }
+      // Axios wraps it again: { data: { data: VideoCall[], ... } }
+      const rawData = response?.data?.data || response?.data || response;
+      console.log('🔎 Extracted raw data:', rawData);
+      
+      // Store the raw data directly (can be array or single object)
+      setActiveCalls(rawData || []);
+      console.log('✅ Set activeCalls to:', rawData);
+    } catch (error) {
+      console.error('❌ Error fetching active calls:', error);
+      setActiveCalls([]);
+    }
+  };
+
+  const handleJoinActiveCall = async (call) => {
+    try {
+      setIsJoiningCall(true);
+      console.log('👋 Attempting to join call:', call);
+      
+      // Generate a peer ID for this user
+      const peerId = `peer_${user?.data?.id || user?.id}_${Date.now()}`;
+      console.log('🔑 Generated peerId:', peerId);
+      
+      // Join the call via API first
+      const joinResponse = await videoCallService.joinCall(call.id, { 
+        callId: call.id,
+        peerId 
+      });
+      console.log('✅ Join response:', joinResponse);
+      
+      // Navigate to the call page
+      const callLink = `/join-call/${call.id}`;
+      console.log('🔗 Navigating to:', callLink);
+      navigate(callLink);
+      
+      toast.success('Đang tham gia cuộc gọi... 🎥');
+    } catch (error) {
+      console.error('❌ Error joining call:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Vui lòng thử lại';
+      toast.error(`Không thể tham gia cuộc gọi. ${errorMsg}`);
+    } finally {
+      setIsJoiningCall(false);
+    }
+  };
+
   
   console.log('🔍 Leader check:', {
     userObject: user,
@@ -124,6 +191,28 @@ export default function GroupDetail() {
 
   const handleGoBack = () => {
     navigate('/my-groups');
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn rời khỏi nhóm này?')) {
+      return;
+    }
+
+    try {
+      setIsLeavingGroup(true);
+      await groupService.leaveGroup(id);
+      toast.success(`Đã rời khỏi nhóm "${groupData.groupName || groupData.name}" 👋`);
+      
+      // Redirect to groups list after leaving
+      setTimeout(() => {
+        navigate('/my-groups');
+      }, 1000);
+    } catch (error) {
+      console.error('Error leaving group:', error);
+      toast.error('Không thể rời nhóm. ' + (error.message || 'Vui lòng thử lại'));
+    } finally {
+      setIsLeavingGroup(false);
+    }
   };
 
   // Loading state
@@ -223,6 +312,19 @@ export default function GroupDetail() {
                           Mời thành viên
                         </Button>
                       )}
+
+                      {/* Leave Group Button - Only for Members (not leaders) */}
+                      {!isHost && (
+                        <Button
+                          danger
+                          onClick={handleLeaveGroup}
+                          loading={isLeavingGroup}
+                          className="ml-4 border-0 rounded-full shadow-lg hover:shadow-xl"
+                          size="small"
+                        >
+                          Rời nhóm
+                        </Button>
+                      )}
                                            
                       <div className="ml-2 px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-600">
                         ✓ Đã tham gia
@@ -246,28 +348,109 @@ export default function GroupDetail() {
                     </div>
                   </div>
 
-                  {/* Video Call Section */}
-                  <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                    <div className="flex items-center space-x-3 mb-4 hover:scale-105 transition-transform duration-200">
-                      <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM5 8a1 1 0 000 2h8a1 1 0 100-2H5z"/>
-                      </svg>
-                      <h2 className="text-lg font-bold text-purple-600">Cuộc gọi video:</h2>
+                  {/* Video Call Section - Only for Leaders */}
+                  {isHost && (
+                    <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                      <div className="flex items-center space-x-3 mb-4 hover:scale-105 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM5 8a1 1 0 000 2h8a1 1 0 100-2H5z"/>
+                        </svg>
+                        <h2 className="text-lg font-bold text-purple-600">Cuộc gọi video:</h2>
+                      </div>
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <VideoCallManager
+                          groupId={groupData.id}
+                          groupName={groupData.groupName || groupData.name}
+                          members={transformedMembers}
+                        />
+                      </div>
                     </div>
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <VideoCallManager
-                        groupId={groupData.id}
-                        groupName={groupData.groupName || groupData.name}
-                        members={transformedMembers}
-                      />
-                    </div>
-                  </div>
+                  )}
+
+                  {/* Active Calls - For Members to Join */}
+                  {!isHost && (() => {
+                    // Convert to array: works for objects, arrays, or single object
+                    const callsArray = activeCalls && typeof activeCalls === 'object' 
+                      ? (activeCalls.id ? [activeCalls] : Object.values(activeCalls).filter(item => item?.id))
+                      : [];
+                    
+                    const hasActiveCalls = callsArray.length > 0;
+                    
+                    return (
+                      <div className={`transition-all duration-500 delay-1000 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <VideoCameraOutlined className="text-purple-600 text-xl" />
+                            <h2 className="text-lg font-bold text-purple-600">Cuộc gọi video:</h2>
+                            {hasActiveCalls && (
+                              <Badge count={callsArray.length} className="ml-2" />
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {hasActiveCalls ? 'Đang có cuộc gọi' : 'Chưa có cuộc gọi nào'}
+                          </span>
+                        </div>
+                        
+                        {/* Render calls using Object.values() */}
+                        {hasActiveCalls ? (
+                          <div className="space-y-3">
+                            {callsArray.map((call) => (
+                              <div
+                                key={call.id}
+                                className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-lg"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3 mb-2">
+                                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                      <h3 className="text-lg font-bold text-gray-800">
+                                        {call.callTitle || 'Cuộc gọi nhóm'}
+                                      </h3>
+                                    </div>
+                                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                      <div className="flex items-center space-x-1">
+                                        <UserOutlined />
+                                        <span>{call.participants?.filter(p => p.isActive).length || 0} người tham gia</span>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <PhoneOutlined />
+                                        <span>Bắt đầu {new Date(call.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="primary"
+                                    size="large"
+                                    icon={<VideoCameraOutlined />}
+                                    onClick={() => handleJoinActiveCall(call)}
+                                    loading={isJoiningCall}
+                                    className="bg-gradient-to-r from-green-500 to-blue-500 border-0 rounded-full shadow-lg hover:shadow-xl px-8"
+                                  >
+                                    Tham gia ngay
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-200">
+                            <div className="text-gray-400 mb-3">
+                              <VideoCameraOutlined style={{ fontSize: '48px' }} />
+                            </div>
+                            <p className="text-gray-600 font-medium">Chưa có cuộc gọi nào đang diễn ra</p>
+                            <p className="text-gray-400 text-sm mt-2">Nhóm trưởng sẽ bắt đầu cuộc gọi khi sẵn sàng</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Group Invitations Manager - Only for Leaders */}
-                  
+                  {isHost && (
                     <div className={`transition-all duration-500 delay-1200 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
                       <GroupInvitationsManager groupId={groupData.id} />
                     </div>
+                  )}
                   
 
                   {/* Subject Section */}

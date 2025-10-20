@@ -94,7 +94,7 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ Registration successful');
-          toast.success('Đăng ký thành công!');
+          toast.success('Đăng ký thành công! 🎉');
           return response;
         } catch (error) {
           console.error('❌ Registration failed:', error.message);
@@ -113,7 +113,7 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ Email verification successful');
-          toast.success('Email đã được xác thực thành công!');
+          toast.success('Email đã được xác thực thành công! ✅');
           return response;
         } catch (error) {
           console.error('❌ Email verification failed:', error.message);
@@ -132,7 +132,7 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ OTP resent successfully');
-          toast.success('Mã OTP đã được gửi lại!');
+          toast.success('Mã OTP đã được gửi lại! 📧');
           return response;
         } catch (error) {
           console.error('❌ Resend OTP failed:', error.message);
@@ -212,7 +212,7 @@ const useAuthStore = create(
           error: null,
         });
         console.log('✅ Logout successful');
-        toast.success('Đăng xuất thành công!');
+        toast.success('Đăng xuất thành công! 👋');
       },
 
       // Clear error

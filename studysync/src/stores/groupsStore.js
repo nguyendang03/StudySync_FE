@@ -38,7 +38,7 @@ const useGroupsStore = create((set, get) => ({
         groups: groups.map(g => g.id === groupId ? updatedGroup : g)
       });
       
-      toast.success(`Đã tham gia nhóm "${group.name}"!`);
+      toast.success(`Đã tham gia nhóm "${group.name}"! 🎉`);
     }
   },
 
@@ -55,7 +55,7 @@ const useGroupsStore = create((set, get) => ({
         groups: groups.map(g => g.id === groupId ? updatedGroup : g)
       });
       
-      toast.success(`Đã rời khỏi nhóm "${group.name}"`);
+      toast.success(`Đã rời khỏi nhóm "${group.name}" 👋`);
     }
   },
 
@@ -80,7 +80,7 @@ const useGroupsStore = create((set, get) => ({
       myGroups: [newGroup, ...myGroups]
     });
 
-    toast.success(`Nhóm "${newGroup.name}" đã được tạo thành công!`);
+    toast.success(`Nhóm "${newGroup.name}" đã được tạo thành công! ✨`);
     return newGroup;
   },
 
@@ -93,7 +93,7 @@ const useGroupsStore = create((set, get) => ({
       myGroups: myGroups.map(g => g.id === groupId ? { ...g, ...updates } : g)
     });
     
-    toast.success('Thông tin nhóm đã được cập nhật!');
+    toast.success('Thông tin nhóm đã được cập nhật! ✅');
   },
 
   // Delete group
@@ -108,7 +108,7 @@ const useGroupsStore = create((set, get) => ({
     });
     
     if (group) {
-      toast.success(`Nhóm "${group.name}" đã được xóa`);
+      toast.success(`Nhóm "${group.name}" đã được xóa 🗑️`);
     }
   },
 

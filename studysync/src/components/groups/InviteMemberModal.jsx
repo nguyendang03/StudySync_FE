@@ -21,28 +21,9 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
         message: values.message || undefined // Send undefined if empty
       });
 
-      toast.success(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <UserAddOutlined className="text-white text-lg" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Lời mời đã được gửi! 🎉</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Đã gửi lời mời tham gia nhóm đến <span className="font-medium text-purple-600">{values.email}</span>
-              </p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 4000,
-          style: {
-            padding: '16px',
-            maxWidth: '500px',
-          },
-        }
-      );
+      toast.success(`Đã gửi lời mời tham gia nhóm đến ${values.email} 🎉`, {
+        duration: 4000,
+      });
 
       form.resetFields();
       onClose();
@@ -55,71 +36,12 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
       console.error('❌ Error sending invitation:', error);
       
       if (error.response?.status === 404) {
-        toast.error(
-          (t) => (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <CloseOutlined className="text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Không tìm thấy người dùng</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Không tìm thấy tài khoản với email <span className="font-medium">{values.email}</span>
-                </p>
-              </div>
-            </div>
-          ),
-          {
-            duration: 4000,
-            style: {
-              padding: '16px',
-              maxWidth: '500px',
-            },
-          }
-        );
+        toast.error(`Không tìm thấy tài khoản với email ${values.email}`);
       } else if (error.response?.status === 400) {
         const errorMsg = error.response?.data?.message || 'Người dùng đã là thành viên hoặc đã được mời';
-        toast.error(
-          (t) => (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <MailOutlined className="text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Không thể gửi lời mời</p>
-                <p className="text-sm text-gray-600 mt-1">{errorMsg}</p>
-              </div>
-            </div>
-          ),
-          {
-            duration: 4000,
-            style: {
-              padding: '16px',
-              maxWidth: '500px',
-            },
-          }
-        );
+        toast.error(`Không thể gửi lời mời: ${errorMsg}`);
       } else {
-        toast.error(
-          (t) => (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <CloseOutlined className="text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Lỗi gửi lời mời</p>
-                <p className="text-sm text-gray-600 mt-1">{error.message || 'Có lỗi xảy ra, vui lòng thử lại'}</p>
-              </div>
-            </div>
-          ),
-          {
-            duration: 4000,
-            style: {
-              padding: '16px',
-              maxWidth: '500px',
-            },
-          }
-        );
+        toast.error('Lỗi gửi lời mời. ' + (error.message || 'Vui lòng thử lại'));
       }
     } finally {
       setLoading(false);

@@ -62,12 +62,12 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('🔴 Socket connection error:', error);
-      toast.error('Không thể kết nối chat server');
+      toast.error('Không thể kết nối chat server 🔌');
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
       console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-      toast.success('Đã kết nối lại chat');
+      toast.success('Đã kết nối lại chat ✅');
       
       // Rejoin channel after reconnection
       if (channelName) {
@@ -77,7 +77,7 @@ class SocketService {
 
     this.socket.on('reconnect_failed', () => {
       console.error('🔴 Socket reconnection failed');
-      toast.error('Không thể kết nối lại chat server');
+      toast.error('Không thể kết nối lại chat server ❌');
     });
   }
 

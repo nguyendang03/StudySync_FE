@@ -161,7 +161,7 @@ export default function TaskDistribution() {
         ? { ...task, status: checked ? 'completed' : 'pending' }
         : task
     ));
-    toast.success(checked ? 'Task đã hoàn thành!' : 'Task đã đánh dấu chưa hoàn thành');
+    toast.success(checked ? 'Task đã hoàn thành! ✅' : 'Task đã đánh dấu chưa hoàn thành');
   };
 
   const handleCreateTask = async (values) => {
@@ -184,7 +184,7 @@ export default function TaskDistribution() {
       setTasks(prev => [...prev, newTask]);
       setIsModalOpen(false);
       form.resetFields();
-      toast.success('Task đã được tạo thành công!');
+      toast.success('Task đã được tạo thành công! 📝');
     } catch (error) {
       toast.error('Có lỗi xảy ra khi tạo task!');
     }
@@ -192,7 +192,7 @@ export default function TaskDistribution() {
 
   const handleDeleteTask = (taskId) => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
-    toast.success('Task đã được xóa!');
+    toast.success('Task đã được xóa! 🗑️');
   };
 
   const getPriorityColor = (priority) => {
