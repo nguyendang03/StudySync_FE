@@ -139,8 +139,9 @@ export default function GroupDetail() {
       });
       console.log('✅ Join response:', joinResponse);
       
-      // Navigate to the call page
-      const callLink = `/join-call/${call.id}`;
+      // Navigate to the call page with group name as query parameter
+      const groupName = encodeURIComponent(groupData?.groupName || groupData?.name || 'Nhóm học tập');
+      const callLink = `/join-call/${call.id}?group=${groupName}`;
       console.log('🔗 Navigating to:', callLink);
       navigate(callLink);
       
