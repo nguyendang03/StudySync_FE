@@ -107,23 +107,39 @@ export default function VideoCallChat({
       return;
     }
 
+    // CRITICAL: Auto-join the chat room immediately when component opens
+    const userId = user?.data?.id || user?.id;
+    const userName = user?.data?.username || user?.username || user?.data?.email || user?.email;
+    
+    console.log('🎯 VideoCallChat initializing for leader/member:', { 
+      groupId, 
+      userId, 
+      userName,
+      isOpen 
+    });
+
     // Try to connect to socket
     try {
       console.log('🔌 Attempting to connect to chat for group:', groupId);
-      const socket = chatService.connect(user.id, groupId);
+      const socket = chatService.connect(userId, groupId);
       
-      // Check connection after a delay
+      // CRITICAL: Explicitly join the room after connection
+      // This ensures both leader and members are in the same WebSocket room
       setTimeout(() => {
+        console.log('🚪 Explicitly joining chat room for group:', groupId);
+        chatService.joinGroup(groupId);
+        
+        // Check connection status
         if (chatService.isSocketConnected()) {
           setIsConnected(true);
           setConnectionError(false);
-          console.log('✅ Socket connected successfully');
+          console.log('✅ Socket connected and joined room successfully');
         } else {
           setIsConnected(false);
-          setConnectionError(false); // Don't show error if we have REST API fallback
+          setConnectionError(false);
           console.warn('⚠️ Socket not connected - using REST API fallback');
         }
-      }, 1000);
+      }, 500); // Small delay to ensure connection is established
 
       // Listen for messages - includes duplicate check
       chatService.onMessage((messageData) => {
@@ -158,29 +174,31 @@ export default function VideoCallChat({
         }
       });
 
-      // Listen for user joined
-      chatService.onUserJoined((data) => {
-        const systemMessage = {
-          id: `system_${Date.now()}`,
-          type: 'system',
-          message: `${data.userName} đã tham gia cuộc gọi`,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, systemMessage]);
-        scrollToBottom();
-      });
+      // Listen for user joined (commented out - too many notifications)
+      // chatService.onUserJoined((data) => {
+      //   console.log('👋 User joined event received:', data);
+      //   const systemMessage = {
+      //     id: `system_${Date.now()}`,
+      //     type: 'system',
+      //     message: `${data.userName || 'User'} đã tham gia cuộc gọi`,
+      //     timestamp: Date.now()
+      //   };
+      //   setMessages(prev => [...prev, systemMessage]);
+      //   scrollToBottom();
+      // });
 
-      // Listen for user left
-      chatService.onUserLeft((data) => {
-        const systemMessage = {
-          id: `system_${Date.now()}`,
-          type: 'system',
-          message: `${data.userName} đã rời khỏi cuộc gọi`,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, systemMessage]);
-        scrollToBottom();
-      });
+      // Listen for user left (commented out - too many notifications)
+      // chatService.onUserLeft((data) => {
+      //   console.log('👋 User left event received:', data);
+      //   const systemMessage = {
+      //     id: `system_${Date.now()}`,
+      //     type: 'system',
+      //     message: `${data.userName || 'User'} đã rời khỏi cuộc gọi`,
+      //     timestamp: Date.now()
+      //   };
+      //   setMessages(prev => [...prev, systemMessage]);
+      //   scrollToBottom();
+      // });
 
     } catch (error) {
       console.error('❌ Failed to connect to chat server:', error);
@@ -189,11 +207,12 @@ export default function VideoCallChat({
     }
 
     return () => {
+      console.log('🧹 Cleaning up VideoCallChat - leaving group:', groupId);
       if (groupId) {
         chatService.leaveGroup(groupId);
       }
     };
-  }, [groupId, user, isOpen]);
+  }, [groupId, user, isOpen, onNewMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

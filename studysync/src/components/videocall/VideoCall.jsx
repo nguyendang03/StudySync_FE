@@ -33,6 +33,12 @@ const VideoCall = ({
   const [isScreenShareFullscreen, setIsScreenShareFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Helper function to get username from UID
+  const getUsernameByUid = (uid) => {
+    const member = groupMembers.find(m => m.id === uid || m.uid === uid);
+    return member?.username || member?.email?.split('@')[0] || `Người dùng ${uid}`;
+  };
   
   const localVideoRef = useRef(null);
   const localScreenRef = useRef(null);
@@ -452,7 +458,7 @@ const VideoCall = ({
                     {/* Remote Screen Share Indicator */}
                     <div className="absolute top-4 left-4 flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
                       <Monitor className="w-5 h-5" />
-                      <span className="font-medium">Người dùng {screenShareUser?.uid} đang chia sẻ</span>
+                      <span className="font-medium">{getUsernameByUid(screenShareUser?.uid)} đang chia sẻ màn hình</span>
                       <div className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     </div>
                     
@@ -475,7 +481,9 @@ const VideoCall = ({
             </div>
 
             {/* Video Thumbnails Sidebar During Screen Share */}
-            <div className="absolute top-4 right-4 space-y-3 max-h-[calc(100%-2rem)] overflow-y-auto w-64">
+            <div className={`absolute top-4 space-y-3 max-h-[calc(100%-2rem)] overflow-y-auto w-64 transition-all duration-300 ${
+              isChatOpen ? 'right-[25rem]' : 'right-4'
+            }`}>
               {/* Local Video Thumbnail */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -536,7 +544,7 @@ const VideoCall = ({
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
                     <div className="flex items-center justify-between">
                       <span className="text-white text-sm font-medium truncate">
-                        Người dùng {user.uid}
+                        {getUsernameByUid(user.uid)}
                       </span>
                       <div className={`p-1 rounded-full ${user.hasAudio ? 'bg-green-600' : 'bg-red-600'}`}>
                         {user.hasAudio ? (
@@ -583,7 +591,9 @@ const VideoCall = ({
 
             {/* Remote Videos Grid */}
             {remoteUsers.length > 0 && (
-              <div className="absolute top-4 right-4 space-y-3 max-h-96 overflow-y-auto">
+              <div className={`absolute top-4 space-y-3 max-h-96 overflow-y-auto transition-all duration-300 ${
+                isChatOpen ? 'right-[25rem]' : 'right-4'
+              }`}>
                 {remoteUsers.map((user, index) => (
                   <motion.div
                     key={user.uid}
@@ -604,7 +614,7 @@ const VideoCall = ({
                       </div>
                     )}
                     <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
-                      Người dùng {user.uid}
+                      {getUsernameByUid(user.uid)}
                     </div>
                     {/* Audio indicator */}
                     <div className="absolute top-2 right-2">

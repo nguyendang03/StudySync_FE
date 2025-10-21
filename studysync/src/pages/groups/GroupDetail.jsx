@@ -24,6 +24,7 @@ export default function GroupDetail() {
   const [isLeavingGroup, setIsLeavingGroup] = useState(false);
   const [activeCalls, setActiveCalls] = useState([]);
   const [isJoiningCall, setIsJoiningCall] = useState(false);
+  const [refreshInvitations, setRefreshInvitations] = useState(0);
 
   useEffect(() => {
     if (id && isAuthenticated && !hasFetchedDetail) {
@@ -449,7 +450,10 @@ export default function GroupDetail() {
                   {/* Group Invitations Manager - Only for Leaders */}
                   {isHost && (
                     <div className={`transition-all duration-500 delay-1200 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                      <GroupInvitationsManager groupId={groupData.id} />
+                      <GroupInvitationsManager 
+                        groupId={groupData.id} 
+                        refreshTrigger={refreshInvitations}
+                      />
                     </div>
                   )}
                   
@@ -560,8 +564,9 @@ export default function GroupDetail() {
         groupId={groupData?.id}
         groupName={groupData?.groupName || groupData?.name}
         onSuccess={() => {
-          // Optionally refresh group data to update member count
+          // Refresh group data and invitations list
           fetchGroupDetail();
+          setRefreshInvitations(prev => prev + 1);
         }}
       />
     </div>
