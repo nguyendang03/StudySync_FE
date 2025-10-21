@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Spin, Button, Badge } from 'antd';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import { VideoCallButton, VideoCallManager } from '../../components/videocall';
 import { useAuthStore } from '../../stores';
 import groupService from '../../services/groupService';
@@ -82,7 +82,7 @@ export default function GroupDetail() {
       
       // Only show toast on first successful fetch
       if (!hasFetchedDetail) {
-        toast.success(`Đã tải thông tin nhóm ${data.groupName || data.name}`);
+        showToast.success(`Đã tải thông tin nhóm ${data.groupName || data.name}`);
       }
     } catch (error) {
       console.error('Error fetching group detail:', error);
@@ -91,11 +91,11 @@ export default function GroupDetail() {
       // Only show error toasts if we haven't shown them before
       if (!hasFetchedDetail) {
         if (error.response?.status === 403) {
-          toast.error('Bạn không có quyền xem nhóm này');
+          showToast.error('Bạn không có quyền xem nhóm này');
         } else if (error.response?.status === 404) {
-          toast.error('Không tìm thấy nhóm');
+          showToast.error('Không tìm thấy nhóm');
         } else {
-          toast.error('Không thể tải thông tin nhóm');
+          showToast.error('Không thể tải thông tin nhóm');
         }
       }
     } finally {
@@ -145,11 +145,11 @@ export default function GroupDetail() {
       console.log('🔗 Navigating to:', callLink);
       navigate(callLink);
       
-      toast.success('Đang tham gia cuộc gọi... 🎥');
+      commonToasts.callJoined();
     } catch (error) {
       console.error('❌ Error joining call:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Vui lòng thử lại';
-      toast.error(`Không thể tham gia cuộc gọi. ${errorMsg}`);
+      showToast.error(`Không thể tham gia cuộc gọi. ${errorMsg}`);
     } finally {
       setIsJoiningCall(false);
     }
@@ -202,7 +202,7 @@ export default function GroupDetail() {
     try {
       setIsLeavingGroup(true);
       await groupService.leaveGroup(id);
-      toast.success(`Đã rời khỏi nhóm "${groupData.groupName || groupData.name}" 👋`);
+      commonToasts.groupLeft(groupData.groupName || groupData.name);
       
       // Redirect to groups list after leaving
       setTimeout(() => {
@@ -210,7 +210,7 @@ export default function GroupDetail() {
       }, 1000);
     } catch (error) {
       console.error('Error leaving group:', error);
-      toast.error('Không thể rời nhóm. ' + (error.message || 'Vui lòng thử lại'));
+      showToast.error('Không thể rời nhóm. ' + (error.message || 'Vui lòng thử lại'));
     } finally {
       setIsLeavingGroup(false);
     }

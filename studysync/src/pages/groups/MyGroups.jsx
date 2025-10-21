@@ -20,7 +20,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown, Spin } from 'antd';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import { Users, Award, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { VideoCallButton } from '../../components/videocall';
@@ -90,11 +90,9 @@ export default function MyGroups() {
       // Only show toast if we haven't shown it before AND showToast is true
       if (!hasFetched && showToast) {
         if (transformedGroups.length > 0) {
-          toast.success(`✅ Đã tải ${transformedGroups.length} nhóm của bạn`);
+          showToast.success(`Đã tải ${transformedGroups.length} nhóm của bạn`);
         } else {
-          toast('Bạn chưa tham gia nhóm nào. Hãy tạo nhóm mới!', {
-            icon: 'ℹ️',
-          });
+          showToast.info('Bạn chưa tham gia nhóm nào. Hãy tạo nhóm mới!');
         }
       }
     } catch (error) {
@@ -103,11 +101,11 @@ export default function MyGroups() {
       // Only show error toasts if showToast is true
       if (showToast) {
         if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
-          toast.error('🔌 Không thể kết nối đến server. Vui lòng kiểm tra backend.');
+          showToast.error('Không thể kết nối đến server. Vui lòng kiểm tra backend.');
         } else if (error.message?.includes('Authentication required') || error.message?.includes('Session expired')) {
-          toast.error('🔑 Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+          showToast.error('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
         } else {
-          toast.error(`❌ Lỗi tải nhóm: ${error.message}`);
+          showToast.error(`Lỗi tải nhóm: ${error.message}`);
         }
       }
       
@@ -178,7 +176,7 @@ export default function MyGroups() {
       
       console.log('✅ Group created successfully:', response);
       
-      toast.success(`✅ Đã tạo nhóm "${groupData.groupName}" thành công!`);
+      commonToasts.groupCreated(groupData.groupName);
       
       // Refresh the groups list (without showing toast to avoid duplicates)
       setHasFetched(false);
@@ -187,7 +185,7 @@ export default function MyGroups() {
       setIsCreateModalOpen(false);
     } catch (error) {
       console.error('❌ Error creating group:', error);
-      toast.error(`❌ Lỗi tạo nhóm: ${error.message || 'Không thể tạo nhóm'}`);
+      showToast.error(`Lỗi tạo nhóm: ${error.message || 'Không thể tạo nhóm'}`);
     }
   };
 
@@ -196,7 +194,7 @@ export default function MyGroups() {
       setHasFetched(false); // Allow toast on manual refresh
       fetchMyGroups();
     } else {
-      toast.error('Vui lòng đăng nhập để tải danh sách nhóm');
+      showToast.error('Vui lòng đăng nhập để tải danh sách nhóm');
     }
   };
 
@@ -522,7 +520,7 @@ export default function MyGroups() {
               <Button 
                 size="large"
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white px-8"
-                onClick={() => toast.success('Đang tải thêm nhóm...')}
+                onClick={() => showToast.success('Đang tải thêm nhóm...')}
               >
                 HIỂN THỊ THÊM...
               </Button>

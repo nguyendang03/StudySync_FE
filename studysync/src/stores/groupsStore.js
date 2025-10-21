@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../utils/toast';
 
 const useGroupsStore = create((set, get) => ({
   // State
@@ -38,7 +38,7 @@ const useGroupsStore = create((set, get) => ({
         groups: groups.map(g => g.id === groupId ? updatedGroup : g)
       });
       
-      toast.success(`Đã tham gia nhóm "${group.name}"! 🎉`);
+      commonToasts.groupJoined(group.name);
     }
   },
 
@@ -55,7 +55,7 @@ const useGroupsStore = create((set, get) => ({
         groups: groups.map(g => g.id === groupId ? updatedGroup : g)
       });
       
-      toast.success(`Đã rời khỏi nhóm "${group.name}" 👋`);
+      commonToasts.groupLeft(group.name);
     }
   },
 
@@ -80,7 +80,7 @@ const useGroupsStore = create((set, get) => ({
       myGroups: [newGroup, ...myGroups]
     });
 
-    toast.success(`Nhóm "${newGroup.name}" đã được tạo thành công! ✨`);
+    commonToasts.groupCreated(newGroup.name);
     return newGroup;
   },
 
@@ -93,7 +93,7 @@ const useGroupsStore = create((set, get) => ({
       myGroups: myGroups.map(g => g.id === groupId ? { ...g, ...updates } : g)
     });
     
-    toast.success('Thông tin nhóm đã được cập nhật! ✅');
+    showToast.success('Thông tin nhóm đã được cập nhật!');
   },
 
   // Delete group
@@ -108,7 +108,7 @@ const useGroupsStore = create((set, get) => ({
     });
     
     if (group) {
-      toast.success(`Nhóm "${group.name}" đã được xóa 🗑️`);
+      commonToasts.groupDeleted(group.name);
     }
   },
 
