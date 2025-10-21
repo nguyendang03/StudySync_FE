@@ -5,7 +5,7 @@ import {
   Phone, MessageCircle, Copy, Link as LinkIcon,
   Check, Clock, ExternalLink, AlertCircle
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
 const InvitationModal = ({ 
@@ -76,7 +76,7 @@ const InvitationModal = ({
 
   const handleSendInvitations = async () => {
     if (inviteMethod === 'email' && emailList.length === 0) {
-      toast.error('Vui lòng thêm ít nhất một email');
+      showToast.error('Vui lòng thêm ít nhất một email');
       return;
     }
 
@@ -112,7 +112,7 @@ const InvitationModal = ({
 
         // Show results
         if (successful.length > 0) {
-          toast.success(`Đã gửi lời mời đến ${successful.length} người 📧`);
+          showToast.success(`Đã gửi lời mời đến ${successful.length} người`);
         }
         
         if (failed.length > 0) {
@@ -121,7 +121,7 @@ const InvitationModal = ({
             return emailList[failedIndex];
           });
           console.error('❌ Failed to send to:', failedEmails);
-          toast.error(`Không thể gửi đến ${failed.length} email. Vui lòng kiểm tra lại.`);
+          showToast.error(`Không thể gửi đến ${failed.length} email. Vui lòng kiểm tra lại.`);
         }
 
         // Clear email list after sending
@@ -135,7 +135,7 @@ const InvitationModal = ({
       } else if (inviteMethod === 'link') {
         // Copy link to clipboard
         navigator.clipboard.writeText(invitationLink);
-        toast.success('Đã sao chép link mời vào clipboard! 📋');
+        commonToasts.linkCopied();
         
         setTimeout(() => {
           onInviteSent([]);
@@ -145,7 +145,7 @@ const InvitationModal = ({
     } catch (error) {
       console.error('❌ Failed to send invitations:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Không thể gửi lời mời';
-      toast.error(errorMessage);
+      showToast.error(errorMessage);
     } finally {
       setIsSending(false);
     }
@@ -153,7 +153,7 @@ const InvitationModal = ({
 
   const copyInvitationLink = () => {
     navigator.clipboard.writeText(invitationLink);
-    toast.success('Đã sao chép link! 📋');
+    commonToasts.linkCopied();
   };
 
   const shareInvitationLink = () => {

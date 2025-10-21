@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Form, Input, Button } from 'antd';
 import { UserAddOutlined, MailOutlined, MessageOutlined, SendOutlined, CloseOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
 const { TextArea } = Input;
@@ -21,7 +21,7 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
         message: values.message || undefined // Send undefined if empty
       });
 
-      toast.success(`Đã gửi lời mời tham gia nhóm đến ${values.email} 🎉`, {
+      showToast.success(`Đã gửi lời mời tham gia nhóm đến ${values.email}`, {
         duration: 4000,
       });
 
@@ -36,12 +36,12 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
       console.error('❌ Error sending invitation:', error);
       
       if (error.response?.status === 404) {
-        toast.error(`Không tìm thấy tài khoản với email ${values.email}`);
+        showToast.error(`Không tìm thấy tài khoản với email ${values.email}`);
       } else if (error.response?.status === 400) {
         const errorMsg = error.response?.data?.message || 'Người dùng đã là thành viên hoặc đã được mời';
-        toast.error(`Không thể gửi lời mời: ${errorMsg}`);
+        showToast.error(`Không thể gửi lời mời: ${errorMsg}`);
       } else {
-        toast.error('Lỗi gửi lời mời. ' + (error.message || 'Vui lòng thử lại'));
+        showToast.error('Lỗi gửi lời mời. ' + (error.message || 'Vui lòng thử lại'));
       }
     } finally {
       setLoading(false);

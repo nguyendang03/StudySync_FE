@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckOutlined, CloseOutlined, ReloadOutlined, MailOutlined, UserOutlined, ClockCircleOutlined, TeamOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Spin, Button, Modal, Empty, Badge, Pagination } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
 export default function InvitationList() {
@@ -27,7 +27,7 @@ export default function InvitationList() {
       setInvitations(invitationData || []);
     } catch (error) {
       console.error('❌ Error fetching invitations:', error);
-      toast.error('Không thể tải lời mời. ' + (error.message || 'Vui lòng thử lại sau'));
+      showToast.error('Không thể tải lời mời. ' + (error.message || 'Vui lòng thử lại sau'));
     } finally {
       setLoading(false);
     }
@@ -37,9 +37,7 @@ export default function InvitationList() {
     setProcessingId(invitationId);
     try {
       await groupService.acceptInvitation(invitationId);
-      toast.success(`Đã tham gia nhóm "${groupName}"! Chào mừng bạn 🎉`, {
-        duration: 4000,
-      });
+      commonToasts.groupJoined(groupName);
       // Refresh invitations list and reset to first page if needed
       await fetchInvitations();
       // If current page becomes empty after deletion, go to previous page
@@ -53,7 +51,7 @@ export default function InvitationList() {
       }
     } catch (error) {
       console.error('❌ Error accepting invitation:', error);
-      toast.error('Không thể chấp nhận lời mời. ' + (error.message || 'Vui lòng thử lại'));
+      showToast.error('Không thể chấp nhận lời mời. ' + (error.message || 'Vui lòng thử lại'));
     } finally {
       setProcessingId(null);
     }
@@ -73,7 +71,7 @@ export default function InvitationList() {
     try {
       const response = await groupService.declineInvitation(selectedInvitation.id);
       
-      toast.success(`Đã từ chối lời mời tham gia nhóm "${selectedInvitation.name}"`);
+      showToast.success(`Đã từ chối lời mời tham gia nhóm "${selectedInvitation.name}"`);
       
       // Refresh invitations list and adjust page if needed
       await fetchInvitations();
@@ -93,7 +91,7 @@ export default function InvitationList() {
         status: error.response?.status
       });
       
-      toast.error('Không thể từ chối lời mời. ' + (error.message || 'Vui lòng thử lại'));
+      showToast.error('Không thể từ chối lời mời. ' + (error.message || 'Vui lòng thử lại'));
     } finally {
       setProcessingId(null);
       setSelectedInvitation(null);
