@@ -1,25 +1,39 @@
-import React, { useState } from 'react';
-import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined, ReloadOutlined, UserAddOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Modal, Form, Input, Button, message } from 'antd';
-import toast from 'react-hot-toast';
+import { Modal, Form, Input, Button, message, Spin } from 'antd';
+import groupService from '../../services/groupService';
+import InviteMemberModal from '../groups/InviteMemberModal';
+import { useAuthStore } from '../../stores';
 
 export default function GroupList() {
-  const [groups, setGroups] = useState([
-    {
-      id: 1,
-      name: 'Tung Tung Tung Sahur',
-      subject: 'EXE101',
-      status: 'VÀO XEM',
-      members: 6,
-      progress: 75
-    }
-    // You can add more groups here
-  ]);
-
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [form] = Form.useForm();
   const [isCreating, setIsCreating] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const fetchGroups = async () => {
+    setLoading(true);
+    try {
+      const response = await groupService.getMyGroups();
+      const data = response?.data || response;
+      console.log('📚 My groups:', data);
+      setGroups(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('❌ Error fetching groups:', error);
+      message.error(error.message || 'Không thể tải danh sách nhóm');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateGroup = () => {
     setShowCreateForm(true);
@@ -28,24 +42,19 @@ export default function GroupList() {
   const handleCreateSubmit = async (values) => {
     setIsCreating(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await groupService.createGroup({
+        groupName: values.groupName,
+        groupSubject: values.subject,
+        description: values.description || ''
+      });
       
-      const newGroup = {
-        id: groups.length + 1,
-        name: values.groupName,
-        subject: values.subject,
-        status: 'VÀO XEM',
-        members: 1,
-        progress: 0
-      };
-      
-      setGroups([...groups, newGroup]);
+      message.success('Tạo nhóm thành công!');
       setShowCreateForm(false);
       form.resetFields();
-      toast.success('Tạo nhóm thành công!');
+      await fetchGroups(); // Refresh the list
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi tạo nhóm!');
+      console.error('❌ Error creating group:', error);
+      message.error(error.message || 'Có lỗi xảy ra khi tạo nhóm!');
     } finally {
       setIsCreating(false);
     }
@@ -79,20 +88,30 @@ export default function GroupList() {
           <TeamOutlined className="text-purple-600 text-3xl" />
           Danh sách nhóm
         </h2>
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
+        <div className="flex items-center gap-3">
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleCreateGroup}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl h-10 px-6 shadow-lg hover:shadow-xl"
-            size="large"
+            icon={<ReloadOutlined />}
+            onClick={fetchGroups}
+            loading={loading}
+            className="rounded-xl h-10 px-4"
           >
-            Tạo nhóm mới
+            Làm mới
           </Button>
-        </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreateGroup}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 border-0 rounded-xl h-10 px-6 shadow-lg hover:shadow-xl"
+              size="large"
+            >
+              Tạo nhóm mới
+            </Button>
+          </motion.div>
+        </div>
       </div>
       
       <motion.div 
@@ -117,63 +136,87 @@ export default function GroupList() {
         
         {/* Table Body */}
         <AnimatePresence>
-          <div className="divide-y divide-gray-100">
-            {groups.map((group, index) => (
-              <motion.div
-                key={group.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ backgroundColor: 'rgba(147, 51, 234, 0.02)' }}
-                className="px-6 py-4 transition-all duration-200"
-              >
-                <div className="grid grid-cols-5 gap-4 items-center">
-                  {/* STT */}
-                  <div className="text-gray-600 font-medium flex items-center gap-3">
-                    <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
-                      {index + 1}
-                    </span>
-                  </div>
-                  
-                  {/* Group Name */}
-                  <div className="text-gray-900 font-medium">
+          {loading ? (
+            <div className="px-6 py-16 text-center">
+              <Spin size="large" />
+              <p className="text-gray-500 mt-4">Đang tải danh sách nhóm...</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {groups.map((group, index) => (
+                <motion.div
+                  key={group.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ backgroundColor: 'rgba(147, 51, 234, 0.02)' }}
+                  className="px-6 py-4 transition-all duration-200"
+                >
+                  <div className="grid grid-cols-5 gap-4 items-center">
+                    {/* STT */}
+                    <div className="text-gray-600 font-medium flex items-center gap-3">
+                      <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
+                        {index + 1}
+                      </span>
+                    </div>
+                    
+                    {/* Group Name */}
+                    <div className="text-gray-900 font-medium">
+                      <div className="flex items-center gap-2">
+                        <BookOutlined className="text-purple-500" />
+                        {group.groupName || group.name}
+                      </div>
+                    </div>
+                    
+                    {/* Subject */}
+                    <div>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.groupSubject || group.subject)}`}>
+                        {group.groupSubject || group.subject}
+                      </span>
+                    </div>
+                    
+                    {/* Members */}
                     <div className="flex items-center gap-2">
-                      <BookOutlined className="text-purple-500" />
-                      {group.name}
+                      <TeamOutlined className="text-gray-400" />
+                      <span className="text-gray-600">{group.memberCount || group.members || 0} thành viên</span>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      {/* Invite button - only for leaders */}
+                      {user && group.leaderId === user.id && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            setShowInviteModal(true);
+                          }}
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-1"
+                          title="Mời thành viên"
+                        >
+                          <UserAddOutlined />
+                          Mời
+                        </motion.button>
+                      )}
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                      >
+                        VÀO XEM
+                      </motion.button>
                     </div>
                   </div>
-                  
-                  {/* Subject */}
-                  <div>
-                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.subject)}`}>
-                      {group.subject}
-                    </span>
-                  </div>
-                  
-                  {/* Members */}
-                  <div className="flex items-center gap-2">
-                    <TeamOutlined className="text-gray-400" />
-                    <span className="text-gray-600">{group.members} thành viên</span>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
-                    >
-                      {group.status}
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </AnimatePresence>
         
         {/* Empty State */}
-        {groups.length === 0 && (
+        {!loading && groups.length === 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -320,6 +363,20 @@ export default function GroupList() {
           </Form>
         </div>
       </Modal>
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        open={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setSelectedGroup(null);
+        }}
+        groupId={selectedGroup?.id}
+        groupName={selectedGroup?.groupName || selectedGroup?.name}
+        onSuccess={() => {
+          fetchGroups(); // Refresh list to update member counts
+        }}
+      />
     </motion.div>
   );
 }

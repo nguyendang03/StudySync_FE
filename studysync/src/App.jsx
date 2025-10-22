@@ -5,6 +5,7 @@ import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import Layout from './components/layout/Layout';
+import AdminLayout from './components/admin/AdminLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Lazy load all page components
@@ -25,7 +26,7 @@ const TaskDistribution = lazy(() => import('./pages/groups/TaskDistribution'));
 const AgoraDebugTest = lazy(() => import('./pages/common/AgoraDebugTest'));
 const VideoCall = lazy(() => import('./pages/common/VideoCall'));
 const JoinCall = lazy(() => import('./pages/common/JoinCall'));
-
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 function App() {
   return (
     <AuthProvider>
@@ -54,6 +55,47 @@ function App() {
                   </PublicRoute>
                 } 
               />
+              
+              {/* Admin Routes - Protected with AdminLayout */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<LoadingSpinner size="large" fullScreen={true} message="Đang tải trang quản trị..." />}>
+                      <AdminLayout />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              >
+                <Route 
+                  path="dashboard" 
+                  element={
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải dashboard..." />}>
+                      <AdminDashboard />
+                    </Suspense>
+                  } 
+                />
+                {/* Placeholder routes for other admin pages */}
+                <Route path="users" element={<div className="p-8"><h1 className="text-2xl font-bold">Users Management - Coming Soon</h1></div>} />
+                <Route path="admins" element={<div className="p-8"><h1 className="text-2xl font-bold">Admin Management - Coming Soon</h1></div>} />
+                <Route path="roles" element={<div className="p-8"><h1 className="text-2xl font-bold">Roles & Permissions - Coming Soon</h1></div>} />
+                <Route path="groups" element={<div className="p-8"><h1 className="text-2xl font-bold">Groups Management - Coming Soon</h1></div>} />
+                <Route path="messages" element={<div className="p-8"><h1 className="text-2xl font-bold">Messages - Coming Soon</h1></div>} />
+                <Route path="posts" element={<div className="p-8"><h1 className="text-2xl font-bold">Posts & Resources - Coming Soon</h1></div>} />
+                <Route path="video-calls" element={<div className="p-8"><h1 className="text-2xl font-bold">Video Calls - Coming Soon</h1></div>} />
+                <Route path="reports" element={<div className="p-8"><h1 className="text-2xl font-bold">Reports - Coming Soon</h1></div>} />
+                <Route path="activity" element={<div className="p-8"><h1 className="text-2xl font-bold">User Activity - Coming Soon</h1></div>} />
+                <Route path="health" element={<div className="p-8"><h1 className="text-2xl font-bold">System Health - Coming Soon</h1></div>} />
+                <Route path="tasks" element={<div className="p-8"><h1 className="text-2xl font-bold">Scheduled Tasks - Coming Soon</h1></div>} />
+                <Route path="notifications" element={<div className="p-8"><h1 className="text-2xl font-bold">Notifications - Coming Soon</h1></div>} />
+                <Route path="flags" element={<div className="p-8"><h1 className="text-2xl font-bold">Reports & Flags - Coming Soon</h1></div>} />
+                <Route path="achievements" element={<div className="p-8"><h1 className="text-2xl font-bold">Achievements - Coming Soon</h1></div>} />
+                <Route path="database" element={<div className="p-8"><h1 className="text-2xl font-bold">Database - Coming Soon</h1></div>} />
+                <Route path="settings" element={<div className="p-8"><h1 className="text-2xl font-bold">System Settings - Coming Soon</h1></div>} />
+                {/* Redirect /admin to /admin/dashboard */}
+                <Route index element={<Navigate to="dashboard" replace />} />
+              </Route>
+
               <Route 
                 path="/verify-email" 
                 element={

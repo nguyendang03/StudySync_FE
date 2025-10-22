@@ -14,7 +14,8 @@ import {
   FilterOutlined,
   SortAscendingOutlined,
   HeartFilled,
-  StarFilled
+  StarFilled,
+  UserAddOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +25,7 @@ import { Users, Award, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { VideoCallButton } from '../../components/videocall';
 import CreateGroupModal from '../../components/groups/CreateGroupModal';
+import InviteMemberModal from '../../components/groups/InviteMemberModal';
 import groupService from '../../services/groupService';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -36,6 +38,8 @@ export default function MyGroups() {
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
   
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -383,6 +387,21 @@ export default function MyGroups() {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
+                        {/* Invite button - only for leaders */}
+                        {user && group.leaderId === user.id && (
+                          <Tooltip title="Mời thành viên">
+                            <Button
+                              icon={<UserAddOutlined />}
+                              className="bg-green-500 hover:bg-green-600 border-green-500 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedGroup(group);
+                                setShowInviteModal(true);
+                              }}
+                            />
+                          </Tooltip>
+                        )}
+                        
                         <Button 
                           type="primary"
                           icon={<EyeOutlined />}
@@ -511,6 +530,20 @@ export default function MyGroups() {
           )}
         </div>
       </div>
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        open={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setSelectedGroup(null);
+        }}
+        groupId={selectedGroup?.id}
+        groupName={selectedGroup?.name}
+        onSuccess={() => {
+          fetchMyGroups(false); // Refresh list silently
+        }}
+      />
     </div>
     </>
   );
