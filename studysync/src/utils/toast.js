@@ -85,7 +85,7 @@ export const showToast = {
 export const commonToasts = {
   // Authentication
   loginSuccess: (username) => 
-    showToast.success(`Chào mừng trở lại, ${username}!`, { duration: 2500 }),
+    showToast.success(`Đăng nhập thành công`, { duration: 2500 }),
   
   loginError: () => 
     showToast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'),

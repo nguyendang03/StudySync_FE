@@ -8,6 +8,7 @@ import {
 import { Modal, Tooltip, Badge } from 'antd';
 import agoraService from '../../services/agoraService';
 import { useVideoCallStore } from '../../stores';
+import { useAuth } from '../../hooks/useAuth';
 import InvitationModal from './InvitationModal';
 import VideoCallChat from './VideoCallChat';
 import toast from 'react-hot-toast';
@@ -33,11 +34,76 @@ const VideoCall = ({
   const [isScreenShareFullscreen, setIsScreenShareFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  
+  const { user: currentUser } = useAuth();
 
   // Helper function to get username from UID
   const getUsernameByUid = (uid) => {
-    const member = groupMembers.find(m => m.id === uid || m.uid === uid);
-    return member?.username || member?.email?.split('@')[0] || `Người dùng ${uid}`;
+    if (!groupMembers || !Array.isArray(groupMembers) || groupMembers.length === 0) {
+      return `Thành viên ${uid}`;
+    }
+
+    const normalizeId = (value) => {
+      if (value === undefined || value === null) return null;
+      return String(value).trim().toLowerCase();
+    };
+
+    const uidKey = normalizeId(uid);
+    if (!uidKey) {
+      return `Thành viên ${uid}`;
+    }
+
+    const resolveMemberId = (member) => {
+      const possibleIds = [
+        member?.id,
+        member?.userId,
+        member?.memberId,
+        member?.user?.id,
+        member?.user?.userId,
+        member?.user?.profile?.userId,
+        member?.UserId,
+        member?.User?.id,
+        member?.User?.userId,
+        member?.profile?.userId,
+      ];
+
+      for (const candidate of possibleIds) {
+        const normalized = normalizeId(candidate);
+        if (normalized) {
+          return normalized;
+        }
+      }
+
+      return null;
+    };
+
+    const resolveDisplayName = (member) => (
+      member?.user?.username ||
+      member?.user?.fullName ||
+      member?.username ||
+      member?.fullName ||
+      member?.name ||
+      member?.user?.name ||
+      (member?.email ? member.email.split('@')[0] : null) ||
+      (member?.user?.email ? member.user.email.split('@')[0] : null) ||
+      `Thành viên ${uid}`
+    );
+
+    const matchedMember = groupMembers.find((member) => {
+      const memberId = resolveMemberId(member);
+      return memberId && memberId === uidKey;
+    });
+
+    if (matchedMember) {
+      return resolveDisplayName(matchedMember);
+    }
+
+    const userIndex = remoteUsers.findIndex((remoteUser) => normalizeId(remoteUser.uid) === uidKey);
+    if (userIndex >= 0 && groupMembers[userIndex]) {
+      return resolveDisplayName(groupMembers[userIndex]);
+    }
+
+    return `Thành viên ${uid}`;
   };
   
   const localVideoRef = useRef(null);
@@ -55,6 +121,9 @@ const VideoCall = ({
   // Initialize call
   useEffect(() => {
     isMountedRef.current = true;
+    
+    // Debug: Log group members structure
+    console.log('👥 Group members for video call:', groupMembers);
     
     const initCall = async () => {
       try {
@@ -217,7 +286,13 @@ const VideoCall = ({
         throw new Error('Channel name is required');
       }
       
-      const uid = await agoraService.joinChannel(channelName);
+      const rawUserId = currentUser?.data?.id ?? currentUser?.id ?? currentUser?.userId;
+      const preferredUid = rawUserId ? String(rawUserId) : null;
+      if (!preferredUid) {
+        console.warn('⚠️ Falling back to Agora auto-generated UID - user id missing or invalid');
+      }
+
+      const uid = await agoraService.joinChannel(channelName, preferredUid);
       
       // Check if component is still mounted after async operation
       if (!isMountedRef.current) {
