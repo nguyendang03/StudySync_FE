@@ -2,44 +2,95 @@ import React, { useState, useEffect } from 'react';
 import { 
   PlusOutlined, 
   SearchOutlined, 
-  UserOutlined, 
-  TeamOutlined,
   BookOutlined,
-  HomeOutlined,
-  MessageOutlined,
-  SettingOutlined,
   EyeOutlined,
-  TrophyOutlined,
-  MenuOutlined,
-  FilterOutlined,
-  SortAscendingOutlined,
-  HeartFilled,
-  StarFilled,
-  UserAddOutlined
+  MenuOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Input, Tag, Progress, Avatar, Tooltip, Button, Dropdown, Spin } from 'antd';
+import { Input, Progress, Button, Tooltip, Pagination } from 'antd';
 import { showToast, commonToasts } from '../../utils/toast';
-import { Users, Award, BookOpen, Activity } from 'lucide-react';
+import { Users, BookOpen, Activity } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
-import { VideoCallButton } from '../../components/videocall';
 import CreateGroupModal from '../../components/groups/CreateGroupModal';
 import InviteMemberModal from '../../components/groups/InviteMemberModal';
 import groupService from '../../services/groupService';
 import { useAuth } from '../../hooks/useAuth';
 
+// Custom pagination styles
+const paginationStyles = `
+  .custom-pagination .ant-pagination-item {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+  }
+  .custom-pagination .ant-pagination-item:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  .custom-pagination .ant-pagination-item-active {
+    background: white;
+    border-color: white;
+    color: #9333ea;
+    font-weight: 600;
+  }
+  .custom-pagination .ant-pagination-item-active:hover {
+    background: white;
+    border-color: white;
+  }
+  .custom-pagination .ant-pagination-item a {
+    color: inherit;
+  }
+  .custom-pagination .ant-pagination-prev button,
+  .custom-pagination .ant-pagination-next button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+  }
+  .custom-pagination .ant-pagination-prev:hover button,
+  .custom-pagination .ant-pagination-next:hover button {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+  }
+  .custom-pagination .ant-pagination-disabled button {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .custom-pagination .ant-select-selector {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    border-radius: 8px !important;
+  }
+  .custom-pagination .ant-select-arrow {
+    color: white;
+  }
+  .custom-pagination .ant-pagination-options-quick-jumper input {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+  }
+`;
+
 export default function MyGroups() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedsubject, setSelectedsubject] = useState('all');  const [isLoaded, setIsLoaded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('createdAt');
   const [viewMode, setViewMode] = useState('grid');
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6); // 6 cards per page
   
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +102,12 @@ export default function MyGroups() {
     }
   }, [isAuthenticated]);
 
-  const fetchMyGroups = async (showToast = true) => {
+  // Reset to page 1 when search query or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedsubject, sortBy]);
+
+  const fetchMyGroups = async (showToastMessage = true) => {
     try {
       setLoading(true);
       console.log('🔄 Fetching groups for authenticated user...');
@@ -69,26 +125,25 @@ export default function MyGroups() {
       
       console.log('📝 Groups data after extraction:', groupsData);
       
-      const transformedGroups = Array.isArray(groupsData) ? groupsData.map((group, index) => ({
-        id: group.id || index + 1,
-        name: group.groupName || group.name || 'Nhóm không tên',
+      const transformedGroups = Array.isArray(groupsData) ? groupsData.map((group) => ({
+        id: group.id,
+        groupName: group.groupName || 'Nhóm không tên',
         description: group.description || 'Không có mô tả',
-        members: group.memberCount || group.members || 0,
-        subject: group.subject || 'Chưa xác định',
-        progress: Math.floor(Math.random() * 100), // Mock progress for now
-        isActive: true,
-        avatar: (group.groupName || group.name || 'GR').substring(0, 2).toUpperCase(),
-        bgColor: getRandomGradient(),
-        lastActivity: formatLastActivity(group.updatedAt || group.createdAt),
-        rating: Number((4.5 + Math.random() * 0.5).toFixed(1)), // Fixed to 1 decimal place
-        tags: ['Học tập', 'Nhóm']
+        leaderId: group.leaderId,
+        isActive: group.isActive,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+        // Calculate member count from storageLimit
+        storageUsed: group.storageUsed || 0,
+        storageLimit: group.storageLimit || 10240,
+        totalStorageUsedMb: group.totalStorageUsedMb || '0.00'
       })) : [];
 
       setMyGroups(transformedGroups);
       setHasFetched(true);
       
-      // Only show toast if we haven't shown it before AND showToast is true
-      if (!hasFetched && showToast) {
+      // Only show toast if we haven't shown it before AND showToastMessage is true
+      if (!hasFetched && showToastMessage) {
         if (transformedGroups.length > 0) {
           showToast.success(`Đã tải ${transformedGroups.length} nhóm của bạn`);
         } else {
@@ -98,8 +153,8 @@ export default function MyGroups() {
     } catch (error) {
       console.error('❌ Error fetching groups:', error);
       
-      // Only show error toasts if showToast is true
-      if (showToast) {
+      // Only show error toasts if showToastMessage is true
+      if (showToastMessage) {
         if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
           showToast.error('Không thể kết nối đến server. Vui lòng kiểm tra backend.');
         } else if (error.message?.includes('Authentication required') || error.message?.includes('Session expired')) {
@@ -117,18 +172,6 @@ export default function MyGroups() {
   };
 
   // Utility functions
-  const getRandomGradient = () => {
-    const gradients = [
-      "from-yellow-400 to-orange-500",
-      "from-blue-400 to-purple-500", 
-      "from-pink-400 to-red-500",
-      "from-green-400 to-blue-500",
-      "from-purple-400 to-pink-500",
-      "from-indigo-400 to-blue-500"
-    ];
-    return gradients[Math.floor(Math.random() * gradients.length)];
-  };
-
   const formatLastActivity = (dateString) => {
     if (!dateString) return 'Chưa có hoạt động';
     try {
@@ -137,12 +180,24 @@ export default function MyGroups() {
       const diffTime = Math.abs(now - date);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
+      if (diffDays === 0) return 'Hôm nay';
       if (diffDays === 1) return 'Hôm qua';
       if (diffDays < 7) return `${diffDays} ngày trước`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
       return date.toLocaleDateString('vi-VN');
     } catch {
       return 'Không xác định';
     }
+  };
+
+  const formatStorageUsed = (mb) => {
+    const num = parseFloat(mb);
+    if (num < 1) return `${(num * 1024).toFixed(0)} KB`;
+    return `${num.toFixed(2)} MB`;
+  };
+
+  const getStoragePercentage = (used, limit) => {
+    return Math.round((used / limit) * 100);
   };
 
 
@@ -150,9 +205,6 @@ export default function MyGroups() {
   const categories = [
     { id: 'all', name: 'Tất cả nhóm', count: myGroups.length },
     { id: 'active', name: 'Đang hoạt động', count: myGroups.filter(g => g.isActive).length },
-    { id: 'programming', name: 'Lập trình', count: myGroups.filter(g => g.subject === 'Lập trình').length },
-    { id: 'design', name: 'Thiết kế', count: myGroups.filter(g => g.subject === 'Thiết kế').length },
-    { id: 'data', name: 'Khoa học dữ liệu', count: myGroups.filter(g => g.subject === 'Khoa học dữ liệu').length }
   ];
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -200,33 +252,47 @@ export default function MyGroups() {
 
   const sortItems = [
     { key: 'name', label: 'Tên nhóm' },
-    { key: 'members', label: 'Số thành viên' },
-    { key: 'progress', label: 'Tiến độ' },
-    { key: 'activity', label: 'Hoạt động gần nhất' }
+    { key: 'createdAt', label: 'Ngày tạo' },
+    { key: 'updatedAt', label: 'Cập nhật gần nhất' }
   ];
 
   const filteredGroups = myGroups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = group.groupName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          group.description.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (selectedsubject === 'all') return matchesSearch;
     if (selectedsubject === 'active') return matchesSearch && group.isActive;
-    if (selectedsubject === 'programming') return matchesSearch && group.subject === 'Lập trình';
-    if (selectedsubject === 'design') return matchesSearch && group.subject === 'Thiết kế';
-    if (selectedsubject === 'data') return matchesSearch && group.subject === 'Khoa học dữ liệu';
     
     return matchesSearch;
   }).sort((a, b) => {
     switch (sortBy) {
-      case 'members': return b.members - a.members;
-      case 'progress': return b.progress - a.progress;
-      case 'activity': return new Date(b.lastActivity) - new Date(a.lastActivity);
-      default: return a.name.localeCompare(b.name);
+      case 'createdAt': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'updatedAt': return new Date(b.updatedAt) - new Date(a.updatedAt);
+      default: return a.groupName.localeCompare(b.groupName);
     }
   });
 
+  // Pagination
+  const totalGroups = filteredGroups.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
+
+  const handlePageChange = (page, newPageSize) => {
+    setCurrentPage(page);
+    if (newPageSize !== pageSize) {
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset to first page when page size changes
+    }
+    // Scroll to top of groups section
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
+
   return (
     <>
+    {/* Custom Pagination Styles */}
+    <style>{paginationStyles}</style>
+
     {/* Create Group Modal */}
     <CreateGroupModal 
       isOpen={isCreateModalOpen}
@@ -274,7 +340,7 @@ export default function MyGroups() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {[
                 { 
                   title: 'Tổng nhóm', 
@@ -291,18 +357,11 @@ export default function MyGroups() {
                   iconBg: 'bg-green-500/20'
                 },
                 { 
-                  title: 'Thành viên', 
-                  value: myGroups.reduce((sum, g) => sum + g.members, 0), 
-                  icon: <UserOutlined className="text-xl" />,
+                  title: 'Tổng dung lượng', 
+                  value: `${myGroups.reduce((sum, g) => sum + parseFloat(g.totalStorageUsedMb), 0).toFixed(2)} MB`, 
+                  icon: <BookOpen className="w-6 h-6" />,
                   color: 'from-purple-500 to-purple-600',
                   iconBg: 'bg-purple-500/20'
-                },
-                { 
-                  title: 'Tiến độ trung bình', 
-                  value: myGroups.length > 0 ? `${Math.round(myGroups.reduce((sum, g) => sum + g.progress, 0) / myGroups.length)}%` : '0%', 
-                  icon: <Award className="w-6 h-6" />,
-                  color: 'from-pink-500 to-pink-600',
-                  iconBg: 'bg-pink-500/20'
                 }
               ].map((stat, index) => (
                 <motion.div
@@ -328,149 +387,139 @@ export default function MyGroups() {
 
           {/* Groups Grid */}
           <AnimatePresence>
-            {filteredGroups.length > 0 ? (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-              >
-                {filteredGroups.map((group, index) => (
+            {paginatedGroups.length > 0 ? (
+              <>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                >
+                  {paginatedGroups.map((group, index) => (
                   <motion.div
                     key={group.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-white/25 backdrop-blur-md rounded-2xl p-6 border border-white/40 hover:bg-white/30 hover:border-white/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                    onClick={() => navigate(`/groups/${group.id}`)}
                   >
-                    {/* Group Header */}
-                    <div className="flex items-start justify-between mb-5">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="relative">
-                          <Avatar
-                            size={64}
-                            className={`bg-gradient-to-br ${group.bgColor} flex items-center justify-center text-white font-bold text-xl shadow-lg border-4 border-white/30`}
-                          >
-                            {group.avatar}
-                          </Avatar>
-                        </div>
+                    {/* Card Header */}
+                    <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-5">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-xl font-bold text-white tracking-tight line-clamp-1">
-                              {group.name}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-white/90 mb-3">
-                            <span className="flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full font-medium">
-                              <Users className="w-3.5 h-3.5" />
-                              {group.members}
+                          <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">
+                            {group.groupName}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                              group.isActive 
+                                ? 'bg-green-400/30 text-white border border-green-300/50' 
+                                : 'bg-gray-400/30 text-white border border-gray-300/50'
+                            }`}>
+                              <span className="w-2 h-2 rounded-full bg-current"></span>
+                              {group.isActive ? 'Hoạt động' : 'Không hoạt động'}
                             </span>
-                            <span className="flex items-center gap-1.5 bg-yellow-500/20 px-3 py-1 rounded-full font-semibold">
-                              <StarFilled className="text-yellow-400 text-sm" />
-                              {group.rating}
-                            </span>
-                          </div>
-                          <div className="flex gap-2 flex-wrap">
-                            {group.tags.slice(0, 2).map(tag => (
-                              <Tag key={tag} className="bg-white/20 text-white border-white/40 font-medium px-3 py-0.5 rounded-full">
-                                {tag}
-                              </Tag>
-                            ))}
-                            {group.tags.length > 2 && (
-                              <Tag className="bg-purple-500/30 text-white border-white/40 font-medium px-3 py-0.5 rounded-full">
-                                +{group.tags.length - 2}
-                              </Tag>
-                            )}
                           </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        {/* Invite button - only for leaders */}
-                        {user && group.leaderId === user.id && (
-                          <Tooltip title="Mời thành viên">
+                        <div className="flex gap-2">
+                          <Tooltip title="Xem chi tiết">
                             <Button
-                              icon={<UserAddOutlined />}
-                              className="bg-green-500 hover:bg-green-600 border-green-500 text-white"
+                              type="primary"
+                              icon={<EyeOutlined />}
+                              size="small"
+                              className="bg-white/20 hover:bg-white/30 border-white/40 text-white"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedGroup(group);
-                                setShowInviteModal(true);
+                                navigate(`/groups/${group.id}`);
                               }}
                             />
                           </Tooltip>
-                        )}
-                        
-                        <Button 
-                          type="primary"
-                          icon={<EyeOutlined />}
-                          className="bg-pink-500 hover:bg-pink-600 border-pink-500"
-                          onClick={() => navigate(`/groups/${group.id}`)}
-                        >
-                          VÀO XEM
-                        </Button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Description */}
-                    <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/25">
-                      <p className="text-white/95 text-sm leading-relaxed overflow-hidden" style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical'
-                      }}>
-                        {group.description}
-                      </p>
-                    </div>
-
-                    {/* Progress with Ant Design Progress */}
-                    <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/25">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-white/95 text-sm font-medium flex items-center gap-2">
-                          <BookOpen className="w-4 h-4" />
-                          Tiến độ học tập
-                        </span>
-                        <span className="text-white font-bold text-base bg-white/25 px-3 py-1 rounded-full">
-                          {group.progress}%
-                        </span>
+                    {/* Card Body */}
+                    <div className="p-5">
+                      {/* Description */}
+                      <div className="mb-4">
+                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
+                          {group.description}
+                        </p>
                       </div>
-                      <Progress 
-                        percent={group.progress} 
-                        showInfo={false}
-                        strokeColor={{
-                          '0%': '#60a5fa',
-                          '50%': '#a78bfa',
-                          '100%': '#ec4899',
-                        }}
-                        trailColor="rgba(255, 255, 255, 0.2)"
-                        strokeWidth={10}
-                      />
-                    </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-between items-center pt-2">
-                      <div className="flex items-center gap-3">
-                        <Tag 
-                          className={`border-0 font-medium px-4 py-1 rounded-full ${
-                            group.isActive 
-                              ? 'bg-green-500/30 text-green-100' 
-                              : 'bg-gray-400/30 text-gray-200'
-                          }`}
-                        >
-                          <span className="mr-1">{group.isActive ? '●' : '○'}</span>
-                          {group.isActive ? 'Đang hoạt động' : 'Tạm nghỉ'}
-                        </Tag>
-                        <span className="text-white/80 text-sm font-medium bg-white/15 px-3 py-1 rounded-full">
-                          {group.subject}
-                        </span>
+                      {/* Storage Info */}
+                      <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                            <BookOutlined className="text-purple-500" />
+                            Dung lượng sử dụng
+                          </span>
+                          <span className="text-xs font-bold text-purple-600">
+                            {formatStorageUsed(group.totalStorageUsedMb)} / {(group.storageLimit / 1024).toFixed(0)} GB
+                          </span>
+                        </div>
+                        <Progress 
+                          percent={getStoragePercentage(group.storageUsed, group.storageLimit)} 
+                          showInfo={false}
+                          strokeColor={{
+                            '0%': '#9333ea',
+                            '100%': '#a855f7',
+                          }}
+                          trailColor="#e5e7eb"
+                          strokeWidth={8}
+                        />
                       </div>
-                      <span className="text-white/70 text-xs font-medium bg-white/15 px-3 py-1 rounded-full flex items-center gap-1">
-                        <span>⏰</span>
-                        {group.lastActivity}
-                      </span>
+
+                      {/* Footer Info */}
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400">📅</span>
+                          <span>Tạo: {formatLastActivity(group.createdAt)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400">🔄</span>
+                          <span>Cập nhật: {formatLastActivity(group.updatedAt)}</span>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
               </motion.div>
+
+              {/* Pagination */}
+              {totalGroups > pageSize && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex justify-center mt-8"
+                >
+                  <Pagination
+                    current={currentPage}
+                    total={totalGroups}
+                    pageSize={pageSize}
+                    onChange={handlePageChange}
+                    onShowSizeChange={handlePageChange}
+                    showSizeChanger
+                    showTotal={(total, range) => (
+                      <span className="text-white/90 font-medium">
+                        {range[0]}-{range[1]} của {total} nhóm
+                      </span>
+                    )}
+                    pageSizeOptions={[6, 9, 12, 18, 24]}
+                    className="custom-pagination"
+                    style={{
+                      padding: '16px 24px',
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                    }}
+                  />
+                </motion.div>
+              )}
+            </>
             ) : (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -508,24 +557,6 @@ export default function MyGroups() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Load More */}
-          {filteredGroups.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="text-center mt-12"
-            >
-              <Button 
-                size="large"
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white px-8"
-                onClick={() => showToast.success('Đang tải thêm nhóm...')}
-              >
-                HIỂN THỊ THÊM...
-              </Button>
-            </motion.div>
-          )}
         </div>
       </div>
 
