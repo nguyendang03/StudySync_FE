@@ -4,7 +4,9 @@ import {
   SearchOutlined, 
   BookOutlined,
   EyeOutlined,
-  MenuOutlined
+  MenuOutlined,
+  ClockCircleOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -321,17 +323,17 @@ export default function MyGroups() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Nhóm của tôi</h1>
-                <p className="text-white/80">Quản lý và theo dõi tiến độ học tập của bạn</p>
+                <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Nhóm của tôi</h1>
+                <p className="text-white/90 text-lg">Quản lý và theo dõi các nhóm học tập</p>
               </div>
               <div className="flex gap-3">
                 <Button 
                   type="primary" 
                   icon={<PlusOutlined />}
                   onClick={handleCreateGroup}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white"
+                  className="bg-white text-purple-600 hover:bg-white/95 border-0 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                   size="large"
                 >
                   Tạo nhóm mới
@@ -345,23 +347,23 @@ export default function MyGroups() {
                 { 
                   title: 'Tổng nhóm', 
                   value: myGroups.length, 
-                  icon: <Users className="w-6 h-6" />,
-                  color: 'from-blue-500 to-blue-600',
-                  iconBg: 'bg-blue-500/20'
+                  icon: <Users className="w-7 h-7" />,
+                  iconBg: 'bg-blue-500',
+                  bgGradient: 'from-blue-50 to-blue-100'
                 },
                 { 
                   title: 'Đang hoạt động', 
                   value: myGroups.filter(g => g.isActive).length, 
-                  icon: <Activity className="w-6 h-6" />,
-                  color: 'from-green-500 to-green-600',
-                  iconBg: 'bg-green-500/20'
+                  icon: <Activity className="w-7 h-7" />,
+                  iconBg: 'bg-green-500',
+                  bgGradient: 'from-green-50 to-green-100'
                 },
                 { 
                   title: 'Tổng dung lượng', 
                   value: `${myGroups.reduce((sum, g) => sum + parseFloat(g.totalStorageUsedMb), 0).toFixed(2)} MB`, 
-                  icon: <BookOpen className="w-6 h-6" />,
-                  color: 'from-purple-500 to-purple-600',
-                  iconBg: 'bg-purple-500/20'
+                  icon: <BookOpen className="w-7 h-7" />,
+                  iconBg: 'bg-purple-500',
+                  bgGradient: 'from-purple-50 to-purple-100'
                 }
               ].map((stat, index) => (
                 <motion.div
@@ -369,14 +371,16 @@ export default function MyGroups() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.08 }}
-                  className="bg-white/25 backdrop-blur-md rounded-2xl p-6 border border-white/40 hover:bg-white/30 hover:border-white/50 hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer overflow-hidden relative"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  
+                  <div className="relative z-10 flex items-center justify-between">
                     <div>
-                      <p className="text-white/90 text-sm mb-2 font-medium tracking-wide">{stat.title}</p>
-                      <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
+                      <p className="text-gray-600 text-sm mb-2 font-semibold uppercase tracking-wider">{stat.title}</p>
+                      <p className="text-4xl font-bold text-gray-900">{stat.value}</p>
                     </div>
-                    <div className={`w-14 h-14 ${stat.iconBg} backdrop-blur-sm rounded-xl flex items-center justify-center text-white shadow-lg border border-white/20`}>
+                    <div className={`w-16 h-16 ${stat.iconBg} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                       {stat.icon}
                     </div>
                   </div>
@@ -401,61 +405,67 @@ export default function MyGroups() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-1"
                     onClick={() => navigate(`/groups/${group.id}`)}
                   >
                     {/* Card Header */}
-                    <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">
+                    <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-6 relative overflow-hidden">
+                      {/* Decorative elements */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl"></div>
+                      
+                      <div className="relative z-10 flex items-start justify-between">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="text-2xl font-bold text-white mb-3 line-clamp-1 group-hover:scale-[1.02] transition-transform duration-200">
                             {group.groupName}
                           </h3>
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm ${
                               group.isActive 
-                                ? 'bg-green-400/30 text-white border border-green-300/50' 
+                                ? 'bg-emerald-400/30 text-white border border-emerald-300/50' 
                                 : 'bg-gray-400/30 text-white border border-gray-300/50'
                             }`}>
-                              <span className="w-2 h-2 rounded-full bg-current"></span>
+                              <span className={`w-2 h-2 rounded-full ${group.isActive ? 'bg-emerald-200 animate-pulse' : 'bg-gray-300'}`}></span>
                               {group.isActive ? 'Hoạt động' : 'Không hoạt động'}
                             </span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Tooltip title="Xem chi tiết">
-                            <Button
-                              type="primary"
-                              icon={<EyeOutlined />}
-                              size="small"
-                              className="bg-white/20 hover:bg-white/30 border-white/40 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/groups/${group.id}`);
-                              }}
-                            />
-                          </Tooltip>
-                        </div>
+                        <Tooltip title="Xem chi tiết">
+                          <Button
+                            type="primary"
+                            icon={<EyeOutlined />}
+                            size="large"
+                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/groups/${group.id}`);
+                            }}
+                          />
+                        </Tooltip>
                       </div>
                     </div>
 
                     {/* Card Body */}
-                    <div className="p-5">
+                    <div className="p-6">
                       {/* Description */}
-                      <div className="mb-4">
-                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
+                      <div className="mb-5">
+                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-2 min-h-[42px]">
                           {group.description}
                         </p>
                       </div>
 
                       {/* Storage Info */}
-                      <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
-                            <BookOutlined className="text-purple-500" />
-                            Dung lượng sử dụng
-                          </span>
-                          <span className="text-xs font-bold text-purple-600">
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 mb-5 border border-purple-100/50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-9 h-9 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                              <DatabaseOutlined className="text-white text-base" />
+                            </div>
+                            <span className="text-sm font-semibold text-purple-900">
+                              Dung lượng
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1.5 rounded-full">
                             {formatStorageUsed(group.totalStorageUsedMb)} / {(group.storageLimit / 1024).toFixed(0)} GB
                           </span>
                         </div>
@@ -464,22 +474,34 @@ export default function MyGroups() {
                           showInfo={false}
                           strokeColor={{
                             '0%': '#9333ea',
-                            '100%': '#a855f7',
+                            '50%': '#a855f7',
+                            '100%': '#ec4899',
                           }}
-                          trailColor="#e5e7eb"
-                          strokeWidth={8}
+                          trailColor="#e9d5ff"
+                          strokeWidth={10}
+                          strokeLinecap="round"
                         />
                       </div>
 
                       {/* Footer Info */}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-400">📅</span>
-                          <span>Tạo: {formatLastActivity(group.createdAt)}</span>
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <ClockCircleOutlined className="text-blue-500 text-base" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Tạo lúc</p>
+                            <p className="text-xs font-semibold text-gray-900">{formatLastActivity(group.createdAt)}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-400">🔄</span>
-                          <span>Cập nhật: {formatLastActivity(group.updatedAt)}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                            <ClockCircleOutlined className="text-green-500 text-base" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Cập nhật</p>
+                            <p className="text-xs font-semibold text-gray-900">{formatLastActivity(group.updatedAt)}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -525,35 +547,26 @@ export default function MyGroups() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="text-center py-16"
+                className="flex justify-center items-center py-20"
               >
-                <motion.div 
-                  animate={{ 
-                    rotate: [0, 10, -10, 0],
-                    scale: [1, 1.1, 1]
-                  }}
-                  transition={{ 
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="text-6xl mb-6"
-                >
-                  📚
-                </motion.div>
-                <h3 className="text-2xl font-bold text-white mb-4">Không tìm thấy nhóm</h3>
-                <p className="text-white/70 mb-8 max-w-md mx-auto">
-                  Không có nhóm nào phù hợp với bộ lọc của bạn. Hãy thử thay đổi từ khóa tìm kiếm hoặc danh mục.
-                </p>
-                <Button 
-                  type="primary"
-                  size="large"
-                  icon={<PlusOutlined />}
-                  onClick={handleCreateGroup}
-                  className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
-                >
-                  Tạo nhóm mới
-                </Button>
+                <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-lg text-center">
+                  <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <BookOpen className="w-12 h-12 text-purple-600" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-4">Chưa có nhóm nào</h3>
+                  <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                    Bạn chưa tham gia nhóm học tập nào. Tạo nhóm mới để bắt đầu học cùng bạn bè!
+                  </p>
+                  <Button 
+                    type="primary"
+                    size="large"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateGroup}
+                    className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 border-0 text-white font-semibold shadow-lg hover:shadow-xl h-12 px-8 text-base"
+                  >
+                    Tạo nhóm ngay
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
