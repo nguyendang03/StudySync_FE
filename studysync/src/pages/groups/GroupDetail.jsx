@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Spin, Button, Badge } from 'antd';
+import { Spin, Button, Badge, Modal } from 'antd';
 import { showToast, commonToasts } from '../../utils/toast';
 import { VideoCallButton, VideoCallManager } from '../../components/videocall';
 import { useAuthStore } from '../../stores';
@@ -22,6 +22,7 @@ export default function GroupDetail() {
   const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isLeavingGroup, setIsLeavingGroup] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activeCalls, setActiveCalls] = useState([]);
   const [isJoiningCall, setIsJoiningCall] = useState(false);
   const [refreshInvitations, setRefreshInvitations] = useState(0);
@@ -196,14 +197,11 @@ export default function GroupDetail() {
   };
 
   const handleLeaveGroup = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn rời khỏi nhóm này?')) {
-      return;
-    }
-
     try {
       setIsLeavingGroup(true);
       await groupService.leaveGroup(id);
       commonToasts.groupLeft(groupData.groupName || groupData.name);
+      setShowLeaveModal(false);
       
       // Redirect to groups list after leaving
       setTimeout(() => {
@@ -319,7 +317,7 @@ export default function GroupDetail() {
                       {!isHost && (
                         <Button
                           danger
-                          onClick={handleLeaveGroup}
+                          onClick={() => setShowLeaveModal(true)}
                           loading={isLeavingGroup}
                           className="ml-4 border-0 rounded-full shadow-lg hover:shadow-xl"
                           size="small"
@@ -569,6 +567,50 @@ export default function GroupDetail() {
           setRefreshInvitations(prev => prev + 1);
         }}
       />
+
+      {/* Leave Group Confirmation Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined className="text-red-500 text-xl" />
+            <span className="text-lg font-semibold">Xác nhận rời nhóm</span>
+          </div>
+        }
+        open={showLeaveModal}
+        onCancel={() => setShowLeaveModal(false)}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => setShowLeaveModal(false)}
+            className="rounded-full"
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="leave"
+            danger
+            type="primary"
+            loading={isLeavingGroup}
+            onClick={handleLeaveGroup}
+            className="rounded-full"
+          >
+            Rời nhóm
+          </Button>,
+        ]}
+        centered
+      >
+        <div className="py-4">
+          <p className="text-gray-700 mb-3">
+            Bạn có chắc chắn muốn rời khỏi nhóm <span className="font-semibold text-purple-600">"{groupData?.groupName || groupData?.name}"</span>?
+          </p>
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Lưu ý: Sau khi rời nhóm, bạn sẽ không thể truy cập các tài liệu, nhiệm vụ và cuộc trò chuyện của nhóm. 
+              Bạn sẽ cần được mời lại để tham gia nhóm này.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
