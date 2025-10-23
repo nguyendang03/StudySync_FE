@@ -167,6 +167,11 @@ const useAuthStore = create(
 
           if (response.ok) {
             const userProfile = await response.json();
+            
+            // CRITICAL FIX: Update the store state with the fetched profile
+            set({ user: userProfile });
+            console.log('✅ User profile loaded and stored:', userProfile);
+            
             return userProfile;
           }
           
