@@ -123,7 +123,7 @@ export default function VerifyEmail() {
 
     try {
       await resendOTP({ email: formData.email });
-      toast.success('Mã OTP mới đã được gửi đến email của bạn');
+      toast.success('Mã OTP mới đã được gửi đến email của bạn 📧');
       setCountdown(60); // 60 seconds countdown
     } catch (err) {
       console.error('Resend OTP error:', err);
@@ -152,7 +152,7 @@ export default function VerifyEmail() {
 
     try {
       await resendOTP({ email: resendEmail });
-      toast.success(`Mã OTP mới đã được gửi đến ${resendEmail}`);
+      toast.success(`Mã OTP mới đã được gửi đến ${resendEmail} 📧`);
       
       // Update the main email field with the new email
       setFormData(prev => ({ ...prev, email: resendEmail }));

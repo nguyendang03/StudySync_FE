@@ -79,19 +79,24 @@ class ChatService {
    */
   connect(userId, groupId) {
     if (this.socket?.connected) {
-      console.log('🔌 Socket already connected');
+      console.log('🔌 Socket already connected:', this.socket.id);
       return this.socket;
     }
 
-    console.log('🔌 Connecting to chat WebSocket...', { userId, groupId });
-    console.log('🔌 WebSocket URL:', this.wsUrl);
+    if (!userId) {
+      console.warn('❌ Missing userId for WebSocket connection');
+      return null;
+    }
+
+    // User IDs are UUIDs (strings), not integers - don't parse them!
+    const normalizedUserId = String(userId).trim();
     
     // Connect to /chat namespace
     // Make sure wsUrl doesn't have trailing slash
     const wsUrl = this.wsUrl.replace(/\/$/, '');
     const chatUrl = `${wsUrl}/chat`;
     
-    console.log('🔌 Connecting to:', chatUrl);
+    console.log('🔌 Final connection URL:', chatUrl);
     
     this.socket = io(chatUrl, {
       transports: ['websocket', 'polling'],
@@ -99,15 +104,19 @@ class ChatService {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       auth: {
-        userId: parseInt(userId)
+        userId: normalizedUserId
       },
       query: {
-        userId: parseInt(userId)
+        userId: normalizedUserId
       }
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ WebSocket connected:', this.socket.id);
+      console.log('✅ =========================================');
+      console.log('✅ WEBSOCKET CONNECTED SUCCESSFULLY!');
+      console.log('✅ Socket ID:', this.socket.id);
+      console.log('✅ User ID:', normalizedUserId);
+      console.log('✅ =========================================');
       
       // Join the group room
       if (groupId) {
@@ -116,12 +125,21 @@ class ChatService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ WebSocket disconnected:', reason);
+      console.log('❌ =========================================');
+      console.log('❌ WEBSOCKET DISCONNECTED');
+      console.log('❌ Reason:', reason);
+      console.log('❌ User ID:', normalizedUserId);
+      console.log('❌ =========================================');
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ WebSocket connection error:', error);
-      console.error('❌ Error details:', error.message);
+      console.error('❌ =========================================');
+      console.error('❌ WEBSOCKET CONNECTION ERROR');
+      console.error('❌ Error:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', error.description);
+      console.error('❌ User ID:', normalizedUserId);
+      console.error('❌ =========================================');
     });
 
     return this.socket;
@@ -251,6 +269,9 @@ class ChatService {
   onTyping(callback) {
     if (!this.socket) return;
 
+    // Remove existing listener to prevent duplicates
+    this.socket.off('user:typing');
+
     this.socket.on('user:typing', (data) => {
       console.log('⌨️ User typing:', data);
       callback(data);
@@ -267,7 +288,7 @@ class ChatService {
   sendTyping(groupId, userId, userName, isTyping) {
     if (!this.socket) return;
 
-    this.socket.emit('user:typing', {
+    this.socket.emit('chat:typing', {
       groupId: parseInt(groupId),
       userId,
       userName,

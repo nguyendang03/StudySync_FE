@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
@@ -298,24 +298,36 @@ function App() {
             </Routes>
           </Suspense>
           
-          
+          {/* Sonner Toast Container with beautiful custom styling */}
           <Toaster 
             position="bottom-right"
+            expand={true}
+            richColors
+            closeButton
+            duration={3000}
             toastOptions={{
-              duration: 3000,
-              style: {
-                background: 'rgba(255, 255, 255, 0.9)',
-                color: '#333',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+              unstyled: false,
+              classNames: {
+                toast: 'sonner-toast-custom',
+                title: 'sonner-toast-title',
+                description: 'sonner-toast-description',
+                success: 'sonner-toast-success',
+                error: 'sonner-toast-error',
+                warning: 'sonner-toast-warning',
+                info: 'sonner-toast-info',
               },
-              success: {
-                iconTheme: {
-                  primary: '#10b981',
-                  secondary: '#fff',
-                },
+              style: {
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(226, 232, 240, 0.8)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#1e293b',
+                minWidth: '320px',
+                maxWidth: '420px',
               },
             }}
           />

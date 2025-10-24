@@ -88,7 +88,7 @@ export default function Register() {
       const response = await register(registerData);
       
       if (response.requiresVerification) {
-        toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.');
+        toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản 📧');
         
         // Redirect to email verification page
         setTimeout(() => {

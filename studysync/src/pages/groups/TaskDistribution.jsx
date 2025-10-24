@@ -9,7 +9,8 @@ import {
   TagOutlined,
   TeamOutlined,
   FilterOutlined,
-  SearchOutlined
+  SearchOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -25,178 +26,317 @@ import {
   Avatar,
   Tooltip,
   Dropdown,
-  Badge
+  Badge,
+  Spin
 } from 'antd';
 import { Users, Clock, Target, CheckCircle2, AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
+import { useAuth } from '../../hooks/useAuth';
 import Sidebar from '../../components/layout/Sidebar';
 import dayjs from 'dayjs';
+import taskService from '../../services/taskService';
+import groupService from '../../services/groupService';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 export default function TaskDistribution() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState('all');
+  const [selectedGroup, setSelectedGroup] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
+  const [groups, setGroups] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const { user, isAuthenticated } = useAuth();
 
+  // Fetch user's groups on mount
   useEffect(() => {
     setIsLoaded(true);
-  }, []);
-
-  // Sample groups data
-  const [groups] = useState([
-    {
-      id: 1,
-      name: 'Tung Tung Tung Sahur',
-      subject: 'EXE101',
-      members: [
-        { id: 1, name: 'Pham Hoang', avatar: 'PH', color: 'bg-blue-500' },
-        { id: 2, name: 'Thuy Dung', avatar: 'H', color: 'bg-purple-500' },
-        { id: 3, name: 'Dai Khai', avatar: 'DK', color: 'bg-green-500' },
-        { id: 4, name: 'Anh Long', avatar: 'L', color: 'bg-yellow-500' },
-        { id: 5, name: 'Hieu Minh', avatar: 'M', color: 'bg-pink-500' },
-        { id: 6, name: 'Quynh Nhu', avatar: 'N', color: 'bg-indigo-500' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'React Developers',
-      subject: 'SWP391',
-      members: [
-        { id: 7, name: 'John Doe', avatar: 'JD', color: 'bg-red-500' },
-        { id: 8, name: 'Jane Smith', avatar: 'JS', color: 'bg-cyan-500' },
-        { id: 9, name: 'Mike Wilson', avatar: 'MW', color: 'bg-orange-500' }
-      ]
+    if (isAuthenticated) {
+      fetchMyGroups();
     }
-  ]);
+  }, [isAuthenticated]);
 
-  // Sample tasks data
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      groupId: 1,
-      assignee: { id: 1, name: 'Pham Hoang', avatar: 'PH', color: 'bg-blue-500' },
-      title: 'task 1',
-      description: 'Complete the database design',
-      status: 'completed',
-      priority: 'high',
-      dueDate: '2025-09-25',
-      createdAt: '2025-09-20'
-    },
-    {
-      id: 2,
-      groupId: 1,
-      assignee: { id: 1, name: 'Pham Hoang', avatar: 'PH', color: 'bg-blue-500' },
-      title: 'task 2',
-      description: 'Implement user authentication',
-      status: 'pending',
-      priority: 'medium',
-      dueDate: '2025-09-28',
-      createdAt: '2025-09-21'
-    },
-    {
-      id: 3,
-      groupId: 1,
-      assignee: { id: 1, name: 'Pham Hoang', avatar: 'PH', color: 'bg-blue-500' },
-      title: 'task 3',
-      description: 'Create API documentation',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2025-09-30',
-      createdAt: '2025-09-22'
-    },
-    {
-      id: 4,
-      groupId: 1,
-      assignee: { id: 2, name: 'Thuy Dung', avatar: 'H', color: 'bg-purple-500' },
-      title: 'task 1',
-      description: 'Design user interface mockups',
-      status: 'completed',
-      priority: 'high',
-      dueDate: '2025-09-24',
-      createdAt: '2025-09-19'
-    },
-    {
-      id: 5,
-      groupId: 1,
-      assignee: { id: 2, name: 'Thuy Dung', avatar: 'H', color: 'bg-purple-500' },
-      title: 'task 2',
-      description: 'Implement responsive design',
-      status: 'pending',
-      priority: 'medium',
-      dueDate: '2025-09-27',
-      createdAt: '2025-09-20'
-    },
-    {
-      id: 6,
-      groupId: 1,
-      assignee: { id: 2, name: 'Thuy Dung', avatar: 'H', color: 'bg-purple-500' },
-      title: 'task 3',
-      description: 'Test user experience flows',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2025-09-29',
-      createdAt: '2025-09-21'
-    },
-    {
-      id: 7,
-      groupId: 2,
-      assignee: { id: 7, name: 'John Doe', avatar: 'JD', color: 'bg-red-500' },
-      title: 'task 1',
-      description: 'Setup React project structure',
-      status: 'completed',
-      priority: 'high',
-      dueDate: '2025-09-23',
-      createdAt: '2025-09-18'
+  // Fetch tasks when group changes
+  useEffect(() => {
+    if (selectedGroup) {
+      fetchGroupTasks(selectedGroup);
+      fetchTaskStatistics(selectedGroup);
     }
-  ]);
+  }, [selectedGroup]);
 
-  const handleTaskStatusChange = (taskId, checked) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: checked ? 'completed' : 'pending' }
-        : task
-    ));
-    toast.success(checked ? 'Task đã hoàn thành!' : 'Task đã đánh dấu chưa hoàn thành');
+  const fetchMyGroups = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching user groups...');
+      const response = await groupService.getMyGroups();
+      console.log('📝 Groups API response:', response);
+      
+      // Extract data from response (axios already extracts response.data)
+      let groupsData = response?.data || response || [];
+      
+      // Convert object with numeric keys to array if needed
+      if (groupsData && typeof groupsData === 'object' && !Array.isArray(groupsData)) {
+        groupsData = Object.values(groupsData);
+      }
+      
+      console.log('📝 Groups data after extraction:', groupsData);
+      
+      // Ensure we have an array before mapping
+      if (!Array.isArray(groupsData)) {
+        console.error('❌ Groups data is not an array:', groupsData);
+        setGroups([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch members for each group
+      const groupsWithMembers = await Promise.all(
+        groupsData.map(async (group) => {
+          try {
+            const membersResponse = await groupService.getGroupMembers(group.id);
+            const membersData = membersResponse?.data || membersResponse;
+            const members = membersData?.members || [];
+            
+            return {
+              ...group,
+              members: members.map((member, index) => ({
+                id: member.id,
+                userId: member.id,
+                name: member.username || member.email?.split('@')[0] || 'User',
+                email: member.email,
+                avatar: (member.username || 'U').substring(0, 2).toUpperCase(),
+                color: getAvatarColor(index),
+                role: member.role,
+                isLeader: member.isLeader
+              }))
+            };
+          } catch (error) {
+            console.error('Error fetching members for group:', group.id, error);
+            return { ...group, members: [] };
+          }
+        })
+      );
+
+      setGroups(groupsWithMembers);
+      
+      // Auto-select first group
+      if (groupsWithMembers.length > 0 && !selectedGroup) {
+        setSelectedGroup(groupsWithMembers[0].id);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching groups:', error);
+      showToast.error('Không thể tải danh sách nhóm');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGroupTasks = async (groupId) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching tasks for group:', groupId);
+      const response = await taskService.getGroupTasks(groupId);
+      console.log('📝 Tasks API response:', response);
+      
+      // Extract data from response
+      let tasksData = response?.data || response || [];
+      
+      // Convert object with numeric keys to array if needed
+      if (tasksData && typeof tasksData === 'object' && !Array.isArray(tasksData)) {
+        tasksData = Object.values(tasksData);
+      }
+      
+      console.log('📝 Tasks data after extraction:', tasksData);
+      
+      // Ensure we have an array before mapping
+      if (!Array.isArray(tasksData)) {
+        console.error('❌ Tasks data is not an array:', tasksData);
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Transform tasks to match UI format
+      const transformedTasks = tasksData.map(task => ({
+        id: task.id,
+        groupId: task.groupId,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.deadline ? dayjs(task.deadline).format('YYYY-MM-DD') : null,
+        createdAt: task.createdAt,
+        completedAt: task.completedAt,
+        assignee: task.assignee ? {
+          id: task.assignee.id,
+          userId: task.assignee.id,
+          name: task.assignee.username || task.assignee.email?.split('@')[0] || 'User',
+          email: task.assignee.email,
+          avatar: (task.assignee.username || 'U').substring(0, 2).toUpperCase(),
+        } : null,
+        assigner: task.assigner ? {
+          id: task.assigner.id,
+          name: task.assigner.username || task.assigner.email?.split('@')[0] || 'User',
+        } : null
+      }));
+
+      setTasks(transformedTasks);
+    } catch (error) {
+      console.error('❌ Error fetching tasks:', error);
+      showToast.error('Không thể tải danh sách task');
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTaskStatistics = async (groupId) => {
+    try {
+      const response = await taskService.getTaskStatistics(groupId);
+      const stats = response?.data || response;
+      setStatistics(stats);
+    } catch (error) {
+      console.error('❌ Error fetching statistics:', error);
+      setStatistics(null);
+    }
+  };
+
+  const getAvatarColor = (index) => {
+    const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-cyan-500'];
+    return colors[index % colors.length];
+  };
+
+  const handleTaskStatusChange = async (taskId, checked) => {
+    if (!selectedGroup) return;
+    
+    try {
+      const newStatus = checked ? 'completed' : 'pending';
+      await taskService.updateTaskStatus(selectedGroup, taskId, newStatus);
+      
+      // Update local state
+      setTasks(prev => prev.map(task => 
+        task.id === taskId 
+          ? { ...task, status: newStatus, completedAt: checked ? new Date() : null }
+          : task
+      ));
+      
+      showToast.success(checked ? 'Task đã hoàn thành' : 'Task đã đánh dấu chưa hoàn thành');
+      
+      // Refresh statistics
+      fetchTaskStatistics(selectedGroup);
+    } catch (error) {
+      console.error('❌ Error updating task status:', error);
+      showToast.error('Không thể cập nhật trạng thái task');
+    }
   };
 
   const handleCreateTask = async (values) => {
+    if (!selectedGroup) {
+      showToast.error('Vui lòng chọn nhóm');
+      return;
+    }
+
     try {
-      const selectedGroup = groups.find(g => g.id === values.groupId);
-      const selectedMember = selectedGroup?.members.find(m => m.id === values.assignee);
-      
-      const newTask = {
-        id: tasks.length + 1,
-        groupId: values.groupId,
-        assignee: selectedMember,
+      // Get the selected member's UUID
+      const selectedMember = groups
+        .find(g => g.id === selectedGroup)
+        ?.members.find(m => m.userId === values.assignee);
+
+      if (!selectedMember) {
+        showToast.error('Không tìm thấy thành viên được chọn');
+        return;
+      }
+
+      const payload = {
         title: values.title,
         description: values.description,
-        status: 'pending',
-        priority: values.priority,
-        dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : null,
-        createdAt: dayjs().format('YYYY-MM-DD')
+        assignedTo: selectedMember.userId, // UUID from backend
+        deadline: values.dueDate ? values.dueDate.toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        priority: values.priority || 'medium'
       };
 
-      setTasks(prev => [...prev, newTask]);
+      console.log('📤 Creating task with payload:', payload);
+      await taskService.createTask(selectedGroup, payload);
+      
+      commonToasts.taskCreated();
       setIsModalOpen(false);
       form.resetFields();
-      toast.success('Task đã được tạo thành công!');
+      
+      // Refresh tasks and statistics
+      await fetchGroupTasks(selectedGroup);
+      await fetchTaskStatistics(selectedGroup);
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi tạo task!');
+      console.error('❌ Error creating task:', error);
+      showToast.error(error.message || 'Không thể tạo task');
     }
   };
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-    toast.success('Task đã được xóa!');
+  const handleUpdateTask = async (values) => {
+    if (!editingTask || !selectedGroup) return;
+
+    try {
+      const payload = {
+        title: values.title,
+        description: values.description,
+        deadline: values.dueDate ? values.dueDate.toISOString() : undefined,
+        priority: values.priority
+      };
+
+      await taskService.updateTask(selectedGroup, editingTask.id, payload);
+      
+      commonToasts.taskUpdated();
+      setIsModalOpen(false);
+      setEditingTask(null);
+      form.resetFields();
+      
+      // Refresh tasks
+      await fetchGroupTasks(selectedGroup);
+    } catch (error) {
+      console.error('❌ Error updating task:', error);
+      showToast.error(error.message || 'Không thể cập nhật task');
+    }
+  };
+
+  const handleDeleteClick = (task) => {
+    setTaskToDelete(task);
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedGroup || !taskToDelete) return;
+
+    try {
+      await taskService.deleteTask(selectedGroup, taskToDelete.id);
+      commonToasts.taskDeleted();
+      
+      // Close modal and reset
+      setDeleteModalVisible(false);
+      setTaskToDelete(null);
+      
+      // Refresh tasks and statistics
+      await fetchGroupTasks(selectedGroup);
+      await fetchTaskStatistics(selectedGroup);
+    } catch (error) {
+      console.error('❌ Error deleting task:', error);
+      showToast.error(error.message || 'Không thể xóa task');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setTaskToDelete(null);
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
+    switch (priority?.toLowerCase()) {
+      case 'urgent': return 'volcano';
       case 'high': return 'red';
       case 'medium': return 'orange';
       case 'low': return 'green';
@@ -204,41 +344,54 @@ export default function TaskDistribution() {
     }
   };
 
+  const getPriorityLabel = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'urgent': return 'Khẩn cấp';
+      case 'high': return 'Cao';
+      case 'medium': return 'Trung bình';
+      case 'low': return 'Thấp';
+      default: return priority;
+    }
+  };
+
   const getStatusIcon = (status) => {
     return status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />;
   };
 
-  // Filter tasks based on selected group and search query
+  // Filter tasks based on search query
   const filteredTasks = tasks.filter(task => {
-    const matchesGroup = selectedGroup === 'all' || task.groupId === parseInt(selectedGroup);
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         task.assignee.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesGroup && matchesSearch;
+    const matchesSearch = task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         task.assignee?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   // Group tasks by assignee for the selected group
   const getTasksByGroup = () => {
-    if (selectedGroup === 'all') {
-      // Show all groups with their tasks
-      return groups.map(group => ({
-        ...group,
-        tasks: filteredTasks.filter(task => task.groupId === group.id)
-      }));
-    } else {
-      // Show tasks grouped by members for the selected group
-      const group = groups.find(g => g.id === parseInt(selectedGroup));
-      if (!group) return [];
+    const group = groups.find(g => g.id === selectedGroup);
+    if (!group) return [];
 
-      return group.members.map(member => ({
-        ...member,
-        groupName: group.name,
-        tasks: filteredTasks.filter(task => task.assignee.id === member.id)
-      }));
-    }
+    return group.members.map(member => ({
+      ...member,
+      groupName: group.groupName || group.name,
+      tasks: filteredTasks.filter(task => task.assignee?.userId === member.userId || task.assignee?.id === member.userId)
+    }));
   };
 
   const groupedData = getTasksByGroup();
+
+  // Check if current user is leader
+  const currentUserId = user?.data?.id || user?.id;
+  const currentGroup = groups.find(g => g.id === selectedGroup);
+  const isLeader = currentGroup?.leaderId === currentUserId;
+
+  if (loading && groups.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}>
+        <Spin indicator={<LoadingOutlined style={{ fontSize: 48, color: 'white' }} spin />} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -278,11 +431,11 @@ export default function TaskDistribution() {
                       onChange={setSelectedGroup}
                       className="w-64"
                       size="large"
+                      placeholder="Chọn nhóm"
                     >
-                      <Option value="all">Tất cả nhóm</Option>
                       {groups.map(group => (
-                        <Option key={group.id} value={group.id.toString()}>
-                          {group.name}
+                        <Option key={group.id} value={group.id}>
+                          {group.groupName || group.name}
                         </Option>
                       ))}
                     </Select>
@@ -298,79 +451,104 @@ export default function TaskDistribution() {
                     />
                   </div>
 
-                  {/* Add Task Button */}
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setIsModalOpen(true)}
-                    size="large"
-                    className="bg-white text-purple-600 border-0 hover:bg-gray-100"
-                  >
-                    Thêm Task
-                  </Button>
+                  {/* Add Task Button - Only for leaders */}
+                  {isLeader && (
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        setEditingTask(null);
+                        form.resetFields();
+                        setIsModalOpen(true);
+                      }}
+                      size="large"
+                      className="bg-white text-purple-600 border-0 hover:bg-gray-100"
+                      disabled={!selectedGroup}
+                    >
+                      Thêm Task
+                    </Button>
+                  )}
                 </div>
+
+                {/* Statistics */}
+                {statistics && selectedGroup && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div className="bg-white/30 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{statistics.total || 0}</div>
+                      <div className="text-xs text-white/80">Tổng số</div>
+                    </div>
+                    <div className="bg-yellow-500/30 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{statistics.pending || 0}</div>
+                      <div className="text-xs text-white/80">Chưa làm</div>
+                    </div>
+                    <div className="bg-blue-500/30 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{statistics.inProgress || 0}</div>
+                      <div className="text-xs text-white/80">Đang làm</div>
+                    </div>
+                    <div className="bg-green-500/30 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{statistics.completed || 0}</div>
+                      <div className="text-xs text-white/80">Hoàn thành</div>
+                    </div>
+                    <div className="bg-red-500/30 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{statistics.overdue || 0}</div>
+                      <div className="text-xs text-white/80">Quá hạn</div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
 
               {/* Task Grid */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              >
-                <AnimatePresence>
-                  {groupedData.map((item, index) => (
-                    <motion.div
-                      key={selectedGroup === 'all' ? `group-${item.id}` : `member-${item.id}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ y: -5 }}
-                    >
-                      <Card
-                        className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden"
-                        bodyStyle={{ padding: 0 }}
+              {!selectedGroup ? (
+                <div className="text-center text-white py-12">
+                  <TeamOutlined className="text-6xl mb-4 opacity-50" />
+                  <p className="text-xl">Vui lòng chọn nhóm để xem tasks</p>
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  <AnimatePresence>
+                    {groupedData.map((item, index) => (
+                      <motion.div
+                        key={`member-${item.userId || item.id}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ y: -5 }}
                       >
-                        {/* Card Header */}
-                        <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
-                          <div className="flex items-center gap-3 mb-2">
-                            {selectedGroup === 'all' ? (
-                              <>
-                                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                                  <TeamOutlined className="text-white text-lg" />
-                                </div>
-                                <div>
-                                  <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                                  <p className="text-sm text-gray-600">{item.subject}</p>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <Avatar
-                                  size={40}
-                                  className={`${item.color} flex items-center justify-center text-white font-bold`}
-                                >
-                                  {item.avatar}
-                                </Avatar>
-                                <div>
-                                  <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
-                                  <p className="text-sm text-gray-600">{item.groupName}</p>
-                                </div>
-                              </>
-                            )}
+                        <Card
+                          className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden"
+                          bodyStyle={{ padding: 0 }}
+                        >
+                          {/* Card Header */}
+                          <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Avatar
+                                size={40}
+                                className={`${item.color} flex items-center justify-center text-white font-bold`}
+                              >
+                                {item.avatar}
+                              </Avatar>
+                              <div>
+                                <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
+                                <p className="text-sm text-gray-600">{item.groupName}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Target className="w-4 h-4" />
+                                {item.tasks?.length || 0} tasks
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" />
+                                {item.tasks?.filter(t => t.status === 'completed').length || 0} hoàn thành
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Target className="w-4 h-4" />
-                              {item.tasks?.length || 0} tasks
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              {item.tasks?.filter(t => t.status === 'completed').length || 0} hoàn thành
-                            </span>
-                          </div>
-                        </div>
 
                         {/* Task List */}
                         <div className="p-6 max-h-80 overflow-y-auto">
@@ -402,7 +580,7 @@ export default function TaskDistribution() {
                                           {task.title}
                                         </span>
                                         <Tag color={getPriorityColor(task.priority)} size="small">
-                                          {task.priority}
+                                          {getPriorityLabel(task.priority)}
                                         </Tag>
                                       </div>
                                       <p className={`text-sm mb-2 ${
@@ -419,37 +597,41 @@ export default function TaskDistribution() {
                                         </div>
                                       )}
                                     </div>
-                                    <Dropdown
-                                      menu={{
-                                        items: [
-                                          {
-                                            key: 'edit',
-                                            icon: <EditOutlined />,
-                                            label: 'Chỉnh sửa',
-                                            onClick: () => {
-                                              setEditingTask(task);
-                                              form.setFieldsValue({
-                                                ...task,
-                                                dueDate: task.dueDate ? dayjs(task.dueDate) : null
-                                              });
-                                              setIsModalOpen(true);
+                                    {isLeader && (
+                                      <Dropdown
+                                        menu={{
+                                          items: [
+                                            {
+                                              key: 'edit',
+                                              icon: <EditOutlined />,
+                                              label: 'Chỉnh sửa',
+                                              onClick: () => {
+                                                setEditingTask(task);
+                                                form.setFieldsValue({
+                                                  title: task.title,
+                                                  description: task.description,
+                                                  priority: task.priority,
+                                                  dueDate: task.dueDate ? dayjs(task.dueDate) : null
+                                                });
+                                                setIsModalOpen(true);
+                                              }
+                                            },
+                                            {
+                                              key: 'delete',
+                                              icon: <DeleteOutlined />,
+                                              label: 'Xóa',
+                                              danger: true,
+                                              onClick: () => handleDeleteClick(task)
                                             }
-                                          },
-                                          {
-                                            key: 'delete',
-                                            icon: <DeleteOutlined />,
-                                            label: 'Xóa',
-                                            danger: true,
-                                            onClick: () => handleDeleteTask(task.id)
-                                          }
-                                        ]
-                                      }}
-                                      trigger={['click']}
-                                    >
-                                      <Button type="text" size="small" className="text-gray-400 hover:text-gray-600">
-                                        <EditOutlined />
-                                      </Button>
-                                    </Dropdown>
+                                          ]
+                                        }}
+                                        trigger={['click']}
+                                      >
+                                        <Button type="text" size="small" className="text-gray-400 hover:text-gray-600">
+                                          <EditOutlined />
+                                        </Button>
+                                      </Dropdown>
+                                    )}
                                   </div>
                                 </motion.div>
                               ))}
@@ -466,7 +648,7 @@ export default function TaskDistribution() {
                   ))}
                 </AnimatePresence>
               </motion.div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -494,46 +676,15 @@ export default function TaskDistribution() {
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleCreateTask}
+          onFinish={editingTask ? handleUpdateTask : handleCreateTask}
           className="mt-6"
+          initialValues={editingTask ? {
+            title: editingTask.title,
+            description: editingTask.description,
+            priority: editingTask.priority,
+            dueDate: editingTask.dueDate ? dayjs(editingTask.dueDate) : null
+          } : undefined}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="groupId"
-              label="Nhóm"
-              rules={[{ required: true, message: 'Vui lòng chọn nhóm!' }]}
-            >
-              <Select placeholder="Chọn nhóm" size="large">
-                {groups.map(group => (
-                  <Option key={group.id} value={group.id}>
-                    {group.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="assignee"
-              label="Người thực hiện"
-              rules={[{ required: true, message: 'Vui lòng chọn người thực hiện!' }]}
-            >
-              <Select placeholder="Chọn thành viên" size="large">
-                {groups.flatMap(group => 
-                  group.members.map(member => (
-                    <Option key={member.id} value={member.id}>
-                      <div className="flex items-center gap-2">
-                        <Avatar size={20} className={`${member.color} text-white text-xs`}>
-                          {member.avatar}
-                        </Avatar>
-                        {member.name}
-                      </div>
-                    </Option>
-                  ))
-                )}
-              </Select>
-            </Form.Item>
-          </div>
-
           <Form.Item
             name="title"
             label="Tiêu đề task"
@@ -554,6 +705,27 @@ export default function TaskDistribution() {
             />
           </Form.Item>
 
+          {!editingTask && (
+            <Form.Item
+              name="assignee"
+              label="Người thực hiện"
+              rules={[{ required: true, message: 'Vui lòng chọn người thực hiện!' }]}
+            >
+              <Select placeholder="Chọn thành viên" size="large">
+                {currentGroup?.members?.map(member => (
+                  <Option key={member.userId} value={member.userId}>
+                    <div className="flex items-center gap-2">
+                      <Avatar size={20} className={`${member.color} text-white text-xs`}>
+                        {member.avatar}
+                      </Avatar>
+                      {member.name}
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               name="priority"
@@ -561,6 +733,9 @@ export default function TaskDistribution() {
               rules={[{ required: true, message: 'Vui lòng chọn độ ưu tiên!' }]}
             >
               <Select placeholder="Chọn độ ưu tiên" size="large">
+                <Option value="urgent">
+                  <Tag color="volcano">Khẩn cấp</Tag>
+                </Option>
                 <Option value="high">
                   <Tag color="red">Cao</Tag>
                 </Option>
@@ -576,12 +751,14 @@ export default function TaskDistribution() {
             <Form.Item
               name="dueDate"
               label="Hạn hoàn thành"
+              rules={[{ required: true, message: 'Vui lòng chọn deadline!' }]}
             >
               <DatePicker 
                 placeholder="Chọn ngày hạn" 
                 size="large"
                 className="w-full"
                 format="DD/MM/YYYY"
+                disabledDate={(current) => current && current < dayjs().startOf('day')}
               />
             </Form.Item>
           </div>
@@ -610,6 +787,61 @@ export default function TaskDistribution() {
         </Form>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-semibold">Xác nhận xóa task</span>
+          </div>
+        }
+        open={deleteModalVisible}
+        onCancel={handleCancelDelete}
+        footer={null}
+        width={500}
+      >
+        <div className="mt-4">
+          <p className="text-gray-700 mb-4">
+            Bạn có chắc chắn muốn xóa task này không? Hành động này không thể hoàn tác.
+          </p>
+          
+          {taskToDelete && (
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="font-semibold text-gray-700">Tên task:</span>
+                <span className="text-gray-600">{taskToDelete.title}</span>
+              </div>
+              <div className="flex items-start gap-2 mb-2">
+                <span className="font-semibold text-gray-700">Mô tả:</span>
+                <span className="text-gray-600">{taskToDelete.description}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-700">Người được giao:</span>
+                <span className="text-gray-600">{taskToDelete.assignee?.name || 'N/A'}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              onClick={handleCancelDelete}
+              size="large"
+              className="flex-1"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              danger
+              onClick={handleConfirmDelete}
+              size="large"
+              className="flex-1"
+            >
+              Xóa Task
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      </div>
     </>
   );
 }

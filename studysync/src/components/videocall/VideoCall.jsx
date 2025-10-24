@@ -8,6 +8,7 @@ import {
 import { Modal, Tooltip, Badge } from 'antd';
 import agoraService from '../../services/agoraService';
 import { useVideoCallStore } from '../../stores';
+import { useAuth } from '../../hooks/useAuth';
 import InvitationModal from './InvitationModal';
 import VideoCallChat from './VideoCallChat';
 import toast from 'react-hot-toast';
@@ -34,6 +35,77 @@ const VideoCall = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   
+  const { user: currentUser } = useAuth();
+
+  // Helper function to get username from UID
+  const getUsernameByUid = (uid) => {
+    if (!groupMembers || !Array.isArray(groupMembers) || groupMembers.length === 0) {
+      return `Thành viên ${uid}`;
+    }
+
+    const normalizeId = (value) => {
+      if (value === undefined || value === null) return null;
+      return String(value).trim().toLowerCase();
+    };
+
+    const uidKey = normalizeId(uid);
+    if (!uidKey) {
+      return `Thành viên ${uid}`;
+    }
+
+    const resolveMemberId = (member) => {
+      const possibleIds = [
+        member?.id,
+        member?.userId,
+        member?.memberId,
+        member?.user?.id,
+        member?.user?.userId,
+        member?.user?.profile?.userId,
+        member?.UserId,
+        member?.User?.id,
+        member?.User?.userId,
+        member?.profile?.userId,
+      ];
+
+      for (const candidate of possibleIds) {
+        const normalized = normalizeId(candidate);
+        if (normalized) {
+          return normalized;
+        }
+      }
+
+      return null;
+    };
+
+    const resolveDisplayName = (member) => (
+      member?.user?.username ||
+      member?.user?.fullName ||
+      member?.username ||
+      member?.fullName ||
+      member?.name ||
+      member?.user?.name ||
+      (member?.email ? member.email.split('@')[0] : null) ||
+      (member?.user?.email ? member.user.email.split('@')[0] : null) ||
+      `Thành viên ${uid}`
+    );
+
+    const matchedMember = groupMembers.find((member) => {
+      const memberId = resolveMemberId(member);
+      return memberId && memberId === uidKey;
+    });
+
+    if (matchedMember) {
+      return resolveDisplayName(matchedMember);
+    }
+
+    const userIndex = remoteUsers.findIndex((remoteUser) => normalizeId(remoteUser.uid) === uidKey);
+    if (userIndex >= 0 && groupMembers[userIndex]) {
+      return resolveDisplayName(groupMembers[userIndex]);
+    }
+
+    return `Thành viên ${uid}`;
+  };
+  
   const localVideoRef = useRef(null);
   const localScreenRef = useRef(null);
   const remoteVideoRefs = useRef({});
@@ -49,6 +121,9 @@ const VideoCall = ({
   // Initialize call
   useEffect(() => {
     isMountedRef.current = true;
+    
+    // Debug: Log group members structure
+    console.log('👥 Group members for video call:', groupMembers);
     
     const initCall = async () => {
       try {
@@ -211,7 +286,13 @@ const VideoCall = ({
         throw new Error('Channel name is required');
       }
       
-      const uid = await agoraService.joinChannel(channelName);
+      const rawUserId = currentUser?.data?.id ?? currentUser?.id ?? currentUser?.userId;
+      const preferredUid = rawUserId ? String(rawUserId) : null;
+      if (!preferredUid) {
+        console.warn('⚠️ Falling back to Agora auto-generated UID - user id missing or invalid');
+      }
+
+      const uid = await agoraService.joinChannel(channelName, preferredUid);
       
       // Check if component is still mounted after async operation
       if (!isMountedRef.current) {
@@ -299,7 +380,7 @@ const VideoCall = ({
   };
 
   const handleInviteSent = (invitedUsers) => {
-    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người`);
+    toast.success(`Đã gửi lời mời đến ${invitedUsers.length} người 📧`);
     setShowInviteModal(false);
   };
 
@@ -452,7 +533,7 @@ const VideoCall = ({
                     {/* Remote Screen Share Indicator */}
                     <div className="absolute top-4 left-4 flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
                       <Monitor className="w-5 h-5" />
-                      <span className="font-medium">Người dùng {screenShareUser?.uid} đang chia sẻ</span>
+                      <span className="font-medium">{getUsernameByUid(screenShareUser?.uid)} đang chia sẻ màn hình</span>
                       <div className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     </div>
                     
@@ -475,7 +556,9 @@ const VideoCall = ({
             </div>
 
             {/* Video Thumbnails Sidebar During Screen Share */}
-            <div className="absolute top-4 right-4 space-y-3 max-h-[calc(100%-2rem)] overflow-y-auto w-64">
+            <div className={`absolute top-4 space-y-3 max-h-[calc(100%-2rem)] overflow-y-auto w-64 transition-all duration-300 ${
+              isChatOpen ? 'right-[25rem]' : 'right-4'
+            }`}>
               {/* Local Video Thumbnail */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -536,7 +619,7 @@ const VideoCall = ({
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
                     <div className="flex items-center justify-between">
                       <span className="text-white text-sm font-medium truncate">
-                        Người dùng {user.uid}
+                        {getUsernameByUid(user.uid)}
                       </span>
                       <div className={`p-1 rounded-full ${user.hasAudio ? 'bg-green-600' : 'bg-red-600'}`}>
                         {user.hasAudio ? (
@@ -583,7 +666,9 @@ const VideoCall = ({
 
             {/* Remote Videos Grid */}
             {remoteUsers.length > 0 && (
-              <div className="absolute top-4 right-4 space-y-3 max-h-96 overflow-y-auto">
+              <div className={`absolute top-4 space-y-3 max-h-96 overflow-y-auto transition-all duration-300 ${
+                isChatOpen ? 'right-[25rem]' : 'right-4'
+              }`}>
                 {remoteUsers.map((user, index) => (
                   <motion.div
                     key={user.uid}
@@ -604,7 +689,7 @@ const VideoCall = ({
                       </div>
                     )}
                     <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
-                      Người dùng {user.uid}
+                      {getUsernameByUid(user.uid)}
                     </div>
                     {/* Audio indicator */}
                     <div className="absolute top-2 right-2">

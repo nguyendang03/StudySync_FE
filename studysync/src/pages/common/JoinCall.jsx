@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import VideoCall from '../../components/videocall/VideoCall';
 import { useAuthStore, useVideoCallStore } from '../../stores';
+import videoCallService from '../../services/videoCallService';
 import toast from 'react-hot-toast';
 
 const JoinCall = () => {
@@ -25,34 +26,51 @@ const JoinCall = () => {
 
   const groupName = searchParams.get('group') || 'Nhóm học tập';
 
-  // Simulate fetching call information
+  // Fetch call information from backend
   useEffect(() => {
     const fetchCallInfo = async () => {
       setIsLoading(true);
       try {
-        // Simulate API call to get call information
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('🔍 Fetching call details for callId:', callId);
         
-        // Mock call info - in real app, this would come from your backend
-        const mockCallInfo = {
-          id: callId,
-          channelName: callId,
+        // Get actual call details from backend
+        const response = await videoCallService.getCallDetails(callId);
+        const callData = response?.data || response;
+        
+        console.log('📥 Call data received:', callData);
+        
+        // Generate the SAME channel name format as the leader
+        const channelName = `group_${callData.groupId}_call_${callData.id}`;
+        
+        // Get host name from starter data
+        const hostName = callData.starter?.username 
+          || callData.starter?.name 
+          || callData.starter?.email?.split('@')[0] 
+          || 'Host';
+        
+        // Build call info
+        const callInfo = {
+          id: callData.id,
+          channelName: channelName, // Use consistent channel name
+          groupId: callData.groupId,
           groupName: groupName,
-          hostName: 'Nguyễn Văn A',
-          startTime: Date.now() - 300000, // Started 5 minutes ago
-          participantCount: 3,
-          isActive: true,
-          participants: [
-            { id: 'host', name: 'Nguyễn Văn A', isHost: true },
-            { id: 'user_1', name: 'Trần Thị B', isHost: false },
-            { id: 'user_2', name: 'Lê Văn C', isHost: false }
-          ]
+          hostName: hostName,
+          startTime: new Date(callData.startedAt).getTime(),
+          participantCount: callData.participants?.filter(p => p.isActive).length || 0,
+          isActive: callData.status === 'ongoing',
+          participants: callData.participants?.map(p => ({
+            id: p.userId,
+            name: p.user?.username || p.user?.name || p.user?.email?.split('@')[0] || 'User',
+            isHost: p.userId === callData.startedBy
+          })) || []
         };
         
-        setCallInfo(mockCallInfo);
+        console.log('✅ Processed call info:', callInfo);
+        setCallInfo(callInfo);
       } catch (error) {
-        console.error('Failed to fetch call info:', error);
-        setCallError('Không thể tải thông tin cuộc gọi');
+        console.error('❌ Failed to fetch call info:', error);
+        const errorMsg = error.response?.data?.message || error.message || 'Không thể tải thông tin cuộc gọi';
+        setCallError(errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -81,16 +99,20 @@ const JoinCall = () => {
     setIsJoining(true);
     
     try {
-      // Start the call
+      console.log('👋 Joining call with channel:', callInfo.channelName);
+      
+      // Start the call in store
       startCall({
+        callId: callInfo.id,
         channelName: callInfo.channelName,
+        groupId: callInfo.groupId,
         groupName: callInfo.groupName,
         participants: callInfo.participants,
         isHost: false
       });
       
       setIsCallActive(true);
-      toast.success('Đã tham gia cuộc gọi!');
+      toast.success('Đã tham gia cuộc gọi! 🎥');
     } catch (error) {
       console.error('Failed to join call:', error);
       toast.error('Không thể tham gia cuộc gọi');
@@ -101,7 +123,7 @@ const JoinCall = () => {
 
   const handleDeclineCall = () => {
     navigate('/');
-    toast.success('Đã từ chối tham gia cuộc gọi');
+    toast.success('Đã từ chối tham gia cuộc gọi ✋');
   };
 
   const handleCallEnd = () => {
@@ -157,6 +179,7 @@ const JoinCall = () => {
     return (
       <VideoCall
         channelName={callInfo.channelName}
+        groupId={callInfo.groupId}
         onCallEnd={handleCallEnd}
         isHost={false}
         groupMembers={callInfo.participants}
