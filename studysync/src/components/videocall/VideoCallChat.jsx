@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input, Avatar, Badge, Tooltip, Button, Alert } from 'antd';
 import { 
@@ -8,7 +8,6 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { MessageCircle } from 'lucide-react';
-import socketService from '../../services/socketService';
 import chatService from '../../services/chatService';
 import { useAuthStore } from '../../stores';
 
@@ -34,92 +33,183 @@ export default function VideoCallChat({
   const typingTimeoutRef = useRef(null);
   const { user, fetchUserProfile } = useAuthStore();
 
-  // Ensure user profile is loaded
+  // Derive user identifiers once for consistent usage
+  const currentUserId = user?.data?.id || user?.id;
+  const currentUserName = user?.data?.username || user?.username || user?.data?.email || user?.email;
+
+  // Ensure user profile is loaded BEFORE attempting socket connection
   useEffect(() => {
     const ensureUserProfile = async () => {
-      if (!user) {
-        console.log('⚠️ User not loaded, attempting to fetch profile...');
-        await fetchUserProfile();
+      if (!user && isOpen) {
+        console.log('⚠️ =========================================');
+        console.log('⚠️ USER NOT LOADED - FETCHING PROFILE');
+        console.log('⚠️ =========================================');
+        try {
+          await fetchUserProfile();
+          console.log('✅ =========================================');
+          console.log('✅ USER PROFILE FETCHED SUCCESSFULLY');
+          console.log('✅ =========================================');
+        } catch (error) {
+          console.error('❌ =========================================');
+          console.error('❌ FAILED TO FETCH USER PROFILE');
+          console.error('❌ Error:', error);
+          console.error('❌ =========================================');
+        }
       }
     };
     
-    if (isOpen) {
-      ensureUserProfile();
-    }
+    ensureUserProfile();
   }, [isOpen, user, fetchUserProfile]);
+
+  // Function to load message history - using useCallback to stabilize reference
+  // showLoading parameter controls whether to show spinner (true for initial load, false for refresh after send)
+  const loadMessageHistory = useCallback(async (showLoading = true) => {
+    if (!groupId || !isOpen) return;
+    
+    if (showLoading) {
+      setIsLoadingMessages(true);
+    }
+    
+    try {
+      console.log('📥 Loading chat history for group:', groupId);
+      const response = await chatService.getMessages(groupId, { 
+        page: 1,
+        limit: 50
+      });
+      
+      // Extract messages from response
+      console.log('📦 Full API response:', response);
+      const responseData = response?.data?.data || response?.data || response;
+      const messageList = responseData?.messages || [];
+      
+      console.log('📝 Extracted messages:', messageList);
+      
+      // Transform API messages to match UI format
+      const formattedMessages = messageList.map(msg => ({
+        id: msg.id,
+        userId: msg.senderId || msg.sender?.id,
+        userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
+        message: msg.content,
+        timestamp: new Date(msg.createdAt).getTime(),
+        type: msg.type === 'system' ? 'system' : 'message',
+        isEdited: msg.isEdited
+      }));
+      
+      setMessages(formattedMessages);
+      console.log('✅ Loaded', formattedMessages.length, 'messages from history');
+      
+      // Scroll to bottom after loading
+      setTimeout(() => scrollToBottom(), 100);
+    } catch (error) {
+      console.error('❌ Failed to load message history:', error);
+      console.error('Error details:', error.response?.data || error.message);
+    } finally {
+      if (showLoading) {
+        setIsLoadingMessages(false);
+      }
+    }
+  }, [groupId, isOpen]);
 
   // Load message history on mount using REST API
   useEffect(() => {
-    const loadMessageHistory = async () => {
-      if (!groupId || !isOpen) return;
-      
-      setIsLoadingMessages(true);
-      try {
-        console.log('📥 Loading chat history for group:', groupId);
-        const response = await chatService.getMessages(groupId, { 
-          page: 1,  // Backend uses page, not offset
-          limit: 50
-        });
-        
-        // Extract messages from response - backend returns { data: { messages, total, ... } }
-        const responseData = response?.data || response;
-        const messageList = responseData?.messages || [];
-        
-        console.log('📝 Raw messages from API:', messageList);
-        
-        // Transform API messages to match UI format
-        // Backend returns messages with sender relation
-        const formattedMessages = messageList.map(msg => ({
-          id: msg.id,
-          userId: msg.senderId || msg.sender?.id,
-          userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
-          message: msg.content,
-          timestamp: new Date(msg.createdAt).getTime(),
-          type: msg.type === 'system' ? 'system' : 'message',
-          isEdited: msg.isEdited
-        }));
-        
-        setMessages(formattedMessages);
-        console.log('✅ Loaded', formattedMessages.length, 'messages from history');
-        
-        // Scroll to bottom after loading
-        setTimeout(() => scrollToBottom(), 100);
-      } catch (error) {
-        console.error('❌ Failed to load message history:', error);
-        console.error('Error details:', error.response?.data || error.message);
-        // Don't show error to user, just continue with empty messages
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
-
     loadMessageHistory();
-  }, [groupId, isOpen]);
+  }, [loadMessageHistory]);
 
   useEffect(() => {
-    if (!channelName || !user || !isOpen) return;
+    if (!groupId || !currentUserId || !isOpen) {
+      console.log('⚠️ =========================================');
+      console.log('⚠️ CANNOT CONNECT TO CHAT - MISSING DATA');
+      console.log('⚠️ Group ID:', groupId);
+      console.log('⚠️ User ID:', currentUserId);
+      console.log('⚠️ Is Open:', isOpen);
+      console.log('⚠️ User object:', user);
+      console.log('⚠️ =========================================');
+      return;
+    }
+
+    // CRITICAL: Auto-join the chat room immediately when component opens
+    console.log('🎯 =========================================');
+    console.log('🎯 VIDEOCALLCHAT INITIALIZATION');
+    console.log('🎯 Group ID:', groupId);
+    console.log('🎯 User ID:', currentUserId);
+    console.log('🎯 User Name:', currentUserName);
+    console.log('🎯 Is Open:', isOpen);
+    console.log('🎯 =========================================');
+
+    let socketInstance;
+
+    const handleConnected = () => {
+      console.log('✅ =========================================');
+      console.log('✅ CHAT SOCKET CONNECTED IN COMPONENT');
+      console.log('✅ Group ID:', groupId);
+      console.log('✅ Joining group room...');
+      console.log('✅ =========================================');
+      chatService.joinGroup(groupId);
+      setIsConnected(true);
+      setConnectionError(false);
+      loadMessageHistory(false);
+    };
+
+    const handleDisconnected = (reason) => {
+      console.warn('⚠️ =========================================');
+      console.warn('⚠️ CHAT SOCKET DISCONNECTED IN COMPONENT');
+      console.warn('⚠️ Reason:', reason);
+      console.warn('⚠️ =========================================');
+      setIsConnected(false);
+    };
 
     // Try to connect to socket
     try {
-      console.log('🔌 Attempting to connect to chat for channel:', channelName);
-      const socket = socketService.connect(user.id, channelName);
-      
-      // Check connection after a delay
-      setTimeout(() => {
-        if (socketService.isSocketConnected()) {
-          setIsConnected(true);
-          setConnectionError(false);
-          console.log('✅ Socket connected successfully');
-        } else {
-          setIsConnected(false);
-          setConnectionError(false); // Don't show error if we have REST API fallback
-          console.warn('⚠️ Socket not connected - using REST API fallback');
-        }
-      }, 1000);
+      console.log('🔌 =========================================');
+      console.log('🔌 ATTEMPTING SOCKET CONNECTION FROM COMPONENT');
+      console.log('🔌 Group ID:', groupId);
+      console.log('🔌 User ID:', currentUserId);
+      console.log('🔌 =========================================');
+      socketInstance = chatService.connect(currentUserId, groupId);
 
-      // Listen for messages
-      socketService.onMessage((messageData) => {
-        setMessages(prev => [...prev, messageData]);
+      if (!socketInstance) {
+        console.warn('❌ Socket instance not created; realtime chat disabled');
+        setIsConnected(false);
+        setConnectionError(true);
+        return;
+      }
+
+      socketInstance.on('connect', handleConnected);
+      socketInstance.on('disconnect', handleDisconnected);
+
+      // If socket is already connected, join immediately
+      if (socketInstance.connected) {
+        console.log('🔌 Socket already connected, joining group immediately');
+        handleConnected();
+      }
+
+      // Set up message listener
+      // This will be set up ONCE per mount - the callback will have access to latest state via setter function
+      console.log('📡 =========================================');
+      console.log('📡 SETTING UP MESSAGE LISTENER');
+      console.log('📡 Group ID:', groupId);
+      console.log('📡 Socket connected:', socketInstance.connected);
+      console.log('📡 =========================================');
+      
+      chatService.onMessage((messageData) => {
+        console.log('📨 =========================================');
+        console.log('📨 NEW MESSAGE RECEIVED VIA WEBSOCKET');
+        console.log('📨 Message ID:', messageData.id);
+        console.log('📨 From:', messageData.userName);
+        console.log('📨 Content:', messageData.message);
+        console.log('📨 =========================================');
+        
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          if (prev.find(m => m.id === messageData.id)) {
+            console.log('⚠️ Duplicate message detected, skipping:', messageData.id);
+            return prev;
+          }
+          
+          console.log('✅ Adding new message to state');
+          return [...prev, messageData];
+        });
+        
         scrollToBottom();
         if (onNewMessage) {
           onNewMessage();
@@ -127,8 +217,8 @@ export default function VideoCallChat({
       });
 
       // Listen for typing indicators
-      socketService.onTyping((data) => {
-        if (user && data.userId !== user.id) {
+      chatService.onTyping((data) => {
+        if (currentUserId && data.userId !== currentUserId) {
           if (data.isTyping) {
             setTypingUsers(prev => {
               if (!prev.find(u => u.userId === data.userId)) {
@@ -142,29 +232,31 @@ export default function VideoCallChat({
         }
       });
 
-      // Listen for user joined
-      socketService.onUserJoined((data) => {
-        const systemMessage = {
-          id: `system_${Date.now()}`,
-          type: 'system',
-          message: `${data.userName} đã tham gia cuộc gọi`,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, systemMessage]);
-        scrollToBottom();
-      });
+      // Listen for user joined (commented out - too many notifications)
+      // chatService.onUserJoined((data) => {
+      //   console.log('👋 User joined event received:', data);
+      //   const systemMessage = {
+      //     id: `system_${Date.now()}`,
+      //     type: 'system',
+      //     message: `${data.userName || 'User'} đã tham gia cuộc gọi`,
+      //     timestamp: Date.now()
+      //   };
+      //   setMessages(prev => [...prev, systemMessage]);
+      //   scrollToBottom();
+      // });
 
-      // Listen for user left
-      socketService.onUserLeft((data) => {
-        const systemMessage = {
-          id: `system_${Date.now()}`,
-          type: 'system',
-          message: `${data.userName} đã rời khỏi cuộc gọi`,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, systemMessage]);
-        scrollToBottom();
-      });
+      // Listen for user left (commented out - too many notifications)
+      // chatService.onUserLeft((data) => {
+      //   console.log('👋 User left event received:', data);
+      //   const systemMessage = {
+      //     id: `system_${Date.now()}`,
+      //     type: 'system',
+      //     message: `${data.userName || 'User'} đã rời khỏi cuộc gọi`,
+      //     timestamp: Date.now()
+      //   };
+      //   setMessages(prev => [...prev, systemMessage]);
+      //   scrollToBottom();
+      // });
 
     } catch (error) {
       console.error('❌ Failed to connect to chat server:', error);
@@ -173,11 +265,16 @@ export default function VideoCallChat({
     }
 
     return () => {
-      if (channelName) {
-        socketService.leaveChannel(channelName);
+      console.log('🧹 Cleaning up VideoCallChat - leaving group:', groupId);
+      if (socketInstance) {
+        socketInstance.off('connect', handleConnected);
+        socketInstance.off('disconnect', handleDisconnected);
+      }
+      if (groupId) {
+        chatService.leaveGroup(groupId);
       }
     };
-  }, [channelName, user, isOpen]);
+  }, [groupId, currentUserId, currentUserName, isOpen, onNewMessage, loadMessageHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,7 +282,7 @@ export default function VideoCallChat({
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-    if (!user) {
+    if (!currentUserId) {
       console.error('❌ No user available to send message');
       setConnectionError('Vui lòng đăng nhập lại để gửi tin nhắn');
       return;
@@ -194,24 +291,14 @@ export default function VideoCallChat({
     const messageContent = inputMessage;
     setInputMessage(''); // Clear immediately for better UX
 
-    // Try WebSocket first, fallback to REST API
-    if (isConnected) {
-      try {
-        socketService.sendMessage(
-          channelName,
-          messageContent,
-          user.id,
-          user.username || user.email
-        );
-        setIsTyping(false);
-        socketService.sendTyping(channelName, user.id, user.username, false);
-      } catch (error) {
-        console.error('❌ Socket send failed, trying REST API:', error);
-        await sendViaRestAPI(messageContent);
-      }
-    } else {
-      // Use REST API when socket not connected
-      await sendViaRestAPI(messageContent);
+    // Always use REST API first for reliability
+    console.log('📤 Sending message via REST API');
+    await sendViaRestAPI(messageContent);
+    
+    // Clear typing indicator if socket is connected
+    if (isConnected && currentUserId) {
+      setIsTyping(false);
+      chatService.sendTyping(groupId, currentUserId, currentUserName, false);
     }
   };
 
@@ -223,42 +310,21 @@ export default function VideoCallChat({
 
     try {
       console.log('📤 Sending message via REST API');
-      // Send just the content string - chatService will wrap it properly
-      const response = await chatService.sendMessage(groupId, messageContent);
-
-      console.log('📦 Full response:', response);
+      console.log('📤 GroupId:', groupId);
+      console.log('📤 Content:', messageContent);
       
-      // Add message to local state
-      const responseData = response?.data || response;
-      console.log('📦 Response data:', responseData);
+      // Send the message - backend will broadcast it via WebSocket to ALL clients
+      // including the sender, so we DON'T need to reload message history
+      await chatService.sendMessage(groupId, messageContent);
+      console.log('✅ Message sent successfully to server');
+      console.log('✅ Message will arrive via WebSocket broadcast');
       
-      const sentMessage = responseData?.data || responseData;
-      console.log('📝 Sent message:', sentMessage);
+      // DON'T reload message history - let WebSocket handle it!
+      // The backend broadcasts to all clients, so we'll receive our own message via WebSocket
       
-      // Validate we have a valid message object
-      if (!sentMessage || !sentMessage.id) {
-        console.error('❌ Invalid message response:', sentMessage);
-        throw new Error('Invalid message response from server');
-      }
-      
-      // Use sender info from response if available, otherwise use current user info
-      const senderInfo = sentMessage.sender || {};
-      const newMessage = {
-        id: sentMessage.id,
-        userId: sentMessage.senderId || (user && user.id),
-        userName: senderInfo.username || senderInfo.name || senderInfo.email?.split('@')[0] || (user && (user.username || user.name || user.email?.split('@')[0])) || 'You',
-        message: sentMessage.content || messageContent,
-        timestamp: sentMessage.createdAt ? new Date(sentMessage.createdAt).getTime() : Date.now(),
-        type: 'message',
-        isEdited: sentMessage.isEdited || false
-      };
-      
-      console.log('📝 Adding message to UI:', newMessage);
-      setMessages(prev => [...prev, newMessage]);
-      scrollToBottom();
-      console.log('✅ Message sent via REST API');
     } catch (error) {
       console.error('❌ Failed to send message via REST API:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
       // Re-add message to input if send failed
       setInputMessage(messageContent);
       alert('Không thể gửi tin nhắn. Vui lòng thử lại.');
@@ -269,15 +335,15 @@ export default function VideoCallChat({
     const value = e.target.value;
     setInputMessage(value);
 
-    if (!isConnected) return;
+    if (!isConnected || !currentUserId) return;
 
     // Handle typing indicator
     if (value.trim() && !isTyping) {
       setIsTyping(true);
-      socketService.sendTyping(channelName, user.id, user.username, true);
+      chatService.sendTyping(groupId, currentUserId, currentUserName, true);
     } else if (!value.trim() && isTyping) {
       setIsTyping(false);
-      socketService.sendTyping(channelName, user.id, user.username, false);
+      chatService.sendTyping(groupId, currentUserId, currentUserName, false);
     }
 
     // Clear typing indicator after 2 seconds of no typing
@@ -286,7 +352,7 @@ export default function VideoCallChat({
     }
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socketService.sendTyping(channelName, user.id, user.username, false);
+      chatService.sendTyping(groupId, currentUserId, currentUserName, false);
     }, 2000);
   };
 
@@ -364,7 +430,7 @@ export default function VideoCallChat({
 
         <AnimatePresence>
           {messages.filter(msg => msg && msg.id).map((msg) => {
-            const isOwnMessage = user && msg.userId === user.id;
+            const isOwnMessage = currentUserId && msg.userId === currentUserId;
             const isSystemMessage = msg.type === 'system';
 
             if (isSystemMessage) {
@@ -444,9 +510,10 @@ export default function VideoCallChat({
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-gray-200">
-        {!user && (
+        {!currentUserId && (
           <Alert
             message="Đang tải thông tin người dùng..."
+            description="Vui lòng đợi để kết nối chat..."
             type="warning"
             showIcon
             className="mb-2"
@@ -462,16 +529,16 @@ export default function VideoCallChat({
                 handleSendMessage();
               }
             }}
-            placeholder={!user ? "Đang tải..." : groupId ? "Nhập tin nhắn..." : "Chọn nhóm để chat..."}
+            placeholder={!currentUserId ? "Đang tải..." : groupId ? "Nhập tin nhắn..." : "Chọn nhóm để chat..."}
             autoSize={{ minRows: 1, maxRows: 3 }}
             className="flex-1"
-            disabled={!groupId || isLoadingMessages || !user}
+            disabled={!groupId || isLoadingMessages || !currentUserId}
           />
           <Button
             type="primary"
             icon={<SendOutlined />}
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || !groupId || isLoadingMessages || !user}
+            disabled={!inputMessage.trim() || !groupId || isLoadingMessages || !currentUserId}
             className="bg-gradient-to-r from-purple-600 to-blue-600 border-none self-end"
           />
         </div>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import authService from '../services/authService.js';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../utils/toast';
 
 const useAuthStore = create(
   persist(
@@ -70,7 +70,8 @@ const useAuthStore = create(
           });
 
           console.log('✅ Login successful');
-          toast.success('Đăng nhập thành công!');
+          const username = userProfile?.username || response.user?.username || 'bạn';
+          commonToasts.loginSuccess(username);
           return response;
         } catch (error) {
           console.error('❌ Login failed:', error.message);
@@ -80,7 +81,7 @@ const useAuthStore = create(
             loading: false,
             error: error.message,
           });
-          toast.error(error.message);
+          showToast.error(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
           throw error;
         }
       },
@@ -94,12 +95,12 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ Registration successful');
-          toast.success('Đăng ký thành công!');
+          commonToasts.registerSuccess();
           return response;
         } catch (error) {
           console.error('❌ Registration failed:', error.message);
           set({ loading: false, error: error.message });
-          toast.error(error.message);
+          showToast.error(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
           throw error;
         }
       },
@@ -113,12 +114,12 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ Email verification successful');
-          toast.success('Email đã được xác thực thành công!');
+          showToast.success('Email đã được xác thực thành công');
           return response;
         } catch (error) {
           console.error('❌ Email verification failed:', error.message);
           set({ loading: false, error: error.message });
-          toast.error(error.message);
+          showToast.error(error.message || 'Xác thực email thất bại. Vui lòng thử lại.');
           throw error;
         }
       },
@@ -132,12 +133,12 @@ const useAuthStore = create(
           
           set({ loading: false, error: null });
           console.log('✅ OTP resent successfully');
-          toast.success('Mã OTP đã được gửi lại!');
+          showToast.success('Mã OTP đã được gửi lại');
           return response;
         } catch (error) {
           console.error('❌ Resend OTP failed:', error.message);
           set({ loading: false, error: error.message });
-          toast.error(error.message);
+          showToast.error(error.message || 'Gửi lại OTP thất bại. Vui lòng thử lại.');
           throw error;
         }
       },
@@ -166,6 +167,11 @@ const useAuthStore = create(
 
           if (response.ok) {
             const userProfile = await response.json();
+            
+            // CRITICAL FIX: Update the store state with the fetched profile
+            set({ user: userProfile });
+            console.log('✅ User profile loaded and stored:', userProfile);
+            
             return userProfile;
           }
           
@@ -212,7 +218,7 @@ const useAuthStore = create(
           error: null,
         });
         console.log('✅ Logout successful');
-        toast.success('Đăng xuất thành công!');
+        commonToasts.logoutSuccess();
       },
 
       // Clear error

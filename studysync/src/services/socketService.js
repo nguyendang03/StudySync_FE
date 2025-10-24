@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../utils/toast';
 
 class SocketService {
   constructor() {
@@ -16,13 +16,16 @@ class SocketService {
       return this.socket;
     }
 
-    console.log('🔌 Connecting to socket server...', this.serverUrl);
+    console.log('🔌 Connecting to chat socket server...', this.serverUrl + '/chat');
 
-    this.socket = io(this.serverUrl, {
+    // Connect to /chat namespace
+    this.socket = io(this.serverUrl + '/chat', {
       transports: ['websocket', 'polling'],
       auth: {
-        userId: userId,
-        channelName: channelName
+        userId: userId
+      },
+      query: {
+        userId: userId
       },
       reconnection: true,
       reconnectionDelay: 1000,
@@ -37,11 +40,14 @@ class SocketService {
   // Set up socket event listeners
   setupEventListeners(channelName) {
     this.socket.on('connect', () => {
-      console.log('✅ Socket connected successfully');
+      console.log('✅ Socket connected to /chat namespace');
       this.isConnected = true;
       
-      // Join the channel room
-      this.socket.emit('join-channel', { channelName });
+      // Auto-join channel if provided
+      if (channelName) {
+        // channelName is actually the groupId for chat
+        this.joinGroup(channelName);
+      }
     });
 
     this.socket.on('disconnect', (reason) => {
@@ -56,39 +62,73 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('🔴 Socket connection error:', error);
-      toast.error('Không thể kết nối chat server');
+      showToast.error('Không thể kết nối chat server');
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
       console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-      toast.success('Đã kết nối lại chat');
+      showToast.success('Đã kết nối lại chat');
+      
+      // Rejoin channel after reconnection
+      if (channelName) {
+        this.joinGroup(channelName);
+      }
     });
 
     this.socket.on('reconnect_failed', () => {
       console.error('🔴 Socket reconnection failed');
-      toast.error('Không thể kết nối lại chat server');
+      showToast.error('Không thể kết nối lại chat server');
     });
   }
 
-  // Send a message to the channel
-  sendMessage(channelName, message, userId, userName) {
+  // Join a group chat room
+  joinGroup(groupId) {
     if (!this.socket || !this.isConnected) {
-      console.error('Socket not connected');
-      toast.error('Chưa kết nối chat server');
+      console.error('Socket not connected, cannot join group');
       return;
     }
 
+    console.log('🚪 Joining group:', groupId);
+    this.socket.emit('chat:join', { groupId: parseInt(groupId) }, (response) => {
+      if (response) {
+        console.log('✅ Join group response:', response);
+      }
+    });
+    
+    // Also listen for the join confirmation
+    this.socket.once('chat:joined', (data) => {
+      console.log('✅ Successfully joined group room:', data);
+    });
+  }
+
+  // Leave a group chat room
+  leaveGroup(groupId) {
+    if (!this.socket || !this.isConnected) return;
+
+    console.log('🚪 Leaving group:', groupId);
+    this.socket.emit('chat:leave', { groupId: parseInt(groupId) });
+  }
+
+  // Send a message to the channel (using WebSocket)
+  sendMessage(channelName, message, userId, userName) {
+    if (!this.socket || !this.isConnected) {
+      console.error('Socket not connected');
+      showToast.error('Chưa kết nối chat server');
+      return;
+    }
+
+    const groupId = parseInt(channelName); // channelName is actually groupId
+    
     const messageData = {
-      channelName,
-      message,
-      userId,
-      userName,
-      timestamp: Date.now(),
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      groupId,
+      message: {
+        content: message
+        // type is optional and defaults to 'text' in backend
+      }
     };
 
-    this.socket.emit('send-message', messageData);
-    console.log('📤 Message sent:', messageData);
+    console.log('📤 Sending message via socket:', messageData);
+    this.socket.emit('chat:send', messageData);
   }
 
   // Listen for incoming messages
@@ -98,9 +138,28 @@ class SocketService {
       return;
     }
 
-    this.socket.on('receive-message', (messageData) => {
-      console.log('📥 Message received:', messageData);
-      callback(messageData);
+    // Remove existing listener to prevent duplicates
+    this.socket.off('chat:message');
+    
+    console.log('📡 Setting up new chat:message listener');
+
+    this.socket.on('chat:message', (data) => {
+      console.log('📥 Message received via socket:', data);
+      
+      // Transform backend message format to UI format
+      const msg = data.message;
+      const transformedMessage = {
+        id: msg.id,
+        userId: msg.senderId || msg.sender?.id,
+        userName: msg.sender?.username || msg.sender?.name || msg.sender?.email?.split('@')[0] || 'User',
+        message: msg.content,
+        timestamp: new Date(msg.createdAt).getTime(),
+        type: msg.type === 'system' ? 'system' : 'message',
+        isEdited: msg.isEdited
+      };
+      
+      console.log('✅ Transformed message for UI:', transformedMessage);
+      callback(transformedMessage);
     });
   }
 
@@ -108,7 +167,7 @@ class SocketService {
   onUserJoined(callback) {
     if (!this.socket) return;
 
-    this.socket.on('user-joined', (data) => {
+    this.socket.on('user:joined', (data) => {
       console.log('👋 User joined:', data);
       callback(data);
     });
@@ -118,7 +177,7 @@ class SocketService {
   onUserLeft(callback) {
     if (!this.socket) return;
 
-    this.socket.on('user-left', (data) => {
+    this.socket.on('user:left', (data) => {
       console.log('👋 User left:', data);
       callback(data);
     });
@@ -128,10 +187,9 @@ class SocketService {
   sendTyping(channelName, userId, userName, isTyping) {
     if (!this.socket || !this.isConnected) return;
 
-    this.socket.emit('typing', {
-      channelName,
-      userId,
-      userName,
+    const groupId = parseInt(channelName);
+    this.socket.emit('chat:typing', {
+      groupId,
       isTyping
     });
   }
@@ -140,7 +198,7 @@ class SocketService {
   onTyping(callback) {
     if (!this.socket) return;
 
-    this.socket.on('user-typing', (data) => {
+    this.socket.on('user:typing', (data) => {
       callback(data);
     });
   }
@@ -149,7 +207,8 @@ class SocketService {
   leaveChannel(channelName) {
     if (!this.socket || !this.isConnected) return;
 
-    this.socket.emit('leave-channel', { channelName });
+    const groupId = parseInt(channelName);
+    this.leaveGroup(groupId);
   }
 
   // Disconnect socket

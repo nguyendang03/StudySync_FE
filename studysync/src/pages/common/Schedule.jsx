@@ -128,7 +128,7 @@ export default function Schedule() {
       setScheduleEvents(prev => [...prev, newEvent]);
       setIsModalOpen(false);
       form.resetFields();
-      toast.success('Đã thêm sự kiện thành công!');
+      toast.success('Đã thêm sự kiện thành công! 📅');
     } catch (error) {
       toast.error('Có lỗi xảy ra khi tạo sự kiện!');
     }

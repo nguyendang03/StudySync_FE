@@ -32,7 +32,7 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       const response = await api.post('/forgot-password', { email });
-      toast.success(response.data.message || 'OTP đã được gửi đến email!', { autoClose: 3000 });
+      toast.success(response.data.message || 'OTP đã được gửi đến email! 📧', { autoClose: 3000 });
       console.log(`OTP request sent for ${email}`);
 
       setTimeout(() => {
