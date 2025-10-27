@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Card, Button, Table, Tag, Space, Modal, message, Spin } from 'antd';
+import { Tabs, Card, Button, Table, Tag, Space, Modal, Spin } from 'antd';
 import { 
   SendOutlined, 
   UserAddOutlined, 
@@ -8,11 +8,12 @@ import {
   ReloadOutlined,
   ClockCircleOutlined 
 } from '@ant-design/icons';
+import { showToast } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
 const { TabPane } = Tabs;
 
-export default function GroupInvitationsManager({ groupId }) {
+export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 }) {
   const [sentInvitations, setSentInvitations] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [loadingSent, setLoadingSent] = useState(false);
@@ -25,7 +26,7 @@ export default function GroupInvitationsManager({ groupId }) {
       fetchJoinRequests();
     }
     fetchSentInvitations();
-  }, [groupId]);
+  }, [groupId, refreshTrigger]);
 
   const fetchSentInvitations = async () => {
     setLoadingSent(true);
@@ -43,7 +44,7 @@ export default function GroupInvitationsManager({ groupId }) {
       setSentInvitations(filtered);
     } catch (error) {
       console.error('❌ Error fetching sent invitations:', error);
-      message.error(error.message || 'Không thể tải danh sách lời mời đã gửi');
+      showToast.error(error.message || 'Không thể tải danh sách lời mời đã gửi');
     } finally {
       setLoadingSent(false);
     }
@@ -60,7 +61,7 @@ export default function GroupInvitationsManager({ groupId }) {
       setJoinRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('❌ Error fetching join requests:', error);
-      message.error(error.message || 'Không thể tải danh sách yêu cầu tham gia');
+      showToast.error(error.message || 'Không thể tải danh sách yêu cầu tham gia');
     } finally {
       setLoadingRequests(false);
     }
@@ -76,11 +77,11 @@ export default function GroupInvitationsManager({ groupId }) {
         setProcessingId(requestId);
         try {
           await groupService.approveJoinRequest(requestId);
-          message.success(`Đã chấp nhận yêu cầu của ${userName}`);
+          showToast.success(`Đã chấp nhận yêu cầu của ${userName}`);
           await fetchJoinRequests();
         } catch (error) {
           console.error('❌ Error approving request:', error);
-          message.error(error.message || 'Không thể duyệt yêu cầu');
+          showToast.error(error.message || 'Không thể duyệt yêu cầu');
         } finally {
           setProcessingId(null);
         }
@@ -99,11 +100,11 @@ export default function GroupInvitationsManager({ groupId }) {
         setProcessingId(requestId);
         try {
           await groupService.denyJoinRequest(requestId);
-          message.success(`Đã từ chối yêu cầu của ${userName}`);
+          showToast.success(`Đã từ chối yêu cầu của ${userName}`);
           await fetchJoinRequests();
         } catch (error) {
           console.error('❌ Error denying request:', error);
-          message.error(error.message || 'Không thể từ chối yêu cầu');
+          showToast.error(error.message || 'Không thể từ chối yêu cầu');
         } finally {
           setProcessingId(null);
         }

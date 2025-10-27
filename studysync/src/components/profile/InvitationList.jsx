@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckOutlined, CloseOutlined, ReloadOutlined, MailOutlined, UserOutlined, ClockCircleOutlined, TeamOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Spin, Button, Modal, Empty, Badge, Pagination } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { showToast, commonToasts } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
 export default function InvitationList() {
@@ -24,34 +24,10 @@ export default function InvitationList() {
     try {
       const response = await groupService.getReceivedInvitations();
       const invitationData = response?.data || response;
-      console.log('📥 Fetched invitations:', invitationData);
-      console.log('📊 Response structure:', { response, data: response?.data, isArray: Array.isArray(invitationData) });
-      
-      const processedInvitations = Array.isArray(invitationData) ? invitationData : [];
-      console.log('✅ Processed invitations:', invitationData);
-      setInvitations(invitationData);
+      setInvitations(invitationData || []);
     } catch (error) {
       console.error('❌ Error fetching invitations:', error);
-      toast.error(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CloseOutlined className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Không thể tải lời mời</p>
-              <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại sau'}</p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 3000,
-          style: {
-            padding: '16px',
-            maxWidth: '400px',
-          },
-        }
-      );
+      showToast.error('Không thể tải lời mời. ' + (error.message || 'Vui lòng thử lại sau'));
     } finally {
       setLoading(false);
     }
@@ -61,28 +37,7 @@ export default function InvitationList() {
     setProcessingId(invitationId);
     try {
       await groupService.acceptInvitation(invitationId);
-      toast.success(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CheckOutlined className="text-white text-lg" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Đã tham gia nhóm! 🎉</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Chào mừng bạn đến với nhóm <span className="font-medium text-purple-600">"{groupName}"</span>
-              </p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 4000,
-          style: {
-            padding: '16px',
-            maxWidth: '500px',
-          },
-        }
-      );
+      commonToasts.groupJoined(groupName);
       // Refresh invitations list and reset to first page if needed
       await fetchInvitations();
       // If current page becomes empty after deletion, go to previous page
@@ -96,33 +51,13 @@ export default function InvitationList() {
       }
     } catch (error) {
       console.error('❌ Error accepting invitation:', error);
-      toast.error(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CloseOutlined className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Không thể chấp nhận lời mời</p>
-              <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 3000,
-          style: {
-            padding: '16px',
-            maxWidth: '400px',
-          },
-        }
-      );
+      showToast.error('Không thể chấp nhận lời mời. ' + (error.message || 'Vui lòng thử lại'));
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleDecline = async (invitationId, groupName) => {
-    console.log('🔴 handleDecline called:', { invitationId, groupName });
     setSelectedInvitation({ id: invitationId, name: groupName });
     setDeclineModalVisible(true);
   };
@@ -130,37 +65,13 @@ export default function InvitationList() {
   const confirmDecline = async () => {
     if (!selectedInvitation) return;
     
-    console.log('✅ User confirmed decline');
     setProcessingId(selectedInvitation.id);
     setDeclineModalVisible(false);
     
     try {
-      console.log('📤 Calling declineInvitation API...');
       const response = await groupService.declineInvitation(selectedInvitation.id);
-      console.log('✅ Decline response:', response);
       
-      toast.success(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CloseOutlined className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Đã từ chối lời mời</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Lời mời tham gia nhóm <span className="font-medium">"{selectedInvitation.name}"</span> đã bị từ chối
-              </p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 3000,
-          style: {
-            padding: '16px',
-            maxWidth: '450px',
-          },
-        }
-      );
+      showToast.success(`Đã từ chối lời mời tham gia nhóm "${selectedInvitation.name}"`);
       
       // Refresh invitations list and adjust page if needed
       await fetchInvitations();
@@ -180,26 +91,7 @@ export default function InvitationList() {
         status: error.response?.status
       });
       
-      toast.error(
-        (t) => (
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <CloseOutlined className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Không thể từ chối lời mời</p>
-              <p className="text-sm text-gray-600 mt-1">{error.message || 'Vui lòng thử lại'}</p>
-            </div>
-          </div>
-        ),
-        {
-          duration: 3000,
-          style: {
-            padding: '16px',
-            maxWidth: '400px',
-          },
-        }
-      );
+      showToast.error('Không thể từ chối lời mời. ' + (error.message || 'Vui lòng thử lại'));
     } finally {
       setProcessingId(null);
       setSelectedInvitation(null);
@@ -235,17 +127,6 @@ export default function InvitationList() {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedInvitations = invitationsArray.slice(startIndex, endIndex);
-
-  console.log('🔍 Pagination Debug:', {
-    invitationsType: Array.isArray(invitations) ? 'array' : 'object',
-    invitationsCount,
-    currentPage,
-    pageSize,
-    startIndex,
-    endIndex,
-    paginatedCount: paginatedInvitations.length,
-    paginatedData: paginatedInvitations
-  });
 
   const handlePageChange = (page, newPageSize) => {
     setCurrentPage(page);
@@ -426,12 +307,7 @@ export default function InvitationList() {
                       <Button
                         danger
                         icon={<CloseOutlined />}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('🔴 BUTTON CLICKED - Decline button pressed!');
-                          handleDecline(invitation.id, invitation.groupName);
-                        }}
+                        onClick={() => handleDecline(invitation.id, invitation.groupName)}
                         loading={processingId === invitation.id}
                         disabled={processingId && processingId !== invitation.id}
                         className="flex-1 h-11 rounded-lg font-semibold"
@@ -480,7 +356,6 @@ export default function InvitationList() {
         open={declineModalVisible}
         onOk={confirmDecline}
         onCancel={() => {
-          console.log('❌ User cancelled decline');
           setDeclineModalVisible(false);
           setSelectedInvitation(null);
         }}
