@@ -6,7 +6,25 @@ class SocketService {
     this.socket = null;
     this.isConnected = false;
     this.messageHandlers = new Map();
-    this.serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+    
+    // Get socket URL - use VITE_SOCKET_URL if set, otherwise derive from API URL
+    const getSocketUrl = () => {
+      if (import.meta.env.VITE_SOCKET_URL) {
+        return import.meta.env.VITE_SOCKET_URL;
+      }
+      
+      // If VITE_API_URL is set, extract base URL from it
+      if (import.meta.env.VITE_API_URL) {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        // Remove /api/v1 if present to get base URL
+        return apiUrl.replace(/\/api\/v1\/?$/, '');
+      }
+      
+      // Default for development
+      return 'http://localhost:3000';
+    };
+    
+    this.serverUrl = getSocketUrl();
   }
 
   // Initialize socket connection

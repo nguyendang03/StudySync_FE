@@ -3,8 +3,11 @@ import API_BASE_URL from '../config/api.js';
 class AuthService {
     async login(loginData) {
         try {
+            const loginUrl = `${API_BASE_URL}/auth/login`;
             console.log('🔐 Starting login process...');
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            console.log('🌐 API Base URL:', API_BASE_URL);
+            console.log('🌐 Full Login URL:', loginUrl);
+            const response = await fetch(loginUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
