@@ -27,6 +27,8 @@ const AgoraDebugTest = lazy(() => import('./pages/common/AgoraDebugTest'));
 const VideoCall = lazy(() => import('./pages/common/VideoCall'));
 const JoinCall = lazy(() => import('./pages/common/JoinCall'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Subscriptions = lazy(() => import('./pages/common/Subscriptions'));
+const PaymentSuccess = lazy(() => import('./pages/common/PaymentSuccess'));
 function App() {
   return (
     <AuthProvider>
@@ -263,6 +265,30 @@ function App() {
                     <Layout>
                       <Suspense fallback={<LoadingSpinner size="large" message="Đang tải phân công nhiệm vụ..." />}>
                         <TaskDistribution />
+                      </Suspense>
+                    </Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/subscriptions" 
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải gói subscription..." />}>
+                        <Subscriptions />
+                      </Suspense>
+                    </Layout>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/payment/success/:orderCode" 
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải hóa đơn..." />}>
+                        <PaymentSuccess />
                       </Suspense>
                     </Layout>
                   </ProtectedRoute>

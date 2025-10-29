@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import authService from '../services/authService.js';
 import { showToast, commonToasts } from '../utils/toast';
+import API_BASE_URL from '../config/api.js';
 
 const useAuthStore = create(
   persist(
@@ -158,21 +159,32 @@ const useAuthStore = create(
             return null;
           }
 
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/users/me/profile`, {
+          console.log('🌐 Fetching profile from:', `${API_BASE_URL}/users/me/profile`);
+          
+          const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
 
+          console.log('📡 Profile response status:', response.status);
+
           if (response.ok) {
             const userProfile = await response.json();
+            console.log('📦 Raw profile response:', userProfile);
+            
+            // Handle nested response structure
+            const profileData = userProfile?.data || userProfile;
             
             // CRITICAL FIX: Update the store state with the fetched profile
-            set({ user: userProfile });
-            console.log('✅ User profile loaded and stored:', userProfile);
+            set({ user: profileData });
+            console.log('✅ User profile loaded and stored:', profileData);
             
-            return userProfile;
+            return profileData;
+          } else {
+            const errorText = await response.text();
+            console.error('❌ Profile fetch failed:', response.status, errorText);
           }
           
           console.log('⚠️ Profile fetch returned:', response.status);
@@ -223,6 +235,18 @@ const useAuthStore = create(
 
       // Clear error
       clearError: () => set({ error: null }),
+
+      // Manual refresh user profile (for debugging)
+      refreshUserProfile: async () => {
+        console.log('🔄 Manually refreshing user profile...');
+        const userProfile = await get().fetchUserProfile();
+        if (userProfile) {
+          console.log('✅ User profile refreshed successfully');
+        } else {
+          console.log('❌ Failed to refresh user profile');
+        }
+        return userProfile;
+      },
     }),
     {
       name: 'auth-storage',

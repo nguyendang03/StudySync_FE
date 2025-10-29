@@ -11,7 +11,8 @@ import {
   User,
   Settings,
   Home,
-  Menu
+  Menu,
+  Crown
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -103,6 +104,18 @@ export default function Sidebar() {
             >
               <Bot className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span className="font-medium">AI Trợ lý</span>
+            </Link>
+            
+            <Link 
+              to="/subscriptions"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all group ${
+                location.pathname === '/subscriptions'
+                  ? 'text-white bg-white/20 border border-white/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/20'
+              }`}
+            >
+              <Crown className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Gói dịch vụ</span>
             </Link>
             
             <div className="border-t border-white/20 my-4"></div>
