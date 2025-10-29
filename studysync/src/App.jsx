@@ -29,6 +29,7 @@ const JoinCall = lazy(() => import('./pages/common/JoinCall'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const Subscriptions = lazy(() => import('./pages/common/Subscriptions'));
 const PaymentSuccess = lazy(() => import('./pages/common/PaymentSuccess'));
+const Reviews = lazy(() => import('./pages/common/Reviews'));
 function App() {
   return (
     <AuthProvider>
@@ -164,6 +165,16 @@ function App() {
                   <Layout>
                     <Suspense fallback={<LoadingSpinner size="large" message="Đang tải câu hỏi thường gặp..." />}>
                       <GiaiDapThacMac />
+                    </Suspense>
+                  </Layout>
+                } 
+              />
+              <Route 
+                path="/reviews" 
+                element={
+                  <Layout>
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải đánh giá..." />}>
+                      <Reviews />
                     </Suspense>
                   </Layout>
                 } 

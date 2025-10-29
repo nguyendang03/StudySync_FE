@@ -22,7 +22,8 @@ import {
   CalendarOutlined,
   VideoCameraOutlined,
   CrownOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
 
@@ -113,6 +114,11 @@ export default function Header() {
   // Support dropdown menu items
   const supportMenu = {
     items: [
+      {
+        key: 'reviews',
+        icon: <StarOutlined className="text-yellow-600" />,
+        label: <Link to="/reviews">Đánh giá</Link>,
+      },
       {
         key: 'faq',
         icon: <QuestionCircleOutlined className="text-orange-600" />,
