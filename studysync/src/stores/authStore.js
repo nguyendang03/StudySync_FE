@@ -144,7 +144,7 @@ const useAuthStore = create(
         }
       },
 
-      // Fetch user profile
+      // Fetch user profile (role-aware: ADMIN -> /admin/me, others -> /users/me/profile)
       fetchUserProfile: async () => {
         try {
           const token = authService.getAccessToken();
@@ -159,36 +159,62 @@ const useAuthStore = create(
             return null;
           }
 
-          console.log('🌐 Fetching profile from:', `${API_BASE_URL}/users/me/profile`);
-          
+          // Decode role from JWT to choose endpoint
+          const parseJwt = (t) => {
+            try {
+              const base64Url = t.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+              return JSON.parse(jsonPayload);
+            } catch { return {}; }
+          };
+          const claims = parseJwt(token);
+          const rolesClaim = claims.role || claims.roles || claims.authorities || claims.scopes;
+          const roles = Array.isArray(rolesClaim) ? rolesClaim : (rolesClaim ? [rolesClaim] : []);
+          const isAdmin = roles.some(r => String(r).toUpperCase().includes('ADMIN'));
+
+          if (isAdmin) {
+            console.log('🌐 Fetching admin profile:', `${API_BASE_URL}/admin/me`);
+            const res = await fetch(`${API_BASE_URL}/admin/me`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            console.log('📡 Admin profile status:', res.status);
+            if (res.ok) {
+              const raw = await res.json();
+              const data = raw?.data?.data || raw?.data || raw;
+              set({ user: { ...data, role: data?.role || 'ADMIN' } });
+              console.log('✅ Admin profile loaded');
+              return data;
+            } else {
+              const txt = await res.text();
+              console.error('❌ Admin profile failed:', res.status, txt);
+              return null;
+            }
+          }
+
+          // Non-admin user profile
+          console.log('🌐 Fetching user profile from:', `${API_BASE_URL}/users/me/profile`);
           const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
-
-          console.log('📡 Profile response status:', response.status);
-
+          console.log('📡 User profile response status:', response.status);
           if (response.ok) {
             const userProfile = await response.json();
-            console.log('📦 Raw profile response:', userProfile);
-            
-            // Handle nested response structure
-            const profileData = userProfile?.data || userProfile;
-            
-            // CRITICAL FIX: Update the store state with the fetched profile
+            const profileData = userProfile?.data?.data || userProfile?.data || userProfile;
             set({ user: profileData });
-            console.log('✅ User profile loaded and stored:', profileData);
-            
+            console.log('✅ User profile loaded and stored');
             return profileData;
           } else {
             const errorText = await response.text();
-            console.error('❌ Profile fetch failed:', response.status, errorText);
+            console.error('❌ User profile fetch failed:', response.status, errorText);
+            return null;
           }
-          
-          console.log('⚠️ Profile fetch returned:', response.status);
-          return null;
         } catch (error) {
           console.error('❌ Fetch user profile failed:', error.message);
           return null;

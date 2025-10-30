@@ -8,15 +8,16 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://studysync-be.onrender.com',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path, // Keep the path as is
+        secure: true,
+        rewrite: (path) => path, // keep /api prefix
       },
       '/socket.io': {
-        target: 'http://localhost:3000',
+        target: 'https://studysync-be.onrender.com',
         changeOrigin: true,
         ws: true,
+        secure: true,
       },
     },
   },

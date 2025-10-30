@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const [loadingReviews, setLoadingReviews] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const loadKpis = async () => {
       try {
         setLoadingKpis(true);
@@ -71,7 +72,7 @@ export default function AdminDashboard() {
         // Prefer admin aggregates when available
         try {
           const dash = await adminService.getDashboard();
-          const d = dash?.data || dash || {};
+          const d = dash?.data?.data || dash?.data || dash || {};
           console.log(d);
           if (typeof d.totalRevenue === 'number') computedRevenue = d.totalRevenue;
           if (typeof d.subscriptionStats?.total === 'number') computedTransactions = d.subscriptionStats.total;
@@ -87,7 +88,7 @@ export default function AdminDashboard() {
 
         try {
           const subsStats = await adminService.getSubscriptionStats();
-          const s = subsStats?.data || subsStats || {};
+          const s = subsStats?.data?.data || subsStats?.data || subsStats || {};
           if (s.totalRevenue != null && computedRevenue == null) computedRevenue = s.totalRevenue;
           if (s.totalTransactions != null && computedTransactions == null) computedTransactions = s.totalTransactions;
           if (Array.isArray(s.byPlan) && subscriptionByPlan.length === 0) setSubscriptionByPlan(s.byPlan);
@@ -107,17 +108,19 @@ export default function AdminDashboard() {
           }
         }
 
-        // Finally set state once
-        setRevenue(computedRevenue ?? 0);
-        setTransactionsCount(computedTransactions ?? 0);
+        // Finally set state once (only if still mounted)
+        if (isMounted) {
+          setRevenue(computedRevenue ?? 0);
+          setTransactionsCount(computedTransactions ?? 0);
+        }
 
         // Reviews (optional backend)
         try {
           const rev = await reviewService.getReviews({ limit: 20 });
-          const list = rev?.data || rev || [];
-          setReviews(Array.isArray(list) ? list : []);
+          const listWrap = rev?.data?.data || rev?.data || rev || [];
+          if (isMounted) setReviews(Array.isArray(listWrap?.items) ? listWrap.items : (Array.isArray(listWrap) ? listWrap : []));
         } catch (_) {
-          setReviews([]);
+          if (isMounted) setReviews(prev => prev);
         }
         try {
           // Prefer admin review stats if available
@@ -127,19 +130,22 @@ export default function AdminDashboard() {
           } catch {
             stats = await reviewService.getReviewStats();
           }
-          const s = stats?.data || stats || {};
-          setReviewStats({
-            total: s.total || 0,
-            stars: s.stars || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-          });
+          const s = stats?.data?.data || stats?.data || stats || {};
+          if (isMounted && (s.total != null || s.stars)) {
+            setReviewStats(prev => ({
+              total: s.total ?? prev.total ?? 0,
+              stars: s.stars ?? prev.stars ?? { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+            }));
+          }
         } catch (_) {
-          setReviewStats({ total: 0, stars: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
+          // keep previous stats on error
         }
       } finally {
-        setLoadingKpis(false);
+        if (isMounted) setLoadingKpis(false);
       }
     };
     loadKpis();
+    return () => { isMounted = false; };
   }, []);
 
   const loadFilteredReviews = async (stars) => {
