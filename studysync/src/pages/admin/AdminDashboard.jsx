@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [revenue, setRevenue] = useState(0);
   const [transactionsCount, setTransactionsCount] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [plansById, setPlansById] = useState({});
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ total: 0, stars: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
@@ -60,6 +61,35 @@ export default function AdminDashboard() {
   const [filteredReviews, setFilteredReviews] = useState([]);
   const [selectedStarFilter, setSelectedStarFilter] = useState('all');
   const [loadingReviews, setLoadingReviews] = useState(false);
+  // Pretty number
+  const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('vi-VN') : n);
+
+  // Custom tooltip and legend for charts
+  const renderBarTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    return (
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, boxShadow: '0 6px 16px rgba(0,0,0,0.12)' }}>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 10, height: 10, background: item.color, borderRadius: 2 }} />
+          <span style={{ color: '#4b5563' }}>{item.name}:</span>
+          <span style={{ fontWeight: 600 }}>{fmt(item.value)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBarLegend = ({ payload }) => (
+    <div style={{ display: 'flex', gap: 12 }}>
+      {(payload || []).map((entry) => (
+        <div key={entry.dataKey} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, background: entry.color, borderRadius: 2 }} />
+          <span style={{ color: '#374151', fontSize: 12 }}>{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -78,6 +108,7 @@ export default function AdminDashboard() {
           if (typeof d.totalRevenue === 'number') computedRevenue = d.totalRevenue;
           if (typeof d.subscriptionStats?.total === 'number') computedTransactions = d.subscriptionStats.total;
           if (Array.isArray(d.subscriptionStats?.byPlan)) setSubscriptionByPlan(d.subscriptionStats.byPlan);
+          if (typeof d.totalUsers === 'number') setTotalUsers(d.totalUsers);
           if (d.reviewStats) {
             const dist = d.reviewStats.distribution || {};
             setReviewStats({
@@ -287,41 +318,71 @@ export default function AdminDashboard() {
               </h2>
               <p className="text-sm text-gray-500">Các chỉ số chính trong hệ thống</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="shadow-lg border-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center">
-                    <span className="text-lg font-semibold">₫</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-500">Doanh thu</div>
-                    <div className="text-2xl font-bold text-gray-900">{revenue.toLocaleString('vi-VN')} VND</div>
-                  </div>
-                </div>
-              </Card>
-              <Card className="shadow-lg border-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center">
-                    <CheckCircleOutlined />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-500">Số lượng giao dịch</div>
-                    <div className="text-2xl font-bold text-gray-900">{transactionsCount.toLocaleString('vi-VN')}</div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
+              {/* Total Users */}
+              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden hover:shadow-2xl transition-all bg-white h-full">
+                <div className="relative p-5 h-full flex flex-col">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-md">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs uppercase tracking-wide text-gray-500">Tổng người dùng</div>
+                      <div className="text-3xl font-extrabold text-gray-900 mt-1">{totalUsers.toLocaleString('vi-VN')}</div>
+                    </div>
                   </div>
                 </div>
               </Card>
-              <Card className="shadow-lg border-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5" />
+
+              {/* Revenue */}
+              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden hover:shadow-2xl transition-all bg-white h-full">
+                <div className="relative p-5 h-full flex flex-col">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-purple-500 to-blue-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-md">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs uppercase tracking-wide text-gray-500">Doanh thu</div>
+                      <div className="text-3xl font-extrabold text-gray-900 mt-1">{revenue.toLocaleString('vi-VN')}<span className="text-base font-semibold text-gray-500"> VND</span></div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-500">Số lượng review</div>
-                    <div className="text-2xl font-bold text-gray-900">{(reviewStats.total || 0).toLocaleString('vi-VN')}</div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {[5,4,3,2,1].map(star => (
-                        <Tag key={star} color={star >= 4 ? 'green' : star === 3 ? 'gold' : 'red'}>{star}★ {reviewStats.stars[star] || 0}</Tag>
-                      ))}
+                </div>
+              </Card>
+
+              {/* Transactions */}
+              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden hover:shadow-2xl transition-all bg-white h-full">
+                <div className="relative p-5 h-full flex flex-col">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-md">
+                      <CheckCircleOutlined />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs uppercase tracking-wide text-gray-500">Số giao dịch</div>
+                      <div className="text-3xl font-extrabold text-gray-900 mt-1">{transactionsCount.toLocaleString('vi-VN')}</div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Reviews */}
+              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden hover:shadow-2xl transition-all bg-white h-full">
+                <div className="relative p-5 h-full flex flex-col">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs uppercase tracking-wide text-gray-500">Số lượng review</div>
+                      <div className="text-3xl font-extrabold text-gray-900 mt-1">{(reviewStats.total || 0).toLocaleString('vi-VN')}</div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {[5,4,3,2,1].map(star => (
+                          <Tag key={star} color={star >= 4 ? 'green' : star === 3 ? 'gold' : 'red'}>{star}★ {reviewStats.stars[star] || 0}</Tag>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -353,7 +414,7 @@ export default function AdminDashboard() {
                     <span className="font-semibold">Gói đăng ký theo gói</span>
                   </div>
                 }
-                className="border-0 shadow-lg"
+                className="border-0 shadow-xl rounded-2xl hover:shadow-2xl transition-all bg-white"
               >
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={subscriptionByPlan.map(p => ({
@@ -363,15 +424,8 @@ export default function AdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="planName" stroke="#888" />
                     <YAxis stroke="#888" />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                      }}
-                    />
-                    <Legend />
+                    <RechartsTooltip content={renderBarTooltip} />
+                    <Legend content={renderBarLegend} />
                     <Bar dataKey="active" fill="#8b5cf6" name="Đang hoạt động" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
