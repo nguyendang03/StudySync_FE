@@ -152,6 +152,19 @@ class ReviewService {
       throw error;
     }
   }
+
+  // Get reviews filtered by star rating (public only)
+  async getReviewsByStars(stars, limit = 20, page = 1) {
+    try {
+      const params = { page, limit };
+      if (stars != null && stars !== 'all') params.rating = Number(stars);
+      const response = await axiosInstance.get('/reviews', { params });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get reviews by stars error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
 }
 
 export default new ReviewService();

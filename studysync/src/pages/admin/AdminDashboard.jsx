@@ -94,18 +94,17 @@ export default function AdminDashboard() {
           if (Array.isArray(s.byPlan) && subscriptionByPlan.length === 0) setSubscriptionByPlan(s.byPlan);
         } catch {}
 
-        // Fallback to user history only if still missing
-        if (computedRevenue == null || computedTransactions == null) {
+        // Always fetch recent transactions for the table/section
+        try {
           const pay = await paymentService.getPaymentHistory();
-          const payData = pay?.data || pay || [];
-          setPayments(Array.isArray(payData) ? payData : []);
-          const paidOnly = (Array.isArray(payData) ? payData : []).filter(p => (p.status || p?.data?.status) === 'PAID' || (p.status || '').toLowerCase() === 'success');
-          if (computedRevenue == null) {
-            computedRevenue = paidOnly.reduce((sum, p) => sum + (p.amount || p?.data?.amount || 0), 0);
-          }
-          if (computedTransactions == null) {
-            computedTransactions = paidOnly.length;
-          }
+          const payData = pay?.data?.data || pay?.data || pay || [];
+          const list = Array.isArray(payData) ? payData : [];
+          setPayments(list);
+          const paidOnly = list.filter(p => (p.status || p?.data?.status || '').toString().toUpperCase() === 'PAID' || (p.status || '').toString().toLowerCase() === 'success');
+          if (computedRevenue == null) computedRevenue = paidOnly.reduce((sum, p) => sum + (p.amount || p?.data?.amount || 0), 0);
+          if (computedTransactions == null) computedTransactions = paidOnly.length;
+        } catch {
+          // ignore, KPIs may still be set from admin stats
         }
 
         // Finally set state once (only if still mounted)
@@ -152,8 +151,16 @@ export default function AdminDashboard() {
     try {
       setLoadingReviews(true);
       const response = await reviewService.getReviewsByStars(stars === 'all' ? undefined : stars, 20);
-      const reviewsData = response?.data || response || [];
-      setFilteredReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      const reviewsData = response?.data?.data?.items || response?.data?.data || response?.data || response || [];
+      const list = Array.isArray(reviewsData) ? reviewsData : [];
+      const normalized = list.map((r, idx) => ({
+        id: r.id || idx,
+        user: { name: r?.user?.username || r?.user?.name || r?.user?.email || r?.user?.fullName || '—' },
+        rating: r?.rating ?? r?.stars ?? 0,
+        content: r?.comment ?? r?.content ?? '',
+        createdAt: r?.createdAt ?? r?.updatedAt ?? null,
+      }));
+      setFilteredReviews(normalized);
     } catch (error) {
       console.error('Failed to load filtered reviews:', error);
       setFilteredReviews([]);
