@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [revenue, setRevenue] = useState(0);
   const [transactionsCount, setTransactionsCount] = useState(0);
+  const [plansById, setPlansById] = useState({});
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ total: 0, stars: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
   const [loadingKpis, setLoadingKpis] = useState(false);
@@ -92,6 +93,20 @@ export default function AdminDashboard() {
           if (s.totalRevenue != null && computedRevenue == null) computedRevenue = s.totalRevenue;
           if (s.totalTransactions != null && computedTransactions == null) computedTransactions = s.totalTransactions;
           if (Array.isArray(s.byPlan) && subscriptionByPlan.length === 0) setSubscriptionByPlan(s.byPlan);
+        } catch {}
+
+        // Fetch plan catalog once to resolve plan names
+        try {
+          const plansRes = await paymentService.getSubscriptionPlans();
+          const plansData = plansRes?.data?.data || plansRes?.data || plansRes || [];
+          const arr = Array.isArray(plansData) ? plansData : [];
+          const map = {};
+          arr.forEach(pl => {
+            const id = pl?.id ?? pl?.planId;
+            const name = pl?.name ?? pl?.title ?? pl?.planName;
+            if (id != null && name) map[id] = name;
+          });
+          setPlansById(map);
         } catch {}
 
         // Always fetch recent transactions for the table/section
@@ -176,7 +191,21 @@ export default function AdminDashboard() {
   // Normalize payments for table display
   const normalizePayment = (p, idx) => {
     const orderCode = p?.orderCode ?? p?.data?.orderCode ?? p?.code ?? p?.id ?? `order-${idx}`;
-    const planName = p?.planName ?? p?.plan?.name ?? p?.data?.planName ?? p?.subscription?.plan?.name ?? '-';
+    // Try multiple shapes for plan name observed across payloads
+    const planId = p?.planId ?? p?.data?.planId ?? p?.plan?.id ?? p?.subscription?.plan?.id ?? p?.subscriptionPlan?.id;
+    const planName =
+      p?.planName ??
+      p?.plan?.name ??
+      p?.plan?.title ??
+      p?.data?.planName ??
+      p?.data?.plan?.name ??
+      p?.data?.plan?.title ??
+      p?.subscription?.plan?.name ??
+      p?.subscription?.plan?.title ??
+      p?.subscriptionPlan?.name ??
+      p?.subscriptionPlan?.title ??
+      (planId != null && plansById[planId]) ??
+      (planId != null ? `Gói #${planId}` : '-');
     const amount = p?.amount ?? p?.data?.amount ?? p?.total ?? 0;
     const status = (p?.status ?? p?.data?.status ?? '').toString().toUpperCase();
     const createdAt = p?.createdAt ?? p?.data?.createdAt ?? p?.timestamp ?? p?.paidAt ?? null;
@@ -547,7 +576,7 @@ export default function AdminDashboard() {
               <Table
                 columns={[
                   { title: 'Mã đơn', dataIndex: 'orderCode', key: 'orderCode' },
-                  { title: 'Gói', dataIndex: 'planName', key: 'planName' },
+                  { title: 'Gói', dataIndex: 'planName', key: 'planName', render: (v) => v || '-' },
                   { title: 'Số tiền', dataIndex: 'amount', key: 'amount', render: (v) => (v || 0).toLocaleString('vi-VN') + ' VND' },
                   { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => (
                     <Badge status={s === 'PAID' ? 'success' : s === 'PENDING' ? 'processing' : 'error'} text={s} />
