@@ -18,12 +18,58 @@ class AuthService {
                 }),
             });
 
-            const responseData = await response.json();
-            console.log('📦 Raw login response:', responseData);
-
+            // Read response text once (can only be read once)
+            const responseText = await response.text();
+            
+            // Check response status and parse accordingly
             if (!response.ok) {
-                throw new Error(responseData.message || 'Đăng nhập thất bại');
+                // Try to get error message from response
+                let errorMessage = 'Đăng nhập thất bại';
+                
+                // Handle specific HTTP status codes with user-friendly messages
+                if (response.status === 503) {
+                    errorMessage = 'Máy chủ đang tạm thời không khả dụng. Vui lòng thử lại sau.';
+                } else if (response.status === 500) {
+                    errorMessage = 'Lỗi máy chủ. Vui lòng liên hệ quản trị viên.';
+                } else if (response.status === 401) {
+                    errorMessage = 'Email hoặc mật khẩu không đúng.';
+                } else if (response.status === 404) {
+                    errorMessage = 'Không tìm thấy dịch vụ. Vui lòng kiểm tra lại kết nối.';
+                } else {
+                    try {
+                        if (responseText) {
+                            const contentType = response.headers.get('content-type');
+                            // Check if response is HTML (like error pages)
+                            if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+                                errorMessage = `Máy chủ không phản hồi đúng định dạng (${response.status}). Vui lòng thử lại sau.`;
+                            } else if (contentType && contentType.includes('application/json')) {
+                                const errorData = JSON.parse(responseText);
+                                errorMessage = errorData.message || errorData.error || errorMessage;
+                            } else {
+                                // Non-JSON, non-HTML response - show status code only
+                                errorMessage = `Lỗi máy chủ (${response.status}). Vui lòng thử lại.`;
+                            }
+                        } else {
+                            errorMessage = `Lỗi máy chủ (${response.status}). Vui lòng thử lại.`;
+                        }
+                    } catch (parseError) {
+                        // If parsing fails, use status-based message
+                        errorMessage = `Lỗi máy chủ (${response.status}). Vui lòng thử lại.`;
+                    }
+                }
+                throw new Error(errorMessage);
             }
+
+            // Parse JSON only if response is OK
+            let responseData;
+            try {
+                responseData = responseText ? JSON.parse(responseText) : {};
+            } catch (jsonError) {
+                console.error('❌ Failed to parse JSON response:', jsonError);
+                throw new Error('Server returned invalid response. Vui lòng thử lại.');
+            }
+            
+            console.log('📦 Raw login response:', responseData);
 
             // Backend wraps response in { data: { access_token, refresh_token } }
             const data = responseData.data || responseData;

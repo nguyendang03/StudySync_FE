@@ -4,25 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
-  UserCog,
-  UsersRound,
-  MessageSquare,
-  Video,
-  FileText,
-  BarChart3,
-  Settings,
-  Bell,
-  Shield,
-  Database,
-  Activity,
   Calendar,
-  Award,
-  Flag,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Home
+  Home,
+  Star,
+  CreditCard
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -48,131 +36,40 @@ const AdminSidebar = () => {
       ]
     },
     {
-      title: 'Quản lý người dùng',
+      title: 'Người dùng & Nội dung',
       items: [
         {
           icon: Users,
           label: 'Tất cả người dùng',
           path: '/admin/users',
-          description: 'Quản lý người dùng',
-          badge: '2,543'
+          description: 'Quản lý người dùng'
         },
         {
-          icon: UserCog,
-          label: 'Quản trị viên',
-          path: '/admin/admins',
-          description: 'Tài khoản quản trị'
-        },
-        {
-          icon: Shield,
-          label: 'Vai trò & Quyền',
-          path: '/admin/roles',
-          description: 'Kiểm soát truy cập'
+          icon: Star,
+          label: 'Đánh giá',
+          path: '/admin/reviews',
+          description: 'Kiểm duyệt đánh giá'
         }
       ]
     },
     {
-      title: 'Nội dung',
+      title: 'Thương mại',
       items: [
         {
-          icon: UsersRound,
-          label: 'Nhóm học tập',
-          path: '/admin/groups',
-          description: 'Quản lý nhóm',
-          badge: '486'
+          icon: CreditCard,
+          label: 'Thanh toán',
+          path: '/admin/payments',
+          description: 'Lịch sử & hoàn tiền'
         },
-        {
-          icon: MessageSquare,
-          label: 'Tin nhắn',
-          path: '/admin/messages',
-          description: 'Kiểm duyệt tin nhắn'
-        },
-        {
-          icon: FileText,
-          label: 'Bài đăng & Tài liệu',
-          path: '/admin/posts',
-          description: 'Quản lý nội dung'
-        },
-        {
-          icon: Video,
-          label: 'Cuộc gọi video',
-          path: '/admin/video-calls',
-          description: 'Lịch sử cuộc gọi',
-          badge: '1,845'
-        }
-      ]
-    },
-    {
-      title: 'Phân tích',
-      items: [
-        {
-          icon: BarChart3,
-          label: 'Báo cáo',
-          path: '/admin/reports',
-          description: 'Phân tích chi tiết'
-        },
-        {
-          icon: TrendingUp,
-          label: 'Hoạt động người dùng',
-          path: '/admin/activity',
-          description: 'Theo dõi hoạt động'
-        },
-        {
-          icon: Activity,
-          label: 'Sức khỏe hệ thống',
-          path: '/admin/health',
-          description: 'Chỉ số hiệu suất'
-        }
-      ]
-    },
-    {
-      title: 'Vận hành',
-      items: [
         {
           icon: Calendar,
-          label: 'Tác vụ định kỳ',
-          path: '/admin/tasks',
-          description: 'Tự động hóa'
-        },
-        {
-          icon: Bell,
-          label: 'Thông báo',
-          path: '/admin/notifications',
-          description: 'Cảnh báo hệ thống',
-          badge: '12'
-        },
-        {
-          icon: Flag,
-          label: 'Báo cáo & Cờ',
-          path: '/admin/flags',
-          description: 'Báo cáo người dùng',
-          badge: '3'
-        },
-        {
-          icon: Award,
-          label: 'Thành tích',
-          path: '/admin/achievements',
-          description: 'Gamification'
+          label: 'Gói subscription',
+          path: '/admin/subscriptions',
+          description: 'Gói & quyền lợi'
         }
       ]
     },
-    {
-      title: 'Hệ thống',
-      items: [
-        {
-          icon: Database,
-          label: 'Cơ sở dữ liệu',
-          path: '/admin/database',
-          description: 'Quản lý dữ liệu'
-        },
-        {
-          icon: Settings,
-          label: 'Cài đặt',
-          path: '/admin/settings',
-          description: 'Cấu hình hệ thống'
-        }
-      ]
-    }
+    // Only MVP sections kept; unused tabs removed
   ];
 
   const isActive = (path) => {
