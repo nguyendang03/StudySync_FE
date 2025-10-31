@@ -20,7 +20,10 @@ import {
   HomeOutlined,
   AppstoreOutlined,
   CalendarOutlined,
-  VideoCameraOutlined
+  VideoCameraOutlined,
+  CrownOutlined,
+  DashboardOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
 
@@ -32,6 +35,9 @@ export default function Header() {
   
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if user is admin
+  const isAdmin = user?.role?.includes('admin') || user?.role?.includes('ADMIN');
   
   const handleLogout = () => {
     logout();
@@ -109,6 +115,11 @@ export default function Header() {
   const supportMenu = {
     items: [
       {
+        key: 'reviews',
+        icon: <StarOutlined className="text-yellow-600" />,
+        label: <Link to="/reviews">Đánh giá</Link>,
+      },
+      {
         key: 'faq',
         icon: <QuestionCircleOutlined className="text-orange-600" />,
         label: <Link to="/faq">Câu hỏi thường gặp</Link>,
@@ -134,6 +145,16 @@ export default function Header() {
         icon: <UserOutlined />,
         label: <Link to="/profile">Hồ sơ cá nhân</Link>,
       },
+      {
+        key: 'subscriptions',
+        icon: <CrownOutlined className="text-yellow-600" />,
+        label: <Link to="/subscriptions">Gói dịch vụ</Link>,
+      },
+      ...(isAdmin ? [{
+        key: 'admin-dashboard',
+        icon: <DashboardOutlined className="text-purple-600" />,
+        label: <Link to="/admin/dashboard">Bảng điều khiển Admin</Link>,
+      }] : []),
       {
         key: 'settings',
         icon: <SettingOutlined />,
@@ -376,6 +397,16 @@ export default function Header() {
                         <UserOutlined />
                         Hồ sơ cá nhân
                       </Link>
+                      {isAdmin && (
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <DashboardOutlined />
+                          Bảng điều khiển Admin
+                        </Link>
+                      )}
                       <Link 
                         to="/settings" 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
