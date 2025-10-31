@@ -290,72 +290,84 @@ const ReviewsModeration = () => {
   ];
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="space-y-6"
+        transition={{ duration: 0.4 }}
+        className="space-y-5"
       >
         {/* Statistics Cards */}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Tổng đánh giá"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Tổng đánh giá</span>}
                   value={statsData.total}
                   prefix={<MessageSquare className="w-5 h-5" style={{ color: '#7269ef' }} />}
-                  valueStyle={{ color: '#7269ef', fontWeight: 600 }}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Điểm trung bình"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Điểm trung bình</span>}
                   value={statsData.avgRating}
                   precision={1}
-                  prefix={<StarOutlined style={{ color: '#faad14' }} />}
-                  valueStyle={{ color: '#faad14', fontWeight: 600 }}
+                  prefix={<StarOutlined style={{ color: '#faad14', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đang hiển thị"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đang hiển thị</span>}
                   value={statsData.visible}
-                  prefix={<EyeOutlined style={{ color: '#52c41a' }} />}
-                  valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+                  prefix={<EyeOutlined style={{ color: '#52c41a', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đã ẩn"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đã ẩn</span>}
                   value={statsData.hidden}
-                  prefix={<EyeInvisibleOutlined style={{ color: '#8c8c8c' }} />}
-                  valueStyle={{ color: '#8c8c8c', fontWeight: 600 }}
+                  prefix={<EyeInvisibleOutlined style={{ color: '#8c8c8c', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
@@ -364,14 +376,19 @@ const ReviewsModeration = () => {
 
         {/* Main Table Card */}
         <Card
-          className="border-0 shadow-lg"
+          className="shadow-sm"
+          style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
           title={
             <div className="flex items-center gap-3">
-              <Star className="w-6 h-6 text-yellow-500" />
+              <div className="p-2 bg-yellow-50 rounded-lg">
+                <Star className="w-5 h-5 text-yellow-600" />
+              </div>
               <div>
-                <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Quản lý đánh giá</h1>
-                <p style={{ margin: '4px 0 0 0', color: '#8c8c8c', fontSize: '14px' }}>
-                  Lọc theo sao, ẩn/hiện, trả lời, xóa.
+                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#262626' }}>
+                  Quản lý đánh giá
+                </h1>
+                <p style={{ margin: '2px 0 0 0', color: '#8c8c8c', fontSize: '13px', fontWeight: 400 }}>
+                  Lọc theo sao, ẩn/hiện, trả lời, xóa
                 </p>
               </div>
             </div>
@@ -385,13 +402,14 @@ const ReviewsModeration = () => {
                   loadStats();
                 }}
                 loading={loading}
+                style={{ borderRadius: '8px' }}
               >
                 Làm mới
               </Button>
               <Select
                 value={stars}
                 onChange={setStars}
-                style={{ width: 150 }}
+                style={{ width: 140, borderRadius: '8px' }}
                 placeholder="Lọc theo sao"
               >
                 <Option value="all">Tất cả</Option>
@@ -403,15 +421,14 @@ const ReviewsModeration = () => {
               </Select>
               <Input
                 placeholder="Tìm theo nội dung/người dùng"
-                prefix={<SearchOutlined />}
+                prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ width: 250 }}
+                style={{ width: 240, borderRadius: '8px' }}
                 allowClear
               />
             </Space>
           }
-          style={{ borderRadius: '16px' }}
         >
           <Table
             columns={columns}

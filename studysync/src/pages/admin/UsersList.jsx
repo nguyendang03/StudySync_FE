@@ -209,71 +209,83 @@ const UsersList = () => {
   ];
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="space-y-6"
+        transition={{ duration: 0.4 }}
+        className="space-y-5"
       >
         {/* Statistics Cards */}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Tổng người dùng"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Tổng người dùng</span>}
                   value={stats.total}
-                  prefix={<TeamOutlined style={{ color: '#7269ef' }} />}
-                  valueStyle={{ color: '#7269ef', fontWeight: 600 }}
+                  prefix={<TeamOutlined style={{ color: '#7269ef', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đang hoạt động"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đang hoạt động</span>}
                   value={stats.active}
-                  prefix={<UserOutlined style={{ color: '#52c41a' }} />}
-                  valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+                  prefix={<UserOutlined style={{ color: '#52c41a', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đã khóa"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đã khóa</span>}
                   value={stats.suspended}
-                  prefix={<LockOutlined style={{ color: '#ff4d4f' }} />}
-                  valueStyle={{ color: '#ff4d4f', fontWeight: 600 }}
+                  prefix={<LockOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Quản trị viên"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Quản trị viên</span>}
                   value={stats.admins}
                   prefix={<Shield size={20} style={{ color: '#faad14' }} />}
-                  valueStyle={{ color: '#faad14', fontWeight: 600 }}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
@@ -282,14 +294,19 @@ const UsersList = () => {
 
         {/* Main Table Card */}
         <Card
-          className="border-0 shadow-lg"
+          className="shadow-sm"
+          style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
           title={
             <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-purple-600" />
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
               <div>
-                <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Quản lý người dùng</h1>
-                <p style={{ margin: '4px 0 0 0', color: '#8c8c8c', fontSize: '14px' }}>
-                  Danh sách, tìm kiếm, lọc, đổi vai trò, khóa/mở khóa.
+                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#262626' }}>
+                  Quản lý người dùng
+                </h1>
+                <p style={{ margin: '2px 0 0 0', color: '#8c8c8c', fontSize: '13px', fontWeight: 400 }}>
+                  Danh sách, tìm kiếm, lọc, đổi vai trò, khóa/mở khóa
                 </p>
               </div>
             </div>
@@ -300,20 +317,20 @@ const UsersList = () => {
                 icon={<ReloadOutlined />}
                 onClick={loadUsers}
                 loading={loading}
+                style={{ borderRadius: '8px' }}
               >
                 Làm mới
               </Button>
               <Input
                 placeholder="Tìm theo tên/email"
-                prefix={<SearchOutlined />}
+                prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ width: 300 }}
+                style={{ width: 280, borderRadius: '8px' }}
                 allowClear
               />
             </Space>
           }
-          style={{ borderRadius: '16px' }}
         >
           <Table
             columns={columns}
