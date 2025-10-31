@@ -1,0 +1,366 @@
+import React, { useEffect, useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Table, Card, Button, Tag, Badge, Space, Modal, Tooltip, Statistic, Row, Col, Empty, Avatar } from 'antd';
+import { DownloadOutlined, ReloadOutlined, DollarOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
+import { CreditCard, RefreshCw, TrendingUp } from 'lucide-react';
+import paymentService from '../../services/paymentService';
+import { showToast } from '../../utils/toast';
+import dayjs from 'dayjs';
+
+const PaymentsList = () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const stats = useMemo(() => {
+    const total = items.length;
+    const paid = items.filter(p => p.status === 'PAID').length;
+    const refunded = items.filter(p => p.status === 'REFUNDED').length;
+    const pending = items.filter(p => p.status === 'PENDING').length;
+    const totalRevenue = items
+      .filter(p => p.status === 'PAID')
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    const refundedAmount = items
+      .filter(p => p.status === 'REFUNDED')
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    return { total, paid, refunded, pending, totalRevenue, refundedAmount };
+  }, [items]);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const res = await paymentService.getPaymentHistory();
+      const data = res?.data?.data || res?.data || res || [];
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      showToast.error('Không tải được lịch sử thanh toán');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const exportCSV = async () => {
+    try {
+      setExporting(true);
+      const blob = await paymentService.exportPaymentsCSV();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `payments_${dayjs().format('YYYY-MM-DD_HH-mm')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      showToast.success('Xuất CSV thành công');
+    } catch {
+      showToast.error('Xuất CSV thất bại');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const refund = (payment) => {
+    Modal.confirm({
+      title: 'Xác nhận hoàn tiền',
+      content: (
+        <div>
+          <p>Bạn có chắc muốn hoàn tiền cho đơn hàng này?</p>
+          <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
+            <p style={{ margin: 0, fontSize: '13px' }}><strong>Mã đơn:</strong> {payment.orderCode || payment.id}</p>
+            <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Số tiền:</strong> {formatAmount(payment.amount)}</p>
+            <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Người dùng:</strong> {payment.user?.username || payment.userEmail || '-'}</p>
+          </div>
+          <p style={{ marginTop: '12px', color: '#ff4d4f', fontSize: '12px' }}>
+            ⚠️ Hành động này không thể hoàn tác
+          </p>
+        </div>
+      ),
+      okText: 'Hoàn tiền',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      width: 500,
+      onOk: async () => {
+        try {
+          await paymentService.refundPayment(payment.orderCode || payment.id);
+          showToast.success('Đã gửi yêu cầu hoàn tiền');
+          load();
+        } catch {
+          showToast.error('Hoàn tiền thất bại');
+        }
+      },
+    });
+  };
+
+  const getStatusConfig = (status) => {
+    const configs = {
+      PAID: { color: 'success', text: 'Đã thanh toán', icon: <CheckCircleOutlined /> },
+      REFUNDED: { color: 'warning', text: 'Đã hoàn tiền', icon: <RefreshCw size={14} /> },
+      PENDING: { color: 'processing', text: 'Đang chờ', icon: <ClockCircleOutlined /> },
+      FAILED: { color: 'error', text: 'Thất bại', icon: <CloseCircleOutlined /> },
+    };
+    return configs[status] || { color: 'default', text: status, icon: null };
+  };
+
+  const formatAmount = (amount) => {
+    if (amount == null) return '-';
+    return `${amount.toLocaleString('vi-VN')} đ`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return dayjs(dateString).format('DD/MM/YYYY HH:mm');
+  };
+
+  const columns = [
+    {
+      title: 'Mã đơn',
+      dataIndex: 'orderCode',
+      key: 'orderCode',
+      ellipsis: true,
+      render: (text, record) => (
+        <Tooltip title={text || record.id}>
+          <span style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '13px' }}>
+            {text || record.id}
+          </span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: 'Người dùng',
+      dataIndex: 'user',
+      key: 'user',
+      ellipsis: true,
+      render: (user, record) => (
+        <Tooltip title={user?.username || record.userEmail || '-'}>
+          <Space size="small">
+            <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#7269ef' }}>
+              {(user?.username || record.userEmail || '?').toString().charAt(0).toUpperCase()}
+            </Avatar>
+            <span style={{ fontWeight: 500 }}>
+              {user?.username || record.userEmail || '-'}
+            </span>
+          </Space>
+        </Tooltip>
+      ),
+    },
+    {
+      title: 'Số tiền',
+      dataIndex: 'amount',
+      key: 'amount',
+      width: 130,
+      render: (amount) => (
+        <div style={{ fontWeight: 700, color: '#52c41a', fontSize: '15px' }}>
+          {formatAmount(amount)}
+        </div>
+      ),
+      sorter: (a, b) => (a.amount || 0) - (b.amount || 0),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 140,
+      render: (status) => {
+        const config = getStatusConfig(status);
+        return (
+          <Badge
+            status={config.color}
+            text={
+              <span style={{ fontSize: '13px' }}>
+                {config.icon && <span style={{ marginRight: 4 }}>{config.icon}</span>}
+                {config.text}
+              </span>
+            }
+          />
+        );
+      },
+      filters: [
+        { text: 'Đã thanh toán', value: 'PAID' },
+        { text: 'Đã hoàn tiền', value: 'REFUNDED' },
+        { text: 'Đang chờ', value: 'PENDING' },
+        { text: 'Thất bại', value: 'FAILED' },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: 'Thời gian',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 160,
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (date) => (
+        <Tooltip title={formatDate(date)}>
+          <div style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+            <ClockCircleOutlined style={{ marginRight: 4, color: '#8c8c8c' }} />
+            {dayjs(date).format('DD/MM/YY HH:mm')}
+          </div>
+        </Tooltip>
+      ),
+      sorter: (a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      },
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 120,
+      render: (_, record) => (
+        <Space size="small">
+          {record.status === 'PAID' && (
+            <Button
+              type="primary"
+              danger
+              size="small"
+              onClick={() => refund(record)}
+            >
+              Hoàn tiền
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div className="p-6 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30 min-h-screen">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-6"
+      >
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <Statistic
+                  title="Tổng giao dịch"
+                  value={stats.total}
+                  prefix={<CreditCard className="w-5 h-5" style={{ color: '#7269ef' }} />}
+                  valueStyle={{ color: '#7269ef', fontWeight: 600 }}
+                />
+              </Card>
+            </motion.div>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <Statistic
+                  title="Doanh thu"
+                  value={stats.totalRevenue}
+                  precision={0}
+                  prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
+                  suffix="đ"
+                  valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+                />
+              </Card>
+            </motion.div>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <Statistic
+                  title="Đã thanh toán"
+                  value={stats.paid}
+                  prefix={<CheckCircleOutlined style={{ color: '#1890ff' }} />}
+                  valueStyle={{ color: '#1890ff', fontWeight: 600 }}
+                />
+              </Card>
+            </motion.div>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <Statistic
+                  title="Đã hoàn tiền"
+                  value={stats.refunded}
+                  prefix={<RefreshCw className="w-5 h-5" style={{ color: '#faad14' }} />}
+                  valueStyle={{ color: '#faad14', fontWeight: 600 }}
+                />
+              </Card>
+            </motion.div>
+          </Col>
+        </Row>
+
+        {/* Main Table Card */}
+        <Card
+          className="border-0 shadow-lg"
+          title={
+            <div className="flex items-center gap-3">
+              <CreditCard className="w-6 h-6 text-purple-600" />
+              <div>
+                <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Thanh toán</h1>
+                <p style={{ margin: '4px 0 0 0', color: '#8c8c8c', fontSize: '14px' }}>
+                  Lịch sử, trạng thái, hoàn tiền, xuất CSV.
+                </p>
+              </div>
+            </div>
+          }
+          extra={
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={load}
+                loading={loading}
+              >
+                Làm mới
+              </Button>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={exportCSV}
+                loading={exporting}
+              >
+                Xuất CSV
+              </Button>
+            </Space>
+          }
+          style={{ borderRadius: '16px' }}
+        >
+          <Table
+            columns={columns}
+            dataSource={items}
+            loading={loading}
+            rowKey={(record) => record.orderCode || record.id}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giao dịch`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="Không có giao dịch nào"
+                />
+              ),
+            }}
+          />
+        </Card>
+      </motion.div>
+    </div>
+  );
+};
+
+export default PaymentsList;

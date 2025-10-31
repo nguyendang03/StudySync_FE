@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import PublicRoute from './components/PublicRoute';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/admin/AdminLayout';
@@ -27,9 +28,14 @@ const AgoraDebugTest = lazy(() => import('./pages/common/AgoraDebugTest'));
 const VideoCall = lazy(() => import('./pages/common/VideoCall'));
 const JoinCall = lazy(() => import('./pages/common/JoinCall'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const UsersList = lazy(() => import('./pages/admin/UsersList'));
+const ReviewsModeration = lazy(() => import('./pages/admin/ReviewsModeration'));
+const PlansList = lazy(() => import('./pages/admin/PlansList'));
+const PaymentsList = lazy(() => import('./pages/admin/PaymentsList'));
 const Subscriptions = lazy(() => import('./pages/common/Subscriptions'));
 const PaymentSuccess = lazy(() => import('./pages/common/PaymentSuccess'));
 const Reviews = lazy(() => import('./pages/common/Reviews'));
+const Forbidden = lazy(() => import('./pages/common/Forbidden'));
 function App() {
   return (
     <AuthProvider>
@@ -64,9 +70,11 @@ function App() {
                 path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <Suspense fallback={<LoadingSpinner size="large" fullScreen={true} message="Đang tải trang quản trị..." />}>
-                      <AdminLayout />
-                    </Suspense>
+                    <AdminRoute>
+                      <Suspense fallback={<LoadingSpinner size="large" fullScreen={true} message="Đang tải trang quản trị..." />}>
+                        <AdminLayout />
+                      </Suspense>
+                    </AdminRoute>
                   </ProtectedRoute>
                 }
               >
@@ -78,26 +86,52 @@ function App() {
                     </Suspense>
                   } 
                 />
-                {/* Placeholder routes for other admin pages */}
-                <Route path="users" element={<div className="p-8"><h1 className="text-2xl font-bold">Users Management - Coming Soon</h1></div>} />
-                <Route path="admins" element={<div className="p-8"><h1 className="text-2xl font-bold">Admin Management - Coming Soon</h1></div>} />
-                <Route path="roles" element={<div className="p-8"><h1 className="text-2xl font-bold">Roles & Permissions - Coming Soon</h1></div>} />
-                <Route path="groups" element={<div className="p-8"><h1 className="text-2xl font-bold">Groups Management - Coming Soon</h1></div>} />
-                <Route path="messages" element={<div className="p-8"><h1 className="text-2xl font-bold">Messages - Coming Soon</h1></div>} />
-                <Route path="posts" element={<div className="p-8"><h1 className="text-2xl font-bold">Posts & Resources - Coming Soon</h1></div>} />
-                <Route path="video-calls" element={<div className="p-8"><h1 className="text-2xl font-bold">Video Calls - Coming Soon</h1></div>} />
-                <Route path="reports" element={<div className="p-8"><h1 className="text-2xl font-bold">Reports - Coming Soon</h1></div>} />
-                <Route path="activity" element={<div className="p-8"><h1 className="text-2xl font-bold">User Activity - Coming Soon</h1></div>} />
-                <Route path="health" element={<div className="p-8"><h1 className="text-2xl font-bold">System Health - Coming Soon</h1></div>} />
-                <Route path="tasks" element={<div className="p-8"><h1 className="text-2xl font-bold">Scheduled Tasks - Coming Soon</h1></div>} />
-                <Route path="notifications" element={<div className="p-8"><h1 className="text-2xl font-bold">Notifications - Coming Soon</h1></div>} />
-                <Route path="flags" element={<div className="p-8"><h1 className="text-2xl font-bold">Reports & Flags - Coming Soon</h1></div>} />
-                <Route path="achievements" element={<div className="p-8"><h1 className="text-2xl font-bold">Achievements - Coming Soon</h1></div>} />
-                <Route path="database" element={<div className="p-8"><h1 className="text-2xl font-bold">Database - Coming Soon</h1></div>} />
-                <Route path="settings" element={<div className="p-8"><h1 className="text-2xl font-bold">System Settings - Coming Soon</h1></div>} />
+                {/* MVP admin routes */}
+                <Route 
+                  path="users" 
+                  element={
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải người dùng..." />}>
+                      <UsersList />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="reviews" 
+                  element={
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải đánh giá..." />}>
+                      <ReviewsModeration />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="subscriptions" 
+                  element={
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải gói..." />}>
+                      <PlansList />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="payments" 
+                  element={
+                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải thanh toán..." />}>
+                      <PaymentsList />
+                    </Suspense>
+                  } 
+                />
+                {/* Roles removed */}
                 {/* Redirect /admin to /admin/dashboard */}
                 <Route index element={<Navigate to="dashboard" replace />} />
               </Route>
+              {/* Forbidden */}
+              <Route 
+                path="/403" 
+                element={
+                  <Suspense fallback={<LoadingSpinner size="large" fullScreen={true} message="Đang tải..." />}>
+                    <Forbidden />
+                  </Suspense>
+                } 
+              />
 
               <Route 
                 path="/verify-email" 

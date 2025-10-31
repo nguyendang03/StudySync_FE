@@ -99,7 +99,7 @@ class PaymentService {
   }
 
   /**
-   * Get payment details by order code
+   * Get payment details by order code (from database only)
    * @param {string} orderCode - Payment order code
    * @returns {Promise<Object>} Payment details
    */
@@ -109,6 +109,48 @@ class PaymentService {
       return response.data;
     } catch (error) {
       console.error('❌ Get payment details error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transaction details from PayOS (real-time status)
+   * This endpoint queries PayOS directly for the latest payment status
+   * @param {string} orderCode - Payment order code
+   * @returns {Promise<Object>} Transaction details with real-time status from PayOS
+   */
+  async getTransactionDetails(orderCode) {
+    try {
+      const response = await axiosInstance.get(`/payments/transaction/${orderCode}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get transaction details error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin: refund a payment
+   */
+  async refundPayment(orderCode) {
+    try {
+      const response = await axiosInstance.post(`/payments/refund`, { orderCode });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Refund payment error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin: export payments CSV
+   */
+  async exportPaymentsCSV(params = {}) {
+    try {
+      const response = await axiosInstance.get('/payments/export', { params, responseType: 'blob' });
+      return response.data; // blob
+    } catch (error) {
+      console.error('❌ Export payments CSV error:', error.response?.data || error.message);
       throw error;
     }
   }

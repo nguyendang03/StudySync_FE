@@ -23,9 +23,26 @@ const Subscriptions = () => {
   const [paymentData, setPaymentData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const paymentPopupRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+
+  const normalizeApiResponse = (payload) => payload?.data?.data || payload?.data || payload;
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    try {
+      if (paymentPopupRef.current && !paymentPopupRef.current.closed) {
+        paymentPopupRef.current.close();
+      }
+    } catch (error) {
+      console.warn('Unable to close payment popup on cleanup:', error);
+    }
   }, []);
 
   const fetchData = async () => {
@@ -77,8 +94,7 @@ const Subscriptions = () => {
       console.log('📦 Raw payment response:', result);
 
       // Normalize nested response: { data: { data: {...} } } or { data: {...} }
-      const outer = result || {};
-      const normalized = outer?.data?.data || outer?.data || outer;
+      const normalized = normalizeApiResponse(result);
       const checkoutUrl = normalized?.checkoutUrl;
       const orderCode = normalized?.orderCode;
       console.log('💳 Extracted:', { checkoutUrl, orderCode, normalized });
@@ -108,42 +124,82 @@ const Subscriptions = () => {
   };
 
   const pollPaymentStatus = async (orderCode) => {
+    if (!orderCode) return;
+
+    // Reset previous polling if needed
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    setPaymentStatus('PENDING');
+
     let attempts = 0;
     const maxAttempts = 60; // Poll for 5 minutes
-    
-    const interval = setInterval(async () => {
+
+    pollIntervalRef.current = setInterval(async () => {
       try {
-        const result = await paymentService.getPaymentDetails(orderCode);
-        const payment = result?.data || result;
-        console.log("payment", payment)
-        if (payment?.data?.status === 'PAID' || payment?.data?.status === 'success') {
-          clearInterval(interval);
+        // Use transaction endpoint which checks PayOS directly for real-time status
+        const result = await paymentService.getTransactionDetails(orderCode);
+        const transaction = normalizeApiResponse(result);
+        
+        // PayOS returns status directly in the transaction object
+        const status = (transaction?.status || transaction?.paymentRecord?.status || '').toString().toUpperCase();
+
+        console.log('🔁 Polling status:', status, 'Full transaction:', transaction);
+
+        if (['PAID', 'SUCCESS', 'COMPLETED'].includes(status)) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+
           setPaymentStatus('PAID');
-          setPaymentData(payment?.data);
-          
-          // Update modal content to success and navigate to bill
+          setPaymentData(transaction);
+
           toast.success('Thanh toán thành công! Gói đã được kích hoạt.');
-          // Refresh subscription data
           await fetchData();
-          // Close popup if still open
+
           try {
             if (paymentPopupRef.current && !paymentPopupRef.current.closed) {
               paymentPopupRef.current.close();
             }
-          } catch {}
-          setShowModal(false);
-          if (payment?.data?.orderCode) {
-            navigate(`/payment/success/${payment.orderCode}`);
+          } catch (error) {
+            console.warn('Không thể đóng cửa sổ thanh toán:', error);
           }
-        } else if (payment?.data?.status === 'CANCELLED' || payment?.data?.status === 'cancelled') {
-          clearInterval(interval);
+
+          // Close modal first to ensure UI is responsive
+          setShowModal(false);
+
+          // Small delay before navigation to ensure state updates
+          setTimeout(() => {
+            const successOrderCode = transaction?.orderCode || orderCode;
+            navigate(`/payment/success/${successOrderCode}`);
+          }, 100);
+          return;
+        }
+
+        if (['CANCELLED', 'CANCELED', 'FAILED'].includes(status)) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
           setPaymentStatus('CANCELLED');
           toast.error('Thanh toán đã bị hủy');
+
+          try {
+            if (paymentPopupRef.current && !paymentPopupRef.current.closed) {
+              paymentPopupRef.current.close();
+            }
+          } catch (error) {
+            console.warn('Không thể đóng cửa sổ thanh toán:', error);
+          }
+
+          setShowModal(false);
+          return;
         }
-        
-        attempts++;
+
+        attempts += 1;
         if (attempts >= maxAttempts) {
-          clearInterval(interval);
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          toast.error('Không thể xác nhận trạng thái thanh toán. Vui lòng kiểm tra lại sau.');
         }
       } catch (error) {
         console.error('Poll error:', error);
