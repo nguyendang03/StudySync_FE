@@ -26,11 +26,11 @@ import {
   StarOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notifications] = useState(3); // Mock notification count
   const dropdownRef = useRef(null);
   
   const { isAuthenticated, logout, user } = useAuth();
@@ -253,16 +253,7 @@ export default function Header() {
           {/* Right Side Actions */}
           <div className="flex items-center space-x-3">
             {/* Notifications */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Badge count={notifications} size="small">
-                <button className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200">
-                  <BellOutlined className="text-xl" />
-                </button>
-              </Badge>
-            </motion.div>
+            {isAuthenticated && <NotificationDropdown />}
 
             {/* User Menu - Show if authenticated, otherwise show auth buttons */}
             <div className="hidden md:flex items-center space-x-3">
