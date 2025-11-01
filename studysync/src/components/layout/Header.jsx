@@ -66,7 +66,6 @@ export default function Header() {
         label: (
           <Link to="/my-groups" className="flex items-center gap-3 py-1">
             <span>Nhóm của tôi</span>
-            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">4</span>
           </Link>
         ),
       },
