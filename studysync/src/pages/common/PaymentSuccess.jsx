@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Spin, Alert, Button, Descriptions, Badge, Tag } from 'antd';
-import { CheckCircle } from 'lucide-react';
+import { Card, Spin, Alert, Button, Divider } from 'antd';
+import { CheckCircle, Home, Package, Calendar, CreditCard, Mail } from 'lucide-react';
+import { motion } from 'framer-motion';
 import paymentService from '../../services/paymentService';
 
 const PaymentSuccess = () => {
@@ -11,19 +12,27 @@ const PaymentSuccess = () => {
   const [error, setError] = useState(null);
   const [payment, setPayment] = useState(null);
 
-  const getStatusTag = (status) => {
+  const getStatusBadge = (status) => {
     const statusUpper = status?.toString().toUpperCase();
     const statusMap = {
-      'PAID': { color: 'success', text: 'Đã thanh toán' },
-      'SUCCESS': { color: 'success', text: 'Thành công' },
-      'COMPLETED': { color: 'success', text: 'Hoàn thành' },
-      'PENDING': { color: 'warning', text: 'Đang chờ' },
-      'CANCELLED': { color: 'error', text: 'Đã hủy' },
-      'CANCELED': { color: 'error', text: 'Đã hủy' },
-      'FAILED': { color: 'error', text: 'Thất bại' },
+      'PAID': { color: '#52c41a', text: 'Đã thanh toán' },
+      'SUCCESS': { color: '#52c41a', text: 'Thành công' },
+      'COMPLETED': { color: '#52c41a', text: 'Hoàn thành' },
+      'PENDING': { color: '#faad14', text: 'Đang chờ' },
+      'CANCELLED': { color: '#ff4d4f', text: 'Đã hủy' },
+      'CANCELED': { color: '#ff4d4f', text: 'Đã hủy' },
+      'FAILED': { color: '#ff4d4f', text: 'Thất bại' },
     };
-    const config = statusMap[statusUpper] || { color: 'default', text: status || 'Không xác định' };
-    return <Tag color={config.color} style={{ fontSize: '14px', padding: '4px 12px' }}>{config.text}</Tag>;
+    const config = statusMap[statusUpper] || { color: '#8c8c8c', text: status || 'Không xác định' };
+    return (
+      <span style={{ 
+        color: config.color, 
+        fontWeight: 600,
+        fontSize: '14px',
+      }}>
+        {config.text}
+      </span>
+    );
   };
 
   useEffect(() => {
@@ -59,64 +68,165 @@ const PaymentSuccess = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <Spin size="large" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Spin size="large" tip="Đang tải thông tin thanh toán..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <Alert type="error" message="Lỗi" description={error} showIcon />
-        <div className="mt-4">
-          <Button onClick={() => navigate('/subscriptions')}>Quay lại gói dịch vụ</Button>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full"
+        >
+          <Alert 
+            type="error" 
+            message="Lỗi" 
+            description={error} 
+            showIcon 
+            style={{ marginBottom: 16 }}
+          />
+          <Button type="primary" block onClick={() => navigate('/subscriptions')}>
+            Quay lại gói dịch vụ
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <Card className="shadow-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <h1 className="text-2xl font-semibold">Thanh toán thành công</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="max-w-2xl w-full"
+        >
+          {/* Success Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-white rounded-full p-6 shadow-lg">
+              <CheckCircle className="w-16 h-16 text-green-500" strokeWidth={2.5} />
+            </div>
           </div>
 
-          <Descriptions bordered column={1} size="middle">
-            <Descriptions.Item label="Mã đơn hàng">
-              <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{payment?.orderCode}</span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Gói dịch vụ">
-              <span style={{ fontWeight: 500 }}>{payment?.planName || payment?.plan?.planName}</span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Số tiền">
-              <span style={{ fontWeight: 600, color: '#52c41a', fontSize: '16px' }}>
-                {new Intl.NumberFormat('vi-VN').format(payment?.amount || 0)} VND
-              </span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              {getStatusTag(payment?.status || 'PAID')}
-            </Descriptions.Item>
-            {payment?.paidAt && (
-              <Descriptions.Item label="Thời gian thanh toán">
-                {new Date(payment.paidAt).toLocaleString('vi-VN')}
-              </Descriptions.Item>
-            )}
-            {payment?.timestamp && (
-              <Descriptions.Item label="Thời gian tạo">
-                {new Date(payment.timestamp).toLocaleString('vi-VN')}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
+          {/* Main Card */}
+          <Card 
+            className="shadow-lg"
+            style={{
+              borderRadius: '16px',
+              border: 'none',
+            }}
+          >
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-bold mb-2 text-gray-900">
+                Thanh toán thành công!
+              </h1>
+              <p className="text-gray-600">
+                Cảm ơn bạn đã tin tưởng sử dụng dịch vụ
+              </p>
+            </div>
 
-          <div className="mt-6 flex gap-3">
-            <Button type="primary" onClick={() => navigate('/subscriptions')}>Về trang gói dịch vụ</Button>
-            <Button onClick={() => navigate('/')}>Về trang chủ</Button>
-          </div>
-        </Card>
+            <Divider style={{ margin: '24px 0' }} />
+
+            {/* Payment Details */}
+            <div>
+              {/* Amount Highlight */}
+              <div className="text-center mb-8 p-6 rounded-xl bg-green-50 border border-green-200">
+                <div className="text-gray-600 text-sm mb-2 flex items-center justify-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Số tiền thanh toán
+                </div>
+                <div className="text-4xl font-bold text-green-600">
+                  {new Intl.NumberFormat('vi-VN').format(payment?.amount || 0)} đ
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <Package className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">Gói dịch vụ</div>
+                    <div className="font-semibold text-gray-900">
+                      {payment?.planName || payment?.plan?.planName || 'Premium Plan'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <Mail className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">Mã đơn hàng</div>
+                    <div className="font-mono font-semibold text-gray-900">
+                      {payment?.orderCode}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <CheckCircle className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">Trạng thái</div>
+                    <div>{getStatusBadge(payment?.status || 'PAID')}</div>
+                  </div>
+                </div>
+
+                {(payment?.paidAt || payment?.timestamp) && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                    <Calendar className="w-5 h-5 text-gray-600" />
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500">Thời gian thanh toán</div>
+                      <div className="font-semibold text-gray-900">
+                        {new Date(payment.paidAt || payment.timestamp).toLocaleString('vi-VN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Divider style={{ margin: '24px 0' }} />
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                type="primary"
+                size="large"
+                block
+                onClick={() => navigate('/subscriptions')}
+                className="h-11"
+                icon={<Package className="w-4 h-4" />}
+              >
+                Xem các gói dịch vụ khác
+              </Button>
+              <Button
+                size="large"
+                block
+                onClick={() => navigate('/')}
+                className="h-11"
+                icon={<Home className="w-4 h-4" />}
+              >
+                Về trang chủ
+              </Button>
+            </div>
+
+            {/* Footer Note */}
+            <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
+              <p className="mt-1">Có thắc mắc? Liên hệ hỗ trợ: support@studysync.com</p>
+            </div>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );

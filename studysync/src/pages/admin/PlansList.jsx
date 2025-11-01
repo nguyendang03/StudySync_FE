@@ -170,73 +170,85 @@ const PlansList = () => {
   ];
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="space-y-6"
+        transition={{ duration: 0.4 }}
+        className="space-y-5"
       >
         {/* Statistics Cards */}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Tổng gói"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Tổng gói</span>}
                   value={stats.total}
-                  prefix={<ShoppingOutlined style={{ color: '#7269ef' }} />}
-                  valueStyle={{ color: '#7269ef', fontWeight: 600 }}
+                  prefix={<ShoppingOutlined style={{ color: '#7269ef', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đang bán"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đang bán</span>}
                   value={stats.active}
-                  prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                  valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+                  prefix={<CheckCircleOutlined style={{ color: '#52c41a', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Đã ẩn"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đã ẩn</span>}
                   value={stats.inactive}
-                  prefix={<CheckCircleOutlined style={{ color: '#8c8c8c' }} />}
-                  valueStyle={{ color: '#8c8c8c', fontWeight: 600 }}
+                  prefix={<CheckCircleOutlined style={{ color: '#8c8c8c', fontSize: '20px' }} />}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card 
+                className="shadow-sm hover:shadow-md transition-shadow duration-300"
+                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
+              >
                 <Statistic
-                  title="Tổng giá trị"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Tổng giá trị</span>}
                   value={stats.totalRevenue}
                   precision={0}
-                  prefix={<DollarOutlined style={{ color: '#faad14' }} />}
+                  prefix={<DollarOutlined style={{ color: '#faad14', fontSize: '20px' }} />}
                   suffix="đ"
-                  valueStyle={{ color: '#faad14', fontWeight: 600 }}
+                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
             </motion.div>
@@ -245,14 +257,19 @@ const PlansList = () => {
 
         {/* Main Table Card */}
         <Card
-          className="border-0 shadow-lg"
+          className="shadow-sm"
+          style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
           title={
             <div className="flex items-center gap-3">
-              <CreditCard className="w-6 h-6 text-purple-600" />
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <CreditCard className="w-5 h-5 text-purple-600" />
+              </div>
               <div>
-                <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Gói Subscriptions</h1>
-                <p style={{ margin: '4px 0 0 0', color: '#8c8c8c', fontSize: '14px' }}>
-                  Danh sách, tạo/sửa, bật/tắt.
+                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#262626' }}>
+                  Gói Subscriptions
+                </h1>
+                <p style={{ margin: '2px 0 0 0', color: '#8c8c8c', fontSize: '13px', fontWeight: 400 }}>
+                  Danh sách, tạo/sửa, bật/tắt
                 </p>
               </div>
             </div>
@@ -263,6 +280,7 @@ const PlansList = () => {
                 icon={<ReloadOutlined />}
                 onClick={load}
                 loading={loading}
+                style={{ borderRadius: '8px' }}
               >
                 Làm mới
               </Button>
@@ -270,12 +288,12 @@ const PlansList = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => showToast.info('Tính năng tạo gói đang phát triển')}
+                style={{ borderRadius: '8px' }}
               >
                 Tạo gói
               </Button>
             </Space>
           }
-          style={{ borderRadius: '16px' }}
         >
           <Table
             columns={columns}

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import authService from '../services/authService.js';
 import { showToast, commonToasts } from '../utils/toast';
 import API_BASE_URL from '../config/api.js';
+import useNotificationStore from './notificationStore.js';
 
 const useAuthStore = create(
   persist(
@@ -39,6 +40,10 @@ const useAuthStore = create(
             if (userProfile) {
               set({ user: userProfile });
               console.log('✅ User profile loaded');
+              
+              // Initialize notification store for already logged in users
+              console.log('🔔 Initializing notifications for existing session...');
+              useNotificationStore.getState().initialize();
             }
           }).catch(error => {
             console.log('⚠️ Could not load user profile, but auth is still valid:', error.message);
@@ -69,6 +74,10 @@ const useAuthStore = create(
             loading: false,
             error: null,
           });
+
+          // Initialize notification store after successful login
+          console.log('🔔 Initializing notifications...');
+          useNotificationStore.getState().initialize();
 
           console.log('✅ Login successful');
           const username = userProfile?.username || response.user?.username || 'bạn';
@@ -248,6 +257,11 @@ const useAuthStore = create(
       // Logout action
       logout: () => {
         console.log('🔄 Logging out...');
+        
+        // Cleanup notification store before logout
+        console.log('🔕 Cleaning up notifications...');
+        useNotificationStore.getState().cleanup();
+        
         authService.logout();
         set({
           user: null,
