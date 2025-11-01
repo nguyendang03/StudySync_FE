@@ -231,6 +231,21 @@ const Subscriptions = () => {
     return currentPlan.planId === plan.id || currentPlan.plan?.id === plan.id;
   };
 
+  const isCheaperThanCurrent = (plan) => {
+    if (!currentPlan || !currentPlan.plan) return false;
+    const currentPrice = currentPlan.plan.price || 0;
+    const planPrice = plan.price || 0;
+    return planPrice < currentPrice;
+  };
+
+  const canPurchasePlan = (plan) => {
+    // Can't purchase if it's the current plan
+    if (isCurrentPlan(plan)) return false;
+    // Can't purchase if it's cheaper than current plan
+    if (isCheaperThanCurrent(plan)) return false;
+    return true;
+  };
+
   const getUsagePercentage = (used, limit) => {
     if (!limit || limit === 0) return 0;
     const percentage = (used / limit) * 100;
@@ -239,167 +254,284 @@ const Subscriptions = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 flex items-center justify-center">
         <Spin size="large" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        
+        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Chọn Gói Subscription
+          <h1 className="text-5xl font-bold text-white mb-4">
+            Chọn Gói Phù Hợp Với Bạn
           </h1>
-          <p className="text-xl text-gray-600">
-            Nâng cấp trải nghiệm học tập của bạn
+          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+            Nâng cấp trải nghiệm học tập với các tính năng cao cấp và không giới hạn
           </p>
         </motion.div>
-
-        {/* Current Subscription */}
-        {currentPlan && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <Card className="border-2 border-blue-500 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Badge status="success" className="mr-2" />
-                  <span className="font-semibold text-lg">Gói hiện tại: {currentPlan.plan?.planName || 'Free'}</span>
-                  {currentPlan.endDate && (
-                    <p className="text-gray-600 text-sm mt-1">
-                      Hết hạn: {new Date(currentPlan.endDate).toLocaleDateString('vi-VN')}
-                    </p>
-                  )}
-                </div>
-                {currentPlan.plan && (
-                  <div className="flex gap-4">
-                    <div className="text-center">
-                      <Camera className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                      <p className="text-xs text-gray-600">
-                        Video: {currentPlan.usageVideoMinutes} / {currentPlan.plan.videoCallMinutesLimit || '∞'}
-                      </p>
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 transition-all"
-                          style={{ width: `${getUsagePercentage(currentPlan.usageVideoMinutes, currentPlan.plan.videoCallMinutesLimit)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <Sparkles className="w-4 h-4 text-purple-600 mx-auto mb-1" />
-                      <p className="text-xs text-gray-600">
-                        AI: {currentPlan.usageAiQueries} / {currentPlan.plan.aiQueriesLimit || '∞'}
-                      </p>
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-purple-500 transition-all"
-                          style={{ width: `${getUsagePercentage(currentPlan.usageAiQueries, currentPlan.plan.aiQueriesLimit)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </motion.div>
-        )}
 
         {/* Plans Grid */}
         {plans.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">Không có gói subscription nào khả dụng</p>
-            <p className="text-gray-400 text-sm mt-2">Vui lòng kiểm tra cấu hình backend</p>
+            <p className="text-white text-lg">Không có gói subscription nào khả dụng</p>
+            <p className="text-purple-200 text-sm mt-2">Vui lòng kiểm tra cấu hình backend</p>
           </div>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {plans.map((plan, index) => {
-            console.log(`🎁 Rendering plan ${index}:`, plan);
+            const isCurrent = isCurrentPlan(plan);
+            const isCheaper = isCheaperThanCurrent(plan);
+            const canPurchase = canPurchasePlan(plan);
+            
             return (
               <motion.div
                 key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative ${getPlanColor(plan.planName)} rounded-2xl p-8 text-white transform transition-all duration-300 hover:scale-105 shadow-2xl ${
-                  isCurrentPlan(plan) ? 'ring-4 ring-yellow-400' : ''
-                }`}
+                transition={{ 
+                  delay: index * 0.15,
+                  duration: 0.5,
+                  type: "spring",
+                  stiffness: 100
+                }}
+                whileHover={!isCheaper ? { y: -8, scale: 1.02 } : {}}
               >
-              {isCurrentPlan(plan) && (
-                <div className="absolute top-4 right-4">
-                  <Badge status="success" text="Đang sử dụng" />
-                </div>
-              )}
-              
-              <div className="flex flex-col items-center mb-6">
-                <div className="mb-4">{getPlanIcon(plan.planName)}</div>
-                <h3 className="text-2xl font-bold mb-2">{plan.planName}</h3>
-                <div className="text-4xl font-bold mb-4">
-                  {formatPrice(plan.price)}
-                </div>
-                {plan.durationDays > 0 && (
-                  <p className="text-sm opacity-90">
-                    Trong {plan.durationDays} ngày
-                  </p>
-                )}
-              </div>
-
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    {plan.aiQueriesLimit || 'Không giới hạn'} truy vấn AI/tháng
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    {plan.videoCallMinutesLimit || 'Không giới hạn'} phút video call
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    {plan.personalStorageLimitMb}MB lưu trữ
-                  </span>
-                </li>
-              </ul>
-
-              {!isCurrentPlan(plan) && (
-                <Button
-                  type="primary"
-                  size="large"
-                  block
-                  icon={<CreditCard className="w-4 h-4" />}
-                  onClick={() => handlePurchase(plan)}
-                  disabled={purchasing}
-                  className="bg-white text-purple-600 hover:bg-gray-100 border-none"
+                <div 
+                  className={`relative backdrop-blur-md rounded-3xl p-8 text-white transition-all duration-500 shadow-2xl ${
+                    isCheaper 
+                      ? 'opacity-50 bg-white/5 border-2 border-white/10' 
+                      : 'bg-white/15 border-2 border-white/40 hover:bg-white/20 hover:border-white/60 hover:shadow-purple-500/50'
+                  }`}
+                  style={{ minHeight: '520px' }}
                 >
-                  {purchasing && selectedPlan?.id === plan.id ? (
-                    <>
-                      <Loader className="animate-spin w-4 h-4 mr-2" />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    <>
-                    Thanh toán
-                    </>
+                  {/* Decorative gradient overlay */}
+                  {!isCheaper && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl pointer-events-none" />
                   )}
-                </Button>
-              )}
+                  
+                  {/* Current Plan Badge */}
+                  {isCurrent && (
+                    <motion.div 
+                      className="absolute -top-3 left-1/2 transform -translate-x-1/2"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: "spring" }}
+                    >
+                      <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 px-5 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                        Gói hiện tại
+                      </span>
+                    </motion.div>
+                  )}
+
+                  {/* Unavailable Badge for Cheaper Plans */}
+                  {isCheaper && !isCurrent && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-gray-600 text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                        Không khả dụng
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Plan Title */}
+                  <div className="text-center mb-8 relative z-10">
+                    <h3 className="text-2xl font-bold mb-6 leading-tight tracking-wide">
+                      {plan.planName}
+                    </h3>
+                    
+                    {/* Price */}
+                    <div className="mb-4">
+                      {plan.price && plan.price > 0 ? (
+                        <div>
+                          <div className="flex items-baseline justify-center gap-1">
+                            <span className="text-4xl font-bold">
+                              {new Intl.NumberFormat('vi-VN').format(plan.price)}
+                            </span>
+                            <span className="text-xl">đ</span>
+                          </div>
+                          <p className="text-sm text-white/70 mt-2">/ tháng</p>
+                          {plan.priceUSD && (
+                            <p className="text-xs text-white/60 mt-1">
+                              (~{plan.priceUSD} USD)
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-3xl font-bold">Miễn phí</p>
+                          <p className="text-sm text-white/70 mt-2">Tính năng cơ bản</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-16 h-0.5 bg-white/30 mx-auto mt-6"></div>
+                  </div>
+
+                  {/* Features List */}
+                  <ul className="space-y-3.5 mb-12 text-left relative z-10">
+                    {plan.aiQueriesLimit && (
+                      <li className="flex items-start group">
+                        <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm leading-relaxed text-white/90">
+                          {plan.aiQueriesLimit === 0 || plan.aiQueriesLimit === null 
+                            ? 'Miễn phí (0đ)' 
+                            : `${plan.aiQueriesLimit} truy vấn AI/tháng`}
+                        </span>
+                      </li>
+                    )}
+                    
+                    {plan.personalStorageLimitMb > 0 && (
+                      <li className="flex items-start group">
+                        <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm leading-relaxed text-white/90">
+                          Lưu trữ {plan.personalStorageLimitMb >= 1024 
+                            ? `${(plan.personalStorageLimitMb / 1024).toFixed(0)}GB` 
+                            : `${plan.personalStorageLimitMb}MB`}
+                        </span>
+                      </li>
+                    )}
+                    
+                    {plan.videoCallMinutesLimit && (
+                      <li className="flex items-start group">
+                        <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm leading-relaxed text-white/90">
+                          {plan.videoCallMinutesLimit === 0 
+                            ? 'Không giới hạn phút video call' 
+                            : `${plan.videoCallMinutesLimit} phút video call`}
+                        </span>
+                      </li>
+                    )}
+
+                    {plan.description && (
+                      <li className="flex items-start group">
+                        <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm leading-relaxed text-white/90">
+                          {plan.description}
+                        </span>
+                      </li>
+                    )}
+
+                    {plan.durationDays > 0 && (
+                      <li className="flex items-start group">
+                        <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm leading-relaxed text-white/90">
+                          Thời hạn: {plan.durationDays > 30 ? `${Math.floor(plan.durationDays / 30)} tháng` : `${plan.durationDays} ngày`}
+                        </span>
+                      </li>
+                    )}
+
+                    {plan.planName?.toLowerCase().includes('freemium') && (
+                      <>
+                        <li className="flex items-start group">
+                          <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <span className="text-sm leading-relaxed text-white/90">Dùng AI cơ bản</span>
+                        </li>
+                        <li className="flex items-start group">
+                          <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <span className="text-sm leading-relaxed text-white/90">Tạo tối đa 6 nhóm</span>
+                        </li>
+                        <li className="flex items-start group">
+                          <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <span className="text-sm leading-relaxed text-white/90">Tải file lên 100MB, lưu trữ 2GB</span>
+                        </li>
+                        <li className="flex items-start group">
+                          <CheckCircle className="w-5 h-5 mr-3 mt-0.5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <span className="text-sm leading-relaxed text-white/90">Phù hợp: Học đơn giản, nhu cầu cơ bản</span>
+                        </li>
+                      </>
+                    )}
+                  </ul>
+
+                  {/* Purchase Button */}
+                  {!isCurrent && (
+                    <div className="absolute bottom-8 left-8 right-8 z-10">
+                      {isCheaperThanCurrent(plan) ? (
+                        <div className="text-center">
+                          <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-3.5 cursor-not-allowed opacity-50">
+                            <span className="text-white/60 font-semibold text-sm">
+                              Không thể hạ cấp
+                            </span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2.5">
+                            Bạn đang sử dụng gói cao hơn
+                          </p>
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => handlePurchase(plan)}
+                          disabled={purchasing}
+                          className={`w-full bg-white hover:bg-gray-50 text-purple-700 font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                            purchasing ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-xl'
+                          }`}
+                        >
+                          {purchasing && selectedPlan?.id === plan.id ? (
+                            <>
+                              <Loader className="animate-spin w-5 h-5" />
+                              <span>Đang xử lý...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="w-5 h-5" />
+                              <span>{plan.price === 0 ? 'Dùng miễn phí' : 'Thanh toán ngay'}</span>
+                              <ArrowRight className="w-4 h-4 ml-1" />
+                            </>
+                          )}
+                        </motion.button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             );
           })}
         </div>
+
+        {/* Footer Notes */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="max-w-5xl mx-auto"
+        >
+          <div className="bg-white/10 backdrop-blur-md border-2 border-white/30 rounded-3xl p-8 shadow-2xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Lưu ý quan trọng</h3>
+            </div>
+            <ul className="space-y-3 text-white/90 text-sm leading-relaxed">
+              <li className="flex items-start gap-3">
+                <span className="text-yellow-400 mt-1 flex-shrink-0">•</span>
+                <span>Quyền của gói sẽ tự bị dừng lại sau ngày hết hạn.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-yellow-400 mt-1 flex-shrink-0">•</span>
+                <span>Vào thư mục <strong>My Group</strong> để tạo nhóm (nhấn nút Create Group và chọn group cho phép tạo file kèm nội dung Upload).</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-yellow-400 mt-1 flex-shrink-0">•</span>
+                <span>Nhấn vào file của nhóm, nhấn nút upload để tải file lên. Mỗi nhóm chỉ có thể upload bốn loại file sau: <strong>.txt, .word, .excel</strong> (tối đa 5MB).</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-yellow-400 mt-1 flex-shrink-0">•</span>
+                <span>Liên hệ <strong className="text-white">studysync@studysync.vn</strong> hoặc qua trang phản hồi để báo lỗi, yêu cầu hỗ trợ hoặc hoàn tiền khi có vấn đề xảy ra.</span>
+              </li>
+            </ul>
+          </div>
+        </motion.div>
 
         {/* Payment Modal */}
         <Modal
