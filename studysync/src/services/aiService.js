@@ -129,9 +129,9 @@ ${conversationHistory.length > 0 ? `LỊCH SỬ TRƯỚC ĐÓ:\n${conversationHi
       
       // Try different Gemini models in order of preference (removed deprecated gemini-pro)
       const models = [
-        'gemini-1.5-flash',    // Fastest, recommended for most use cases
-        'gemini-1.5-pro',      // Most capable, use for complex tasks
-        'gemini-pro-vision',
+        'gemini-2.5-flash',    // Fastest, recommended for most use cases
+        'gemini-2.5-pro',      // Most capable, use for complex tasks
+        'gemini-2.5-flash-lite',
         'gemini-2.0-flash'    // Alternative if others fail
       ];
       
@@ -396,13 +396,23 @@ ${conversationHistory.length > 0 ? `LỊCH SỬ TRƯỚC ĐÓ:\n${conversationHi
           try {
             response = await this.getGeminiResponse(message, conversationHistory);
           } catch (geminiError) {
-            console.error('❌ Gemini API completely failed:', geminiError.message);
+            console.error('❌ Gemini API failed:', geminiError.message);
             console.log('🔄 Falling back to intelligent responses...');
             
-            // Add a notice about AI service status
-            const fallbackWithNotice = `⚠️ **Thông báo:** Dịch vụ AI đang gặp sự cố kỹ thuật. Tôi đang sử dụng chế độ trả lời thông minh.\n\n${this.getFallbackResponse(message)}\n\n🔧 **Lưu ý:** Các tính năng AI sẽ hoạt động bình thường sau khi được khắc phục.`;
+            // Check if it's a quota error
+            const isQuotaError = geminiError.message?.includes('RESOURCE_EXHAUSTED') || 
+                                geminiError.message?.includes('Quota exceeded') ||
+                                geminiError.message?.includes('429');
             
-            return fallbackWithNotice;
+            // Add a notice about AI service status
+            let fallbackNotice = '';
+            if (isQuotaError) {
+              fallbackNotice = `⚠️ **Thông báo:** Gemini API đã vượt quá giới hạn quota. Tôi đang sử dụng chế độ trả lời thông minh.\n\n${this.getFallbackResponse(message)}\n\n💡 **Gợi ý:** Admin có thể cấu hình lại AI provider trong file .env (đổi sang OpenAI hoặc sử dụng chế độ fallback).\n\n🔧 Chi tiết lỗi: ${geminiError.message.substring(0, 100)}...`;
+            } else {
+              fallbackNotice = `⚠️ **Thông báo:** Dịch vụ AI đang gặp sự cố kỹ thuật. Tôi đang sử dụng chế độ trả lời thông minh.\n\n${this.getFallbackResponse(message)}\n\n🔧 **Lưu ý:** Các tính năng AI sẽ hoạt động bình thường sau khi được khắc phục.`;
+            }
+            
+            return fallbackNotice;
           }
           break;
           
