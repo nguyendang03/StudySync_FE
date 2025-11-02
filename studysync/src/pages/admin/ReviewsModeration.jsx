@@ -58,6 +58,9 @@ const ReviewsModeration = () => {
         current: result.page || page,
         total: result.total || items.length,
       }));
+      
+      // Reload stats after loading reviews
+      await loadStats();
     } catch (e) {
       console.error('Load reviews error:', e);
       showToast.error('Không tải được danh sách đánh giá');
@@ -71,21 +74,23 @@ const ReviewsModeration = () => {
       const res = await reviewService.getAdminStats();
       const stats = res?.data?.data || res?.data || res || {};
       setStatsData({
-        total: stats.total || 0,
-        visible: stats.visible || stats.public || 0,
-        hidden: stats.hidden || stats.private || 0,
+        total: stats.total || stats.totalReviews || 0,
+        visible: stats.visible || stats.public || stats.publicReviews || 0,
+        hidden: stats.hidden || stats.private || stats.hiddenReviews || 0,
         avgRating: stats.avgRating || stats.averageRating || 0,
       });
     } catch (e) {
       console.error('Load stats error:', e);
-      // Fallback to computed stats from reviews
-      const total = reviews.length;
-      const visible = reviews.filter(r => r.isPublic).length;
-      const hidden = reviews.filter(r => !r.isPublic).length;
-      const avgRating = total > 0 
-        ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / total).toFixed(1)
-        : 0;
-      setStatsData({ total, visible, hidden, avgRating: parseFloat(avgRating) });
+      // Fallback to computed stats from reviews if API fails
+      if (reviews.length > 0) {
+        const total = reviews.length;
+        const visible = reviews.filter(r => r.isPublic).length;
+        const hidden = reviews.filter(r => !r.isPublic).length;
+        const avgRating = total > 0 
+          ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / total).toFixed(1)
+          : 0;
+        setStatsData({ total, visible, hidden, avgRating: parseFloat(avgRating) });
+      }
     }
   };
 
@@ -197,13 +202,13 @@ const ReviewsModeration = () => {
       title: 'Đánh giá',
       dataIndex: 'rating',
       key: 'rating',
-      width: 120,
+      width: 180,
       render: (rating) => (
-        <div>
-          <Rate disabled defaultValue={rating} style={{ fontSize: 14 }} />
-          <div style={{ fontSize: '11px', color: '#8c8c8c', marginTop: 4 }}>
-            {rating} sao
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+          <Rate disabled defaultValue={rating} style={{ fontSize: 16 }} />
+          <span style={{ fontSize: '13px', color: '#8c8c8c', fontWeight: 500 }}>
+            ({rating}/5)
+          </span>
         </div>
       ),
     },
@@ -217,23 +222,44 @@ const ReviewsModeration = () => {
       render: (content, record) => {
         const comment = record.comment || record.content || content || '';
         return (
-          <Tooltip title={comment}>
-            <div>
-              <div style={{ marginBottom: record.adminReply ? 8 : 0, lineHeight: '1.6', fontSize: '13px' }}>
+          <div>
+            <Tooltip title={comment}>
+              <div style={{ marginBottom: record.adminReply ? 12 : 4, lineHeight: '1.6', fontSize: '13px', color: '#262626' }}>
                 {comment}
               </div>
-              {record.adminReply && (
-                <Tag color="purple" icon={<MessageOutlined />} style={{ marginTop: 4, padding: '4px 8px', fontSize: '12px' }}>
-                  <strong>Phản hồi:</strong> {record.adminReply}
-                </Tag>
-              )}
-              {record.createdAt && (
-                <div style={{ fontSize: '11px', color: '#8c8c8c', marginTop: 4 }}>
-                  {dayjs(record.createdAt).format('DD/MM/YY HH:mm')}
+            </Tooltip>
+            {record.adminReply && (
+              <div style={{ 
+                background: 'linear-gradient(135deg, #f0e6ff 0%, #e6f0ff 100%)', 
+                padding: '8px 12px', 
+                borderRadius: '8px',
+                borderLeft: '3px solid #7269ef',
+                marginTop: 8
+              }}>
+                <div style={{ display: 'flex', alignItems: 'start', gap: 6 }}>
+                  <MessageOutlined style={{ color: '#7269ef', fontSize: '14px', marginTop: 2 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '11px', color: '#7269ef', fontWeight: 600, marginBottom: 4 }}>
+                      PHẢN HỒI CỦA QUẢN TRỊ VIÊN
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#262626', lineHeight: '1.5' }}>
+                      {record.adminReply}
+                    </div>
+                    {record.repliedAt && (
+                      <div style={{ fontSize: '11px', color: '#8c8c8c', marginTop: 4 }}>
+                        {dayjs(record.repliedAt).format('DD/MM/YY HH:mm')}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </Tooltip>
+              </div>
+            )}
+            {record.createdAt && (
+              <div style={{ fontSize: '11px', color: '#8c8c8c', marginTop: 6 }}>
+                <span style={{ fontWeight: 500 }}>Đăng lúc:</span> {dayjs(record.createdAt).format('DD/MM/YY HH:mm')}
+              </div>
+            )}
+          </div>
         );
       },
     },
@@ -462,9 +488,22 @@ const ReviewsModeration = () => {
 
       <Modal
         title={
-          <div className="flex items-center gap-2">
-            <MessageOutlined style={{ color: '#7269ef' }} />
-            <span>Phản hồi đánh giá</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ 
+              width: 36, 
+              height: 36, 
+              borderRadius: '8px', 
+              background: 'linear-gradient(135deg, #7269ef 0%, #5b8def 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <MessageOutlined style={{ color: '#fff', fontSize: 16 }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#262626' }}>Phản hồi đánh giá</div>
+              <div style={{ fontSize: 12, fontWeight: 400, color: '#8c8c8c' }}>Trả lời đánh giá của người dùng</div>
+            </div>
           </div>
         }
         open={replyModalVisible}
@@ -475,25 +514,83 @@ const ReviewsModeration = () => {
         }}
         okText="Gửi phản hồi"
         cancelText="Hủy"
-        width={600}
+        width={650}
+        okButtonProps={{ 
+          style: { 
+            background: 'linear-gradient(135deg, #7269ef 0%, #5b8def 100%)',
+            border: 'none',
+            height: 38,
+            borderRadius: 8
+          } 
+        }}
+        cancelButtonProps={{ 
+          style: { height: 38, borderRadius: 8 } 
+        }}
       >
         {selectedReview && (
-          <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
-            <div style={{ fontWeight: 500, marginBottom: 4 }}>
-              Đánh giá từ: {selectedReview.user?.username || '-'}
+          <div style={{ 
+            marginBottom: 20, 
+            padding: 16, 
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', 
+            borderRadius: 12,
+            border: '1px solid #e0e0e0'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#7269ef' }}>
+                {selectedReview.user?.username?.charAt(0)?.toUpperCase() || '?'}
+              </Avatar>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#262626' }}>
+                  {selectedReview.user?.username || 'Người dùng'}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  <Rate 
+                    disabled 
+                    defaultValue={selectedReview.rating} 
+                    style={{ fontSize: 14 }} 
+                  />
+                  <span style={{ fontSize: 12, color: '#8c8c8c' }}>
+                    ({selectedReview.rating}/5)
+                  </span>
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: '#8c8c8c' }}>
+                {dayjs(selectedReview.createdAt).format('DD/MM/YY HH:mm')}
+              </div>
             </div>
-            <Rate disabled defaultValue={selectedReview.rating} style={{ fontSize: 14, marginBottom: 8 }} />
-            <div style={{ fontSize: '13px', color: '#595959' }}>{selectedReview.comment || selectedReview.content}</div>
+            <div style={{ 
+              fontSize: 13, 
+              color: '#595959', 
+              lineHeight: 1.6,
+              padding: 12,
+              background: '#fff',
+              borderRadius: 8,
+              border: '1px solid #e8e8e8'
+            }}>
+              "{selectedReview.comment || selectedReview.content}"
+            </div>
           </div>
         )}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 8, display: 'block' }}>
+            Phản hồi của bạn:
+          </label>
+        </div>
         <TextArea
-          rows={4}
+          rows={5}
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}
-          placeholder="Nhập phản hồi của quản trị viên..."
+          placeholder="Nhập phản hồi của quản trị viên... (tối đa 500 ký tự)"
           maxLength={500}
           showCount
+          style={{ 
+            borderRadius: 8,
+            fontSize: 13
+          }}
         />
+        <div style={{ marginTop: 12, padding: 12, background: '#f0f7ff', borderRadius: 8, fontSize: 12, color: '#0958d9' }}>
+          <strong>💡 Lưu ý:</strong> Phản hồi của bạn sẽ hiển thị công khai cùng với đánh giá này.
+        </div>
       </Modal>
     </div>
   );
