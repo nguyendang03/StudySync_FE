@@ -12,10 +12,11 @@ const PlansList = () => {
 
   const stats = useMemo(() => {
     const total = plans.length;
-    const active = plans.filter(p => p.active).length;
-    const inactive = plans.filter(p => !p.active).length;
-    const totalRevenue = plans.reduce((sum, p) => sum + (p.price || 0), 0);
-    return { total, active, inactive, totalRevenue };
+    const active = plans.filter(p => p.active || p.isActive).length;
+    const inactive = plans.filter(p => !(p.active || p.isActive)).length;
+    // Total subscribers count (if available from backend)
+    const totalSubscribers = plans.reduce((sum, p) => sum + (p.subscribersCount || p.totalSubscribers || 0), 0);
+    return { total, active, inactive, totalSubscribers };
   }, [plans]);
 
   const load = async () => {
@@ -243,11 +244,9 @@ const PlansList = () => {
                 style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
               >
                 <Statistic
-                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Tổng giá trị</span>}
-                  value={stats.totalRevenue}
-                  precision={0}
-                  prefix={<DollarOutlined style={{ color: '#faad14', fontSize: '20px' }} />}
-                  suffix="đ"
+                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Người đăng ký</span>}
+                  value={stats.totalSubscribers}
+                  prefix={<Sparkles className="w-5 h-5" style={{ color: '#faad14' }} />}
                   valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
                 />
               </Card>
