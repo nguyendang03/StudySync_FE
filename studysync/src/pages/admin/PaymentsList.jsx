@@ -14,15 +14,16 @@ const PaymentsList = () => {
 
   const stats = useMemo(() => {
     const total = items.length;
-    const paid = items.filter(p => p.status === 'PAID').length;
-    const refunded = items.filter(p => p.status === 'REFUNDED').length;
-    const pending = items.filter(p => p.status === 'PENDING').length;
+    // Case-insensitive status comparison
+    const paid = items.filter(p => (p.status || '').toString().toUpperCase() === 'PAID').length;
+    const refunded = items.filter(p => (p.status || '').toString().toUpperCase() === 'REFUNDED').length;
+    const pending = items.filter(p => (p.status || '').toString().toUpperCase() === 'PENDING').length;
     const totalRevenue = items
-      .filter(p => p.status === 'PAID')
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
+      .filter(p => (p.status || '').toString().toUpperCase() === 'PAID')
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const refundedAmount = items
-      .filter(p => p.status === 'REFUNDED')
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
+      .filter(p => (p.status || '').toString().toUpperCase() === 'REFUNDED')
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     return { total, paid, refunded, pending, totalRevenue, refundedAmount };
   }, [items]);
 
