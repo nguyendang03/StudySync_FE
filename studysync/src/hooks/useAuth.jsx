@@ -34,5 +34,6 @@ export const useAuth = () => {
     setError: store.setError,
     clearError: store.clearError,
     reset: store.reset,
+    refreshUserProfile: store.refreshUserProfile,
   };
 };

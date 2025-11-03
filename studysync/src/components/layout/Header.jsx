@@ -20,18 +20,24 @@ import {
   HomeOutlined,
   AppstoreOutlined,
   CalendarOutlined,
-  VideoCameraOutlined
+  VideoCameraOutlined,
+  CrownOutlined,
+  DashboardOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import { Users, Bot, HelpCircle, Info, Phone, Settings, ChevronDown } from 'lucide-react';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notifications] = useState(3); // Mock notification count
   const dropdownRef = useRef(null);
   
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if user is admin
+  const isAdmin = user?.role?.includes('admin') || user?.role?.includes('ADMIN');
   
   const handleLogout = () => {
     logout();
@@ -60,7 +66,6 @@ export default function Header() {
         label: (
           <Link to="/my-groups" className="flex items-center gap-3 py-1">
             <span>Nhóm của tôi</span>
-            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">4</span>
           </Link>
         ),
       },
@@ -109,6 +114,11 @@ export default function Header() {
   const supportMenu = {
     items: [
       {
+        key: 'reviews',
+        icon: <StarOutlined className="text-yellow-600" />,
+        label: <Link to="/reviews">Đánh giá</Link>,
+      },
+      {
         key: 'faq',
         icon: <QuestionCircleOutlined className="text-orange-600" />,
         label: <Link to="/faq">Câu hỏi thường gặp</Link>,
@@ -134,6 +144,16 @@ export default function Header() {
         icon: <UserOutlined />,
         label: <Link to="/profile">Hồ sơ cá nhân</Link>,
       },
+      {
+        key: 'subscriptions',
+        icon: <CrownOutlined className="text-yellow-600" />,
+        label: <Link to="/subscriptions">Gói dịch vụ</Link>,
+      },
+      ...(isAdmin ? [{
+        key: 'admin-dashboard',
+        icon: <DashboardOutlined className="text-purple-600" />,
+        label: <Link to="/admin/dashboard">Bảng điều khiển Admin</Link>,
+      }] : []),
       {
         key: 'settings',
         icon: <SettingOutlined />,
@@ -232,16 +252,7 @@ export default function Header() {
           {/* Right Side Actions */}
           <div className="flex items-center space-x-3">
             {/* Notifications */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Badge count={notifications} size="small">
-                <button className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200">
-                  <BellOutlined className="text-xl" />
-                </button>
-              </Badge>
-            </motion.div>
+            {isAuthenticated && <NotificationDropdown />}
 
             {/* User Menu - Show if authenticated, otherwise show auth buttons */}
             <div className="hidden md:flex items-center space-x-3">
@@ -376,6 +387,16 @@ export default function Header() {
                         <UserOutlined />
                         Hồ sơ cá nhân
                       </Link>
+                      {isAdmin && (
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <DashboardOutlined />
+                          Bảng điều khiển Admin
+                        </Link>
+                      )}
                       <Link 
                         to="/settings" 
                         className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"

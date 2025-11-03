@@ -45,6 +45,7 @@ const VideoCall = ({
 
     const normalizeId = (value) => {
       if (value === undefined || value === null) return null;
+      // Convert to string, remove any extra spaces, and convert to lowercase
       return String(value).trim().toLowerCase();
     };
 
@@ -65,9 +66,12 @@ const VideoCall = ({
         member?.User?.id,
         member?.User?.userId,
         member?.profile?.userId,
+        member?.user?.user?.id, // Nested user object
+        member?.user?.user?.userId, // Nested user object
       ];
 
       for (const candidate of possibleIds) {
+        if (candidate === undefined || candidate === null) continue;
         const normalized = normalizeId(candidate);
         if (normalized) {
           return normalized;
@@ -77,32 +81,59 @@ const VideoCall = ({
       return null;
     };
 
-    const resolveDisplayName = (member) => (
-      member?.user?.username ||
-      member?.user?.fullName ||
-      member?.username ||
-      member?.fullName ||
-      member?.name ||
-      member?.user?.name ||
-      (member?.email ? member.email.split('@')[0] : null) ||
-      (member?.user?.email ? member.user.email.split('@')[0] : null) ||
-      `Thành viên ${uid}`
-    );
+    const resolveDisplayName = (member) => {
+      // Try nested user first
+      if (member?.user?.user) {
+        const displayName = member.user.user.username || 
+                           member.user.user.fullName || 
+                           member.user.user.name ||
+                           (member.user.user.email ? member.user.user.email.split('@')[0] : null);
+        if (displayName) return displayName;
+      }
+      
+      // Try direct user object
+      if (member?.user) {
+        const displayName = member.user.username || 
+                           member.user.fullName || 
+                           member.user.name ||
+                           (member.user.email ? member.user.email.split('@')[0] : null);
+        if (displayName) return displayName;
+      }
+      
+      // Try direct fields
+      const displayName = member?.username || 
+                         member?.fullName || 
+                         member?.name ||
+                         (member?.email ? member.email.split('@')[0] : null);
+      
+      return displayName || `Thành viên ${uid}`;
+    };
 
+    // First, try to find exact match
     const matchedMember = groupMembers.find((member) => {
       const memberId = resolveMemberId(member);
       return memberId && memberId === uidKey;
     });
 
     if (matchedMember) {
-      return resolveDisplayName(matchedMember);
+      const displayName = resolveDisplayName(matchedMember);
+      return displayName;
     }
 
-    const userIndex = remoteUsers.findIndex((remoteUser) => normalizeId(remoteUser.uid) === uidKey);
-    if (userIndex >= 0 && groupMembers[userIndex]) {
-      return resolveDisplayName(groupMembers[userIndex]);
+    // If no direct match found, try fuzzy matching (partial string match)
+    const fuzzyMatch = groupMembers.find((member) => {
+      const memberId = resolveMemberId(member);
+      if (!memberId) return false;
+      // Check if uid contains memberId or vice versa (handles cases where UUID is shortened)
+      return memberId.includes(uidKey) || uidKey.includes(memberId);
+    });
+
+    if (fuzzyMatch) {
+      const displayName = resolveDisplayName(fuzzyMatch);
+      return displayName;
     }
 
+    // If still no match, return default
     return `Thành viên ${uid}`;
   };
   
@@ -273,7 +304,7 @@ const VideoCall = ({
     }
   }, [remoteUsers, screenShareUser]);
 
-  const joinCall = async () => {
+    const joinCall = async () => {
     try {
       if (!isMountedRef.current) {
         console.log('Component unmounted, aborting join call');
@@ -288,6 +319,15 @@ const VideoCall = ({
       
       const rawUserId = currentUser?.data?.id ?? currentUser?.id ?? currentUser?.userId;
       const preferredUid = rawUserId ? String(rawUserId) : null;
+      
+      // Debug logging
+      console.log('👤 Current user data:', {
+        userId: rawUserId,
+        preferredUid: preferredUid,
+        groupMembers: groupMembers?.length || 0,
+        groupMemberIds: groupMembers?.map(m => ({ id: m?.id, userId: m?.userId, user: m?.user?.id }))
+      });
+      
       if (!preferredUid) {
         console.warn('⚠️ Falling back to Agora auto-generated UID - user id missing or invalid');
       }

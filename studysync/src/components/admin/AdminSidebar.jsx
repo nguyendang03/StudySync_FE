@@ -1,32 +1,23 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
-  UserCog,
-  UsersRound,
-  MessageSquare,
-  Video,
-  FileText,
-  BarChart3,
-  Settings,
-  Bell,
-  Shield,
-  Database,
-  Activity,
   Calendar,
-  Award,
-  Flag,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Home
+  Home,
+  Star,
+  CreditCard
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuSections = [
@@ -48,135 +39,63 @@ const AdminSidebar = () => {
       ]
     },
     {
-      title: 'Quản lý người dùng',
+      title: 'Người dùng & Nội dung',
       items: [
         {
           icon: Users,
           label: 'Tất cả người dùng',
           path: '/admin/users',
-          description: 'Quản lý người dùng',
-          badge: '2,543'
+          description: 'Quản lý người dùng'
         },
         {
-          icon: UserCog,
-          label: 'Quản trị viên',
-          path: '/admin/admins',
-          description: 'Tài khoản quản trị'
-        },
-        {
-          icon: Shield,
-          label: 'Vai trò & Quyền',
-          path: '/admin/roles',
-          description: 'Kiểm soát truy cập'
+          icon: Star,
+          label: 'Đánh giá',
+          path: '/admin/reviews',
+          description: 'Kiểm duyệt đánh giá'
         }
       ]
     },
     {
-      title: 'Nội dung',
+      title: 'Thương mại',
       items: [
         {
-          icon: UsersRound,
-          label: 'Nhóm học tập',
-          path: '/admin/groups',
-          description: 'Quản lý nhóm',
-          badge: '486'
+          icon: CreditCard,
+          label: 'Thanh toán',
+          path: '/admin/payments',
+          description: 'Lịch sử & hoàn tiền'
         },
-        {
-          icon: MessageSquare,
-          label: 'Tin nhắn',
-          path: '/admin/messages',
-          description: 'Kiểm duyệt tin nhắn'
-        },
-        {
-          icon: FileText,
-          label: 'Bài đăng & Tài liệu',
-          path: '/admin/posts',
-          description: 'Quản lý nội dung'
-        },
-        {
-          icon: Video,
-          label: 'Cuộc gọi video',
-          path: '/admin/video-calls',
-          description: 'Lịch sử cuộc gọi',
-          badge: '1,845'
-        }
-      ]
-    },
-    {
-      title: 'Phân tích',
-      items: [
-        {
-          icon: BarChart3,
-          label: 'Báo cáo',
-          path: '/admin/reports',
-          description: 'Phân tích chi tiết'
-        },
-        {
-          icon: TrendingUp,
-          label: 'Hoạt động người dùng',
-          path: '/admin/activity',
-          description: 'Theo dõi hoạt động'
-        },
-        {
-          icon: Activity,
-          label: 'Sức khỏe hệ thống',
-          path: '/admin/health',
-          description: 'Chỉ số hiệu suất'
-        }
-      ]
-    },
-    {
-      title: 'Vận hành',
-      items: [
         {
           icon: Calendar,
-          label: 'Tác vụ định kỳ',
-          path: '/admin/tasks',
-          description: 'Tự động hóa'
-        },
-        {
-          icon: Bell,
-          label: 'Thông báo',
-          path: '/admin/notifications',
-          description: 'Cảnh báo hệ thống',
-          badge: '12'
-        },
-        {
-          icon: Flag,
-          label: 'Báo cáo & Cờ',
-          path: '/admin/flags',
-          description: 'Báo cáo người dùng',
-          badge: '3'
-        },
-        {
-          icon: Award,
-          label: 'Thành tích',
-          path: '/admin/achievements',
-          description: 'Gamification'
+          label: 'Gói subscription',
+          path: '/admin/subscriptions',
+          description: 'Gói & quyền lợi'
         }
       ]
     },
-    {
-      title: 'Hệ thống',
-      items: [
-        {
-          icon: Database,
-          label: 'Cơ sở dữ liệu',
-          path: '/admin/database',
-          description: 'Quản lý dữ liệu'
-        },
-        {
-          icon: Settings,
-          label: 'Cài đặt',
-          path: '/admin/settings',
-          description: 'Cấu hình hệ thống'
-        }
-      ]
-    }
+    // Only MVP sections kept; unused tabs removed
   ];
 
   const isActive = (path) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user?.username) return 'A';
+    const name = user.username.split(' ');
+    if (name.length >= 2) {
+      return (name[0][0] + name[name.length - 1][0]).toUpperCase();
+    }
+    return user.username.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -353,11 +272,15 @@ const AdminSidebar = () => {
             <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 
                             flex items-center justify-center text-white font-semibold shadow-lg">
-                A
+                {getUserInitials()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">Quản trị viên</p>
-                <p className="text-xs text-gray-500 truncate">admin@studysync.com</p>
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.username || 'Quản trị viên'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.email || 'admin@studysync.com'}
+                </p>
               </div>
             </div>
 
@@ -365,6 +288,7 @@ const AdminSidebar = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={handleLogout}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 
                        bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl
                        hover:shadow-lg transition-all duration-200"
@@ -377,6 +301,7 @@ const AdminSidebar = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            onClick={handleLogout}
             className="w-full p-3 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 
                      text-white hover:shadow-lg transition-all duration-200 group relative"
           >

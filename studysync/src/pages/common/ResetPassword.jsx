@@ -11,9 +11,9 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Axios instance
+// Axios instance - using relative path to work with Vite proxy
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api/v1/auth',
+  baseURL: '/api/v1/auth',
 });
 
 export default function ResetPassword() {

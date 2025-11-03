@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import authService from '../services/authService.js';
 import { showToast, commonToasts } from '../utils/toast';
+import API_BASE_URL from '../config/api.js';
+import useNotificationStore from './notificationStore.js';
 
 const useAuthStore = create(
   persist(
@@ -38,6 +40,10 @@ const useAuthStore = create(
             if (userProfile) {
               set({ user: userProfile });
               console.log('✅ User profile loaded');
+              
+              // Initialize notification store for already logged in users
+              console.log('🔔 Initializing notifications for existing session...');
+              useNotificationStore.getState().initialize();
             }
           }).catch(error => {
             console.log('⚠️ Could not load user profile, but auth is still valid:', error.message);
@@ -68,6 +74,10 @@ const useAuthStore = create(
             loading: false,
             error: null,
           });
+
+          // Initialize notification store after successful login
+          console.log('🔔 Initializing notifications...');
+          useNotificationStore.getState().initialize();
 
           console.log('✅ Login successful');
           const username = userProfile?.username || response.user?.username || 'bạn';
@@ -143,7 +153,7 @@ const useAuthStore = create(
         }
       },
 
-      // Fetch user profile
+      // Fetch user profile (role-aware: ADMIN -> /admin/me, others -> /users/me/profile)
       fetchUserProfile: async () => {
         try {
           const token = authService.getAccessToken();
@@ -158,25 +168,62 @@ const useAuthStore = create(
             return null;
           }
 
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/users/me/profile`, {
+          // Decode role from JWT to choose endpoint
+          const parseJwt = (t) => {
+            try {
+              const base64Url = t.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+              return JSON.parse(jsonPayload);
+            } catch { return {}; }
+          };
+          const claims = parseJwt(token);
+          const rolesClaim = claims.role || claims.roles || claims.authorities || claims.scopes;
+          const roles = Array.isArray(rolesClaim) ? rolesClaim : (rolesClaim ? [rolesClaim] : []);
+          const isAdmin = roles.some(r => String(r).toUpperCase().includes('ADMIN'));
+
+          if (isAdmin) {
+            console.log('🌐 Fetching admin profile:', `${API_BASE_URL}/admin/me`);
+            const res = await fetch(`${API_BASE_URL}/admin/me`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            console.log('📡 Admin profile status:', res.status);
+            if (res.ok) {
+              const raw = await res.json();
+              const data = raw?.data?.data || raw?.data || raw;
+              set({ user: { ...data, role: data?.role || 'ADMIN' } });
+              console.log('✅ Admin profile loaded');
+              return data;
+            } else {
+              const txt = await res.text();
+              console.error('❌ Admin profile failed:', res.status, txt);
+              return null;
+            }
+          }
+
+          // Non-admin user profile
+          console.log('🌐 Fetching user profile from:', `${API_BASE_URL}/users/me/profile`);
+          const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
-
+          console.log('📡 User profile response status:', response.status);
           if (response.ok) {
             const userProfile = await response.json();
-            
-            // CRITICAL FIX: Update the store state with the fetched profile
-            set({ user: userProfile });
-            console.log('✅ User profile loaded and stored:', userProfile);
-            
-            return userProfile;
+            const profileData = userProfile?.data?.data || userProfile?.data || userProfile;
+            set({ user: profileData });
+            console.log('✅ User profile loaded and stored');
+            return profileData;
+          } else {
+            const errorText = await response.text();
+            console.error('❌ User profile fetch failed:', response.status, errorText);
+            return null;
           }
-          
-          console.log('⚠️ Profile fetch returned:', response.status);
-          return null;
         } catch (error) {
           console.error('❌ Fetch user profile failed:', error.message);
           return null;
@@ -210,6 +257,11 @@ const useAuthStore = create(
       // Logout action
       logout: () => {
         console.log('🔄 Logging out...');
+        
+        // Cleanup notification store before logout
+        console.log('🔕 Cleaning up notifications...');
+        useNotificationStore.getState().cleanup();
+        
         authService.logout();
         set({
           user: null,
@@ -223,6 +275,18 @@ const useAuthStore = create(
 
       // Clear error
       clearError: () => set({ error: null }),
+
+      // Manual refresh user profile (for debugging)
+      refreshUserProfile: async () => {
+        console.log('🔄 Manually refreshing user profile...');
+        const userProfile = await get().fetchUserProfile();
+        if (userProfile) {
+          console.log('✅ User profile refreshed successfully');
+        } else {
+          console.log('❌ Failed to refresh user profile');
+        }
+        return userProfile;
+      },
     }),
     {
       name: 'auth-storage',
