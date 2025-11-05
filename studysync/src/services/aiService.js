@@ -58,7 +58,7 @@ PHONG CÁCH:
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
           messages: messages,
-          max_tokens: 1000,
+          max_tokens: 3000,
           temperature: 0.7,
           presence_penalty: 0.6,
           frequency_penalty: 0.3
@@ -156,7 +156,7 @@ ${conversationHistory.length > 0 ? `LỊCH SỬ TRƯỚC ĐÓ:\n${conversationHi
                 temperature: 0.7,
                 topK: 40,
                 topP: 0.95,
-                maxOutputTokens: 1000,
+                maxOutputTokens: 3000,
               },
               safetySettings: [
                 {
