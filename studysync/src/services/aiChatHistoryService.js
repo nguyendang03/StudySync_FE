@@ -1,19 +1,105 @@
 import API_BASE_URL from '../config/api.js';
+import authService from './authService.js';
 
 class AiChatHistoryService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.isRefreshing = false;
+    this.failedQueue = [];
   }
 
   /**
    * Get auth headers with token
    */
   getHeaders() {
-    const token = localStorage.getItem('accessToken');
+    const token = authService.getAccessToken();
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };
+  }
+
+  /**
+   * Process failed request queue after token refresh
+   */
+  processQueue(error, token = null) {
+    this.failedQueue.forEach(promise => {
+      if (error) {
+        promise.reject(error);
+      } else {
+        promise.resolve(token);
+      }
+    });
+    this.failedQueue = [];
+  }
+
+  /**
+   * Wrapper for fetch with automatic token refresh on 401
+   */
+  async fetchWithAuth(url, options = {}) {
+    try {
+      const response = await fetch(url, options);
+
+      // If 401 and not already refreshing, try to refresh token
+      if (response.status === 401 && !this.isRefreshing) {
+        console.log('🔄 AI Chat History: 401 detected, attempting token refresh...');
+        
+        if (this.isRefreshing) {
+          // If already refreshing, queue this request
+          return new Promise((resolve, reject) => {
+            this.failedQueue.push({ resolve, reject });
+          }).then(() => {
+            // Retry with new token
+            return fetch(url, {
+              ...options,
+              headers: {
+                ...options.headers,
+                'Authorization': `Bearer ${authService.getAccessToken()}`
+              }
+            });
+          });
+        }
+
+        this.isRefreshing = true;
+
+        try {
+          // Attempt token refresh
+          await authService.refreshToken();
+          console.log('✅ AI Chat History: Token refresh successful');
+          
+          // Process queued requests
+          this.processQueue(null, authService.getAccessToken());
+
+          // Retry original request with new token
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              'Authorization': `Bearer ${authService.getAccessToken()}`
+            }
+          });
+
+          return retryResponse;
+        } catch (refreshError) {
+          console.error('❌ AI Chat History: Token refresh failed', refreshError);
+          this.processQueue(refreshError, null);
+          
+          // Logout user
+          authService.logout();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+          throw new Error('Session expired. Please login again.');
+        } finally {
+          this.isRefreshing = false;
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error('❌ AI Chat History: Fetch error', error);
+      throw error;
+    }
   }
 
   /**
@@ -24,7 +110,7 @@ class AiChatHistoryService {
    */
   async saveHistory(query, response) {
     try {
-      const res = await fetch(`${this.baseURL}/ai-chat/save-history`, {
+      const res = await this.fetchWithAuth(`${this.baseURL}/ai-chat/save-history`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -53,7 +139,7 @@ class AiChatHistoryService {
    */
   async getHistory(page = 1, limit = 20) {
     try {
-      const res = await fetch(
+      const res = await this.fetchWithAuth(
         `${this.baseURL}/ai-chat/history?page=${page}&limit=${limit}`,
         {
           method: 'GET',
@@ -80,7 +166,7 @@ class AiChatHistoryService {
    */
   async getHistoryById(id) {
     try {
-      const res = await fetch(`${this.baseURL}/ai-chat/history/${id}`, {
+      const res = await this.fetchWithAuth(`${this.baseURL}/ai-chat/history/${id}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -104,7 +190,7 @@ class AiChatHistoryService {
    */
   async deleteHistory(id) {
     try {
-      const res = await fetch(`${this.baseURL}/ai-chat/history/${id}`, {
+      const res = await this.fetchWithAuth(`${this.baseURL}/ai-chat/history/${id}`, {
         method: 'DELETE',
         headers: this.getHeaders()
       });
@@ -127,7 +213,7 @@ class AiChatHistoryService {
    */
   async clearAllHistory() {
     try {
-      const res = await fetch(`${this.baseURL}/ai-chat/history/clear/all`, {
+      const res = await this.fetchWithAuth(`${this.baseURL}/ai-chat/history/clear/all`, {
         method: 'DELETE',
         headers: this.getHeaders()
       });
@@ -150,7 +236,7 @@ class AiChatHistoryService {
    */
   async getUsage() {
     try {
-      const res = await fetch(`${this.baseURL}/ai-chat/usage`, {
+      const res = await this.fetchWithAuth(`${this.baseURL}/ai-chat/usage`, {
         method: 'GET',
         headers: this.getHeaders()
       });
