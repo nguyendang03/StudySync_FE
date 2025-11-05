@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined, ReloadOutlined, UserAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined, ReloadOutlined, UserAddOutlined, CrownOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Modal, Form, Input, Button, message, Spin } from 'antd';
+import { Modal, Form, Input, Button, message, Spin, Pagination } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import groupService from '../../services/groupService';
 import InviteMemberModal from '../groups/InviteMemberModal';
 import { useAuthStore } from '../../stores';
@@ -14,7 +15,10 @@ export default function GroupList() {
   const [isCreating, setIsCreating] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // 5 items per page for table view
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchGroups();
@@ -26,7 +30,18 @@ export default function GroupList() {
       const response = await groupService.getMyGroups();
       const data = response?.data || response;
       console.log('📚 My groups:', data);
-      setGroups(Array.isArray(data) ? data : []);
+      
+      // Handle both array and object formats
+      let groupsArray = [];
+      if (Array.isArray(data)) {
+        groupsArray = data;
+      } else if (data && typeof data === 'object') {
+        // Convert object to array
+        groupsArray = Object.values(data);
+      }
+      
+      console.log('📚 Converted groups array:', groupsArray);
+      setGroups(groupsArray);
     } catch (error) {
       console.error('❌ Error fetching groups:', error);
       message.error(error.message || 'Không thể tải danh sách nhóm');
@@ -65,6 +80,10 @@ export default function GroupList() {
     form.resetFields();
   };
 
+  const handleViewGroup = (groupId) => {
+    navigate(`/groups/${groupId}`);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'VÀO XEM':
@@ -73,6 +92,24 @@ export default function GroupList() {
         return 'bg-purple-100 text-purple-600';
       default:
         return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  const isGroupLeader = (group) => {
+    return user && (group.leaderId === user.id || group.leader?.id === user.id);
+  };
+
+  // Pagination logic
+  const totalGroups = groups.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedGroups = groups.slice(startIndex, endIndex);
+
+  const handlePageChange = (page, newPageSize) => {
+    setCurrentPage(page);
+    if (newPageSize !== pageSize) {
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset to first page when page size changes
     }
   };
 
@@ -143,7 +180,7 @@ export default function GroupList() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {groups.map((group, index) => (
+              {paginatedGroups.map((group, index) => (
                 <motion.div
                   key={group.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -156,7 +193,7 @@ export default function GroupList() {
                     {/* STT */}
                     <div className="text-gray-600 font-medium flex items-center gap-3">
                       <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
-                        {index + 1}
+                        {startIndex + index + 1}
                       </span>
                     </div>
                     
@@ -164,27 +201,45 @@ export default function GroupList() {
                     <div className="text-gray-900 font-medium">
                       <div className="flex items-center gap-2">
                         <BookOutlined className="text-purple-500" />
-                        {group.groupName || group.name}
+                        <div>
+                          <div className="font-semibold">{group.groupName || group.name}</div>
+                          {isGroupLeader(group) && (
+                            <div className="flex items-center gap-1 text-xs text-amber-600 mt-0.5">
+                              <CrownOutlined className="text-amber-500" />
+                              <span>Trưởng nhóm</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
                     {/* Subject */}
                     <div>
                       <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.groupSubject || group.subject)}`}>
-                        {group.groupSubject || group.subject}
+                        {group.groupSubject || group.subject || 'Chưa có môn'}
                       </span>
+                      {group.description && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{group.description}</p>
+                      )}
                     </div>
                     
                     {/* Members */}
-                    <div className="flex items-center gap-2">
-                      <TeamOutlined className="text-gray-400" />
-                      <span className="text-gray-600">{group.memberCount || group.members || 0} thành viên</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <TeamOutlined className="text-gray-400" />
+                        <span className="text-gray-600 font-medium">{group.memberCount || group.members?.length || 0}</span>
+                      </div>
+                      {group.leader && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Leader: {group.leader.username || group.leader.email}
+                        </p>
+                      )}
                     </div>
                     
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       {/* Invite button - only for leaders */}
-                      {user && group.leaderId === user.id && (
+                      {isGroupLeader(group) && (
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -203,6 +258,7 @@ export default function GroupList() {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        onClick={() => handleViewGroup(group.id)}
                         className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
                       >
                         VÀO XEM
@@ -250,17 +306,28 @@ export default function GroupList() {
           </motion.div>
         )}
         
-        {/* Footer */}
+        {/* Pagination Footer */}
         {groups.length > 0 && (
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-6 py-4 border-t border-purple-100">
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-500 flex items-center gap-2">
+              <div className="text-sm text-gray-600 flex items-center gap-2 font-medium">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Hiển thị {groups.length} nhóm
+                Hiển thị {startIndex + 1}-{Math.min(endIndex, totalGroups)} trong tổng số {totalGroups} nhóm
               </div>
-              <button className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors">
-                HIỂN THỊ THÊM...
-              </button>
+              {totalGroups > pageSize && (
+                <Pagination
+                  current={currentPage}
+                  total={totalGroups}
+                  pageSize={pageSize}
+                  onChange={handlePageChange}
+                  onShowSizeChange={handlePageChange}
+                  showSizeChanger
+                  pageSizeOptions={[5, 10, 20, 50]}
+                  showTotal={(total, range) => `${range[0]}-${range[1]} của ${total}`}
+                  size="small"
+                  className="text-purple-600"
+                />
+              )}
             </div>
           </div>
         )}
