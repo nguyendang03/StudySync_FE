@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusOutlined, TeamOutlined, BookOutlined, CloseOutlined, ReloadOutlined, UserAddOutlined, CrownOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Modal, Form, Input, Button, message, Spin } from 'antd';
+import { Modal, Form, Input, Button, message, Spin, Pagination } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import groupService from '../../services/groupService';
 import InviteMemberModal from '../groups/InviteMemberModal';
@@ -15,6 +15,8 @@ export default function GroupList() {
   const [isCreating, setIsCreating] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // 5 items per page for table view
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -97,6 +99,20 @@ export default function GroupList() {
     return user && (group.leaderId === user.id || group.leader?.id === user.id);
   };
 
+  // Pagination logic
+  const totalGroups = groups.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedGroups = groups.slice(startIndex, endIndex);
+
+  const handlePageChange = (page, newPageSize) => {
+    setCurrentPage(page);
+    if (newPageSize !== pageSize) {
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset to first page when page size changes
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -164,7 +180,7 @@ export default function GroupList() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {groups.map((group, index) => (
+              {paginatedGroups.map((group, index) => (
                 <motion.div
                   key={group.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -177,7 +193,7 @@ export default function GroupList() {
                     {/* STT */}
                     <div className="text-gray-600 font-medium flex items-center gap-3">
                       <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
-                        {index + 1}
+                        {startIndex + index + 1}
                       </span>
                     </div>
                     
@@ -290,17 +306,28 @@ export default function GroupList() {
           </motion.div>
         )}
         
-        {/* Footer */}
+        {/* Pagination Footer */}
         {groups.length > 0 && (
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-6 py-4 border-t border-purple-100">
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-500 flex items-center gap-2">
+              <div className="text-sm text-gray-600 flex items-center gap-2 font-medium">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Hiển thị {groups.length} nhóm
+                Hiển thị {startIndex + 1}-{Math.min(endIndex, totalGroups)} trong tổng số {totalGroups} nhóm
               </div>
-              <button className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors">
-                HIỂN THỊ THÊM...
-              </button>
+              {totalGroups > pageSize && (
+                <Pagination
+                  current={currentPage}
+                  total={totalGroups}
+                  pageSize={pageSize}
+                  onChange={handlePageChange}
+                  onShowSizeChange={handlePageChange}
+                  showSizeChanger
+                  pageSizeOptions={[5, 10, 20, 50]}
+                  showTotal={(total, range) => `${range[0]}-${range[1]} của ${total}`}
+                  size="small"
+                  className="text-purple-600"
+                />
+              )}
             </div>
           </div>
         )}

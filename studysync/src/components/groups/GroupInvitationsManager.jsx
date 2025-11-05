@@ -35,8 +35,16 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
       const data = response?.data || response;
       console.log('📤 Sent invitations:', data);
       
+      // Convert object to array if needed, or use empty array as fallback
+      let invitations = [];
+      if (Array.isArray(data)) {
+        invitations = data;
+      } else if (data && typeof data === 'object') {
+        // If data is an object like {0: {...}, 1: {...}}, convert to array
+        invitations = Object.values(data);
+      }
+      
       // Filter by groupId if provided
-      const invitations = Array.isArray(data) ? data : [];
       const filtered = groupId 
         ? invitations.filter(inv => inv.group?.id === groupId)
         : invitations;
@@ -58,7 +66,17 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
       const response = await groupService.getJoinRequests(groupId);
       const data = response?.data || response;
       console.log('📥 Join requests:', data);
-      setJoinRequests(Array.isArray(data) ? data : []);
+      
+      // Convert object to array if needed, or use empty array as fallback
+      let requests = [];
+      if (Array.isArray(data)) {
+        requests = data;
+      } else if (data && typeof data === 'object') {
+        // If data is an object like {0: {...}, 1: {...}}, convert to array
+        requests = Object.values(data);
+      }
+      
+      setJoinRequests(requests);
     } catch (error) {
       console.error('❌ Error fetching join requests:', error);
       showToast.error(error.message || 'Không thể tải danh sách yêu cầu tham gia');
@@ -123,26 +141,32 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
   const sentInvitationsColumns = [
     {
       title: 'Người nhận',
-      dataIndex: ['invitee', 'username'],
-      key: 'invitee',
-      render: (text, record) => (
+      dataIndex: 'inviteEmail',
+      key: 'inviteEmail',
+      render: (email) => (
         <div>
-          <div className="font-medium">{record.invitee?.username || 'N/A'}</div>
-          <div className="text-sm text-gray-500">{record.invitee?.email}</div>
+          <div className="font-medium text-gray-900">{email || 'N/A'}</div>
         </div>
       ),
     },
     {
       title: 'Nhóm',
-      dataIndex: ['group', 'groupName'],
-      key: 'group',
-      render: (text) => text || 'N/A',
+      dataIndex: 'groupName',
+      key: 'groupName',
+      render: (text, record) => (
+        <div>
+          <div className="font-medium">{text || 'N/A'}</div>
+          {record.groupDescription && (
+            <div className="text-xs text-gray-500 line-clamp-1">{record.groupDescription}</div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Lời nhắn',
-      dataIndex: 'message',
-      key: 'message',
-      render: (text) => text || <span className="text-gray-400 italic">Không có</span>,
+      title: 'Người gửi',
+      dataIndex: 'invitedBy',
+      key: 'invitedBy',
+      render: (text) => text || <span className="text-gray-400 italic">N/A</span>,
     },
     {
       title: 'Trạng thái',
@@ -160,9 +184,15 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
     },
     {
       title: 'Thời gian',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
+      dataIndex: 'invitedAt',
+      key: 'invitedAt',
+      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'N/A',
     },
   ];
 

@@ -4,14 +4,13 @@ import {
   UserOutlined, 
   MailOutlined, 
   PhoneOutlined, 
-  BankOutlined, 
   IdcardOutlined, 
   BookOutlined,
   SaveOutlined,
   LoadingOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import useAuthStore from '../../stores/authStore';
 import userService from '../../services/userService';
 
@@ -23,7 +22,6 @@ export default function ProfileInfoForm() {
     username: '',
     email: '',
     phoneNumber: '',
-    university: '',
     studentId: '',
     major: ''
   });
@@ -41,7 +39,6 @@ export default function ProfileInfoForm() {
           username: profile.username || '',
           email: profile.email || '',
           phoneNumber: profile.phoneNumber || '',
-          university: profile.university || '',
           studentId: profile.studentId || '',
           major: profile.major || ''
         });
@@ -70,7 +67,6 @@ export default function ProfileInfoForm() {
       const updateData = {
         username: formData.username,
         phoneNumber: formData.phoneNumber,
-        university: formData.university,
         studentId: formData.studentId,
         major: formData.major
       };
@@ -133,60 +129,40 @@ export default function ProfileInfoForm() {
           />
         </div>
 
-        {/* Email and Phone in a row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <MailOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              disabled={true}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed transition-colors"
-              placeholder="example@email.com"
-            />
-            <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
-          </div>
-          
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <PhoneOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
-              Số điện thoại
-            </label>
-            <input
-              type="tel"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              disabled={!isEditing}
-              className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
-                !isEditing ? 'bg-gray-50 cursor-not-allowed' : ''
-              }`}
-              placeholder="0123456789"
-            />
-          </div>
-        </div>
-
-        {/* University */}
+        {/* Email */}
         <div>
           <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-            <BankOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
-            Trường Đại Học
+            <MailOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
+            Email
           </label>
           <input
-            type="text"
-            name="university"
-            value={formData.university}
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            disabled={true}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed transition-colors"
+            placeholder="example@email.com"
+          />
+          <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
+        </div>
+
+        {/* Phone Number */}
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            <PhoneOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
+            Số điện thoại
+          </label>
+          <input
+            type="tel"
+            name="phoneNumber"
+            value={formData.phoneNumber}
             onChange={handleInputChange}
             disabled={!isEditing}
             className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
               !isEditing ? 'bg-gray-50 cursor-not-allowed' : ''
             }`}
-            placeholder="Nhập tên trường đại học"
+            placeholder="0123456789"
           />
         </div>
 

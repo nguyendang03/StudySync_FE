@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EyeOutlined, EyeInvisibleOutlined, LockOutlined, LoadingOutlined } from '@ant-design/icons';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import userService from '../../services/userService';
 
 const PasswordField = ({ 
@@ -140,10 +140,7 @@ export default function ChangePassword() {
           confirm: false
         });
         
-        toast.success('Mật khẩu đã được thay đổi thành công!', {
-          duration: 4000,
-          icon: '🔒'
-        });
+        toast.success('Mật khẩu đã được thay đổi thành công!');
       } catch (error) {
         console.error('Failed to change password:', error);
         
