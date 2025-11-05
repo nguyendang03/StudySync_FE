@@ -1,5 +1,56 @@
 import React, { useState } from 'react';
-import { EyeOutlined, EyeInvisibleOutlined, LockOutlined } from '@ant-design/icons';
+import { EyeOutlined, EyeInvisibleOutlined, LockOutlined, LoadingOutlined } from '@ant-design/icons';
+import toast from 'react-hot-toast';
+import userService from '../../services/userService';
+
+const PasswordField = ({ 
+  label, 
+  name, 
+  value, 
+  placeholder, 
+  showField, 
+  error,
+  onToggleVisibility,
+  onChange,
+  icon = <LockOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
+}) => (
+  <div>
+    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+      {icon}
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        type={showField ? 'text' : 'password'}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-purple-500 transition-colors ${
+          error 
+            ? 'border-red-300 focus:border-red-500' 
+            : 'border-gray-200 focus:border-purple-500'
+        }`}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+      <button
+        type="button"
+        onClick={onToggleVisibility}
+        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        tabIndex={-1}
+      >
+        {showField ? (
+          <EyeInvisibleOutlined style={{ fontSize: '18px' }} />
+        ) : (
+          <EyeOutlined style={{ fontSize: '18px' }} />
+        )}
+      </button>
+    </div>
+    {error && (
+      <p className="mt-1 text-sm text-red-600">{error}</p>
+    )}
+  </div>
+);
 
 export default function ChangePassword() {
   const [formData, setFormData] = useState({
@@ -15,6 +66,7 @@ export default function ChangePassword() {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,71 +116,53 @@ export default function ChangePassword() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // TODO: Handle password change logic here
-      console.log('Password change submitted:', {
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword
-      });
-      
-      // Reset form on success
-      setFormData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      
-      // Show success message (you can implement toast/notification here)
-      alert('Mật khẩu đã được thay đổi thành công!');
+      setLoading(true);
+      try {
+        await userService.updatePassword({
+          oldPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        });
+        
+        // Reset form on success
+        setFormData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        
+        // Reset password visibility
+        setShowPasswords({
+          current: false,
+          new: false,
+          confirm: false
+        });
+        
+        toast.success('Mật khẩu đã được thay đổi thành công!', {
+          duration: 4000,
+          icon: '🔒'
+        });
+      } catch (error) {
+        console.error('Failed to change password:', error);
+        
+        // Handle specific error messages
+        if (error.message.includes('Old password is incorrect') || 
+            error.message.includes('incorrect')) {
+          setErrors({
+            currentPassword: 'Mật khẩu hiện tại không đúng'
+          });
+          toast.error('Mật khẩu hiện tại không đúng!');
+        } else {
+          toast.error(error.message || 'Không thể đổi mật khẩu. Vui lòng thử lại!');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const PasswordField = ({ 
-    label, 
-    name, 
-    value, 
-    placeholder, 
-    showField, 
-    error,
-    icon = <LockOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#9333ea' }} />
-  }) => (
-    <div>
-      <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-        {icon}
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={showField ? 'text' : 'password'}
-          name={name}
-          value={value}
-          onChange={handleInputChange}
-          className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-purple-500 transition-colors ${
-            error 
-              ? 'border-red-300 focus:border-red-500' 
-              : 'border-gray-200 focus:border-purple-500'
-          }`}
-          placeholder={placeholder}
-        />
-        <button
-          type="button"
-          onClick={() => togglePasswordVisibility(name.replace('Password', '').replace('current', 'current').replace('new', 'new').replace('confirm', 'confirm'))}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          {showField ? (
-            <EyeInvisibleOutlined style={{ fontSize: '18px' }} />
-          ) : (
-            <EyeOutlined style={{ fontSize: '18px' }} />
-          )}
-        </button>
-      </div>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-    </div>
-  );
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -142,6 +176,8 @@ export default function ChangePassword() {
           placeholder="Nhập mật khẩu hiện tại"
           showField={showPasswords.current}
           error={errors.currentPassword}
+          onChange={handleInputChange}
+          onToggleVisibility={() => togglePasswordVisibility('current')}
         />
 
         <PasswordField
@@ -151,6 +187,8 @@ export default function ChangePassword() {
           placeholder="Nhập mật khẩu mới"
           showField={showPasswords.new}
           error={errors.newPassword}
+          onChange={handleInputChange}
+          onToggleVisibility={() => togglePasswordVisibility('new')}
         />
 
         <PasswordField
@@ -160,15 +198,27 @@ export default function ChangePassword() {
           placeholder="Xác nhận mật khẩu mới"
           showField={showPasswords.confirm}
           error={errors.confirmPassword}
+          onChange={handleInputChange}
+          onToggleVisibility={() => togglePasswordVisibility('confirm')}
         />
 
         <div className="pt-6 flex justify-center">
           <button
             type="submit"
-            className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors shadow-lg"
+            disabled={loading}
+            className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LockOutlined style={{ fontSize: '18px', marginRight: '8px' }} />
-            Xác nhận
+            {loading ? (
+              <>
+                <LoadingOutlined style={{ fontSize: '18px', marginRight: '8px' }} spin />
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                <LockOutlined style={{ fontSize: '18px', marginRight: '8px' }} />
+                Xác nhận
+              </>
+            )}
           </button>
         </div>
       </form>
