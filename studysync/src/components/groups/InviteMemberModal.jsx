@@ -36,10 +36,16 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
       console.error('❌ Error sending invitation:', error);
       
       if (error.response?.status === 404) {
-        showToast.error(`Không tìm thấy tài khoản với email ${values.email}`);
+        showToast.error(
+          `Không tìm thấy tài khoản đã xác thực với email ${values.email}.\n\nNgười dùng cần đăng ký và xác thực email trước khi nhận lời mời.`,
+          { duration: 6000 }
+        );
       } else if (error.response?.status === 400) {
         const errorMsg = error.response?.data?.message || 'Người dùng đã là thành viên hoặc đã được mời';
         showToast.error(`Không thể gửi lời mời: ${errorMsg}`);
+      } else if (error.response?.status === 403) {
+        const errorMsg = error.response?.data?.message || 'Bạn không có quyền mời thành viên';
+        showToast.error(errorMsg);
       } else {
         showToast.error('Lỗi gửi lời mời. ' + (error.message || 'Vui lòng thử lại'));
       }
@@ -205,8 +211,11 @@ export default function InviteMemberModal({ open, onClose, groupId, groupName, o
 
                 {/* Info Text */}
                 <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                  <p className="text-xs text-gray-600 text-center leading-relaxed">
+                  <p className="text-xs text-gray-600 text-center leading-relaxed mb-2">
                     💡 <span className="font-medium">Mẹo:</span> Người dùng sẽ nhận được thông báo qua email và có thể chấp nhận lời mời trong phần Hồ sơ
+                  </p>
+                  <p className="text-xs text-amber-600 text-center leading-relaxed">
+                    ⚠️ <span className="font-medium">Lưu ý:</span> Chỉ có thể mời người dùng đã đăng ký và xác thực email
                   </p>
                 </div>
               </Form>

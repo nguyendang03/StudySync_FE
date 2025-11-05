@@ -81,12 +81,6 @@ export default function Sidebar() {
           label: 'Hồ sơ',
           path: '/profile',
           description: 'Thông tin cá nhân'
-        },
-        {
-          icon: Settings,
-          label: 'Cài đặt',
-          path: '/settings',
-          description: 'Tùy chỉnh hệ thống'
         }
       ]
     }
