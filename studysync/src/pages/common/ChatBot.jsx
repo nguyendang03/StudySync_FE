@@ -175,10 +175,12 @@ export default function ChatBot() {
         setCurrentConversationId(conversation.id);
         
         const conversationData = await aiChatHistoryService.getConversationMessages(conversation.id, 1, 50);
-        console.log('💬 Conversation messages:', conversationData.data.messages);
+        console.log('💬 Conversation data:', conversationData);
+        console.log('💬 Conversation messages:', conversationData.messages);
         
         // Format messages for display
-        const formattedMessages = aiChatHistoryService.formatMessagesForDisplay(conversationData.data.messages);
+        const formattedMessages = aiChatHistoryService.formatMessagesForDisplay(conversationData.data.messages || []);
+        console.log('💬 Formatted messages:', formattedMessages);
         setMessages(formattedMessages);
         
         // Build conversation history for AI context
@@ -188,8 +190,10 @@ export default function ChatBot() {
           history.push({ role: 'assistant', content: msg.responseText });
         });
         setConversationHistory(history);
+        console.log('💬 Conversation history set with', history.length, 'entries');
+        console.log('💬 Current conversation ID:', conversation.id);
         
-        toast.success('Đã tải cuộc trò chuyện');
+      
       }
     } catch (error) {
       console.error('❌ Failed to load conversation:', error);
@@ -247,6 +251,7 @@ export default function ChatBot() {
       timestamp: new Date()
     };
 
+    console.log('📤 Sending message in conversation:', currentConversationId || 'NEW');
     shouldAutoScrollRef.current = true;
     
     setMessages(prev => [...prev, userMessage]);
@@ -275,6 +280,7 @@ export default function ChatBot() {
       
       setConversationHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       
+      console.log('💾 About to save with conversation ID:', currentConversationId);
       saveChatHistory(userMessageText, aiResponse);
       
     } catch (error) {
@@ -323,8 +329,18 @@ export default function ChatBot() {
         toast.success('Đã tạo cuộc trò chuyện mới');
       }
       
+      // Remember which conversation is active before reloading
+      const activeConversationId = result.conversationId || currentConversationId;
+      
       // Reload conversation list to show updated conversations
       await loadChatHistory();
+      
+      // Restore active state for current conversation
+      if (activeConversationId) {
+        setConversations(prev => 
+          prev.map(conv => ({ ...conv, isActive: conv.id === activeConversationId }))
+        );
+      }
     } catch (error) {
       console.error('❌ Save failed:', error.message);
       toast.error('Không thể lưu lịch sử trò chuyện');
