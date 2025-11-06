@@ -58,7 +58,14 @@ const PaymentSuccess = () => {
         setPayment(paymentData);
       } catch (e) {
         console.error('❌ Load payment error:', e);
-        setError(e?.response?.data?.message || e.message || 'Không thể tải hóa đơn');
+        const errorMessage = e?.response?.data?.message || e.message || 'Không thể tải hóa đơn';
+        
+        // Handle specific PayOS error code 101 (transaction not found)
+        if (errorMessage.includes('code: 101') || errorMessage.includes('không tồn tại')) {
+          setError('Giao dịch không tồn tại hoặc đã hết hạn. Vui lòng kiểm tra lại mã giao dịch hoặc thử thanh toán mới.');
+        } else {
+          setError(errorMessage);
+        }
       } finally {
         setLoading(false);
       }
