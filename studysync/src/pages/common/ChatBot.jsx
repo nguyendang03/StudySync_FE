@@ -32,7 +32,7 @@ export default function ChatBot() {
   const [conversationHistory, setConversationHistory] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [currentHistoryId, setCurrentHistoryId] = useState(null);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const [streamingMessageId, setStreamingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -82,11 +82,54 @@ export default function ChatBot() {
   const loadChatHistory = async () => {
     try {
       setLoadingHistory(true);
-      const historyData = await aiChatHistoryService.getHistory(1, 50);
-      const formattedHistory = aiChatHistoryService.formatHistoryForDisplay(historyData.data.items || []);
-      setConversations(formattedHistory);
+      
+      // Try to load conversations from new API
+      try {
+        const conversationsData = await aiChatHistoryService.getConversations(1, 50);
+        console.log('📋 Conversations data received:', conversationsData);
+        console.log('📋 Items:', conversationsData?.items);
+        
+        if (conversationsData?.data?.items && conversationsData.data.items.length > 0) {
+          const formattedConversations = aiChatHistoryService.formatConversationsForDisplay(conversationsData.data.items);
+          console.log('📋 Formatted conversations:', formattedConversations);
+          setConversations(formattedConversations);
+        } else {
+          console.log('ℹ️ No conversations found, trying old history API...');
+          // Fallback to old history API if no conversations exist
+          try {
+            const historyData = await aiChatHistoryService.getHistory(1, 50);
+            console.log('📋 Old history data:', historyData);
+            if (historyData?.data?.items && historyData.data.items.length > 0) {
+              const formattedHistory = aiChatHistoryService.formatHistoryForDisplay(historyData.data.items);
+              console.log('📋 Formatted history:', formattedHistory);
+              setConversations(formattedHistory);
+              toast('Hiển thị lịch sử cũ. Tin nhắn mới sẽ dùng định dạng cuộc trò chuyện.', { 
+                duration: 3000,
+                icon: 'ℹ️'
+              });
+            } else {
+              setConversations([]);
+            }
+          } catch (historyError) {
+            console.error('❌ Failed to load old history:', historyError);
+            setConversations([]);
+          }
+        }
+      } catch (convError) {
+        console.error('❌ Failed to load conversations:', convError);
+        // Try fallback to old history
+        const historyData = await aiChatHistoryService.getHistory(1, 50);
+        if (historyData?.items) {
+          const formattedHistory = aiChatHistoryService.formatHistoryForDisplay(historyData.items);
+          setConversations(formattedHistory);
+        } else {
+          setConversations([]);
+        }
+      }
     } catch (error) {
-      console.error('Failed to load chat history:', error);
+      console.error('❌ Failed to load chat history:', error);
+      toast.error('Không thể tải lịch sử trò chuyện');
+      setConversations([]);
     } finally {
       setLoadingHistory(false);
     }
@@ -98,38 +141,68 @@ export default function ChatBot() {
         prev.map(conv => ({ ...conv, isActive: conv.id === conversation.id }))
       );
       
-      setCurrentHistoryId(conversation.id);
-      
-      setMessages([
-        {
-          id: 1,
-          text: conversation.fullQuery,
-          sender: "user",
-          timestamp: new Date(conversation.timestamp)
-        },
-        {
-          id: 2,
-          text: conversation.fullResponse,
-          sender: "ai",
-          timestamp: new Date(conversation.timestamp),
-          reactions: { thumbsUp: 0, thumbsDown: 0 }
-        }
-      ]);
-      
-      setConversationHistory([
-        { role: 'user', content: conversation.fullQuery },
-        { role: 'assistant', content: conversation.fullResponse }
-      ]);
-      
-      toast.success('Đã tải cuộc trò chuyện');
+      // Check if this is old history format or new conversation format
+      if (conversation.category === 'history' && conversation.fullQuery && conversation.fullResponse) {
+        // Old history format - just display the single Q&A pair
+        console.log('📖 Loading old history item:', conversation.id);
+        setCurrentConversationId(null); // Can't continue old history as conversation
+        
+        setMessages([
+          {
+            id: 1,
+            text: conversation.fullQuery,
+            sender: "user",
+            timestamp: new Date(conversation.timestamp)
+          },
+          {
+            id: 2,
+            text: conversation.fullResponse,
+            sender: "ai",
+            timestamp: new Date(conversation.timestamp),
+            reactions: { thumbsUp: 0, thumbsDown: 0 }
+          }
+        ]);
+        
+        setConversationHistory([
+          { role: 'user', content: conversation.fullQuery },
+          { role: 'assistant', content: conversation.fullResponse }
+        ]);
+        
+        toast('Đang xem lịch sử cũ (chỉ đọc)', { icon: 'ℹ️' });
+      } else {
+        // New conversation format - fetch all messages
+        console.log('💬 Loading conversation:', conversation.id);
+        setCurrentConversationId(conversation.id);
+        
+        const conversationData = await aiChatHistoryService.getConversationMessages(conversation.id, 1, 50);
+        console.log('💬 Conversation messages:', conversationData.data.messages);
+        
+        // Format messages for display
+        const formattedMessages = aiChatHistoryService.formatMessagesForDisplay(conversationData.data.messages);
+        setMessages(formattedMessages);
+        
+        // Build conversation history for AI context
+        const history = [];
+        (conversationData.messages || []).forEach(msg => {
+          history.push({ role: 'user', content: msg.queryText });
+          history.push({ role: 'assistant', content: msg.responseText });
+        });
+        setConversationHistory(history);
+        
+        toast.success('Đã tải cuộc trò chuyện');
+      }
     } catch (error) {
-      console.error('Failed to load conversation:', error);
+      console.error('❌ Failed to load conversation:', error);
+      console.error('❌ Error details:', error);
       toast.error('Không thể tải cuộc trò chuyện');
     }
   };
 
   const deleteConversation = async (conversationId, e) => {
     e?.stopPropagation();
+    
+    // Find the conversation to check its type
+    const conversation = conversations.find(conv => conv.id === conversationId);
     
     Modal.confirm({
       title: 'Xóa cuộc trò chuyện?',
@@ -139,10 +212,18 @@ export default function ChatBot() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await aiChatHistoryService.deleteHistory(conversationId);
+          // Check if it's old history or new conversation
+          if (conversation?.category === 'history') {
+            // Delete old history item
+            await aiChatHistoryService.deleteHistory(conversationId);
+          } else {
+            // Delete new conversation (which also deletes all messages)
+            await aiChatHistoryService.deleteConversation(conversationId);
+          }
+          
           setConversations(prev => prev.filter(conv => conv.id !== conversationId));
           
-          if (currentHistoryId === conversationId) {
+          if (currentConversationId === conversationId) {
             startNewChat();
           }
           
@@ -217,10 +298,36 @@ export default function ChatBot() {
 
   const saveChatHistory = async (query, response) => {
     try {
-      await aiChatHistoryService.saveHistory(query, response);
+      console.log('💾 Saving data:', {
+        hasQuery: !!query,
+        hasResponse: !!response,
+        queryLength: query?.length || 0,
+        responseLength: response?.length || 0,
+        conversationId: currentConversationId
+      });
+      
+      // Validate before sending
+      if (!query || !response) {
+        console.error('❌ Query or response is empty!');
+        toast.error('Dữ liệu không hợp lệ');
+        return;
+      }
+      
+      // Pass current conversationId if exists, backend will create new conversation if not provided
+      const result = await aiChatHistoryService.saveHistory(query, response, currentConversationId);
+      
+      // Update current conversation ID from the response (important for first message)
+      if (result.conversationId && !currentConversationId) {
+        setCurrentConversationId(result.conversationId);
+        console.log('✅ Created new conversation:', result.conversationId);
+        toast.success('Đã tạo cuộc trò chuyện mới');
+      }
+      
+      // Reload conversation list to show updated conversations
       await loadChatHistory();
     } catch (error) {
-      console.error('Failed to save chat history:', error);
+      console.error('❌ Save failed:', error.message);
+      toast.error('Không thể lưu lịch sử trò chuyện');
     }
   };
 
@@ -228,7 +335,7 @@ export default function ChatBot() {
     shouldAutoScrollRef.current = true;
     setMessages([]);
     setConversationHistory([]);
-    setCurrentHistoryId(null);
+    setCurrentConversationId(null);
     setConversations(prev => prev.map(conv => ({ ...conv, isActive: false })));
     toast.success('Cuộc trò chuyện mới đã được tạo');
   };
@@ -480,10 +587,14 @@ export default function ChatBot() {
                       </div>
                       
                       {/* Message Content */}
-                      <div className="flex-1 max-w-2xl">
-                        <div className={`px-4 py-3 rounded-2xl ${
+                      <div className={`${
+                        message.sender === 'user' 
+                          ? 'flex flex-col items-end max-w-2xl' 
+                          : 'flex-1 max-w-2xl'
+                      }`}>
+                        <div className={`px-4 py-3 rounded-2xl inline-block ${
                           message.sender === 'user'
-                            ? 'bg-purple-600 text-white ml-auto'
+                            ? 'bg-purple-600 text-white'
                             : 'bg-gray-100 text-gray-900'
                         }`}>
                           {message.sender === 'ai' && message.isStreaming ? (
