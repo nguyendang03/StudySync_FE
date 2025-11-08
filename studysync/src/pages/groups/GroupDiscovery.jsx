@@ -10,15 +10,25 @@ const { TextArea } = Input;
 
 export default function GroupDiscovery() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showMore, setShowMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(6); // Show 6 groups per page (3 rows of 2)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [requestedGroups, setRequestedGroups] = useState(new Set());
+  const [requestedGroups, setRequestedGroups] = useState(() => {
+    // Load from localStorage on initial render
+    const saved = localStorage.getItem('requestedGroups');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [joinRequestModal, setJoinRequestModal] = useState({ visible: false, groupId: null, groupName: '' });
   const [customMessage, setCustomMessage] = useState('');
   const navigate = useNavigate();
+
+  // Save requestedGroups to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('requestedGroups', JSON.stringify([...requestedGroups]));
+  }, [requestedGroups]);
 
   useEffect(() => {
     fetchAllGroups();
@@ -67,6 +77,15 @@ export default function GroupDiscovery() {
       if (Array.isArray(groupsArray)) {
         setGroups(groupsArray);
         console.log('✅ Successfully loaded', groupsArray.length, 'groups');
+        
+        // Clean up requestedGroups - remove groups that user is now a member of
+        const memberGroupIds = new Set(
+          groupsArray.filter(g => g.isMember).map(g => g.id)
+        );
+        setRequestedGroups(prev => {
+          const updated = new Set([...prev].filter(id => !memberGroupIds.has(id)));
+          return updated;
+        });
       } else {
         console.error('❌ Could not extract groups array');
         message.error('Không thể tải danh sách nhóm');
@@ -153,78 +172,86 @@ export default function GroupDiscovery() {
     );
   });
 
-  const visibleGroups = showMore ? filteredGroups : filteredGroups.slice(0, 3);
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentGroups = filteredGroups.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Scroll to top of groups section
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
-      <div 
-        className="min-h-screen p-8" 
-        style={{ background: 'linear-gradient(135deg, #A640A0, #6D17AE)' }}
-      >
-        <div className="max-w-5xl mx-auto">
-          {/* Page Title */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 30 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-8"
-          >
-            <motion.h1 
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
+        {/* Header Section */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-purple-100">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <motion.div 
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-3xl font-bold text-white mb-2"
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              Khám phá nhóm học tập
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-white/80"
-            >
-              Tìm kiếm và tham gia các nhóm học tập phù hợp với bạn
-            </motion.p>
-          </motion.div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Khám phá nhóm học tập
+              </h1>
+              <p className="text-gray-600">
+                Tìm kiếm và tham gia các nhóm học tập phù hợp với bạn
+              </p>
+            </motion.div>
+          </div>
+        </div>
 
-          {/* Search Bar */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Action Bar */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="flex items-center justify-between mb-8"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
           >
-            <div className="flex items-center space-x-4">
-              <motion.button 
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-white/20 text-white rounded-full border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm font-medium shadow-lg"
-              >
-                <UsergroupAddOutlined className="mr-2" style={{ fontSize: '16px' }} />
-                Danh sách nhóm ({filteredGroups.length})
-              </motion.button>
+            {/* Left side - Stats */}
+            <div className="flex items-center gap-4">
+              <div className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-200">
+                <span className="text-sm font-medium">
+                  {filteredGroups.length} nhóm
+                </span>
+              </div>
+              {filteredGroups.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  Trang {currentPage} / {totalPages}
+                </div>
+              )}
               <motion.button 
                 onClick={handleOpenCreateModal}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-white text-purple-600 rounded-full hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-sm flex items-center gap-2"
               >
-                <PlusOutlined className="mr-2" style={{ fontSize: '16px' }} />
-                Tạo nhóm
+                <PlusOutlined />
+                Tạo nhóm mới
               </motion.button>
             </div>
             
-            <div className="relative">
+            {/* Right side - Search */}
+            <div className="relative w-full sm:w-96">
               <SearchOutlined 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70" 
-                style={{ fontSize: '18px' }}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" 
               />
               <input
                 type="text"
-                placeholder="Bạn tìm nhóm nào?"
+                placeholder="Tìm kiếm nhóm..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-6 py-3 bg-white/20 text-white placeholder-white/70 rounded-full border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/30 w-96 backdrop-blur-sm transition-all duration-300"
+                className="w-full pl-11 pr-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
             </div>
           </motion.div>
@@ -236,132 +263,202 @@ export default function GroupDiscovery() {
             </div>
           )}
 
-          {/* Groups List */}
+          {/* Groups Grid */}
           {!loading && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="bg-white rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg"
-            >
-              <div className="p-8">
-                {filteredGroups.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">
-                      {searchTerm ? 'Không tìm thấy nhóm nào phù hợp' : 'Chưa có nhóm nào'}
+            <AnimatePresence>
+              {filteredGroups.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-white rounded-xl border border-gray-200 p-12 text-center"
+                >
+                  <div className="max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <UsergroupAddOutlined className="text-gray-400 text-2xl" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {searchTerm ? 'Không tìm thấy nhóm nào' : 'Chưa có nhóm nào'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {searchTerm 
+                        ? 'Thử tìm kiếm với từ khóa khác hoặc tạo nhóm mới' 
+                        : 'Hãy là người đầu tiên tạo nhóm học tập!'
+                      }
                     </p>
-                    {!searchTerm && (
-                      <p className="text-gray-400 text-sm mt-2">
-                        Hãy là người đầu tiên tạo nhóm!
-                      </p>
-                    )}
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    {visibleGroups.map((group, index) => (
-                      <motion.div 
-                        key={group.id} 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-                        transition={{ delay: 0.6 + index * 0.1, duration: 0.6 }}
-                        whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
-                        className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-gray-200"
-                      >
-                        <div className="flex items-start justify-between">
+                </motion.div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {currentGroups.map((group, index) => (
+                    <motion.div 
+                      key={group.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.3 }}
+                      className="group"
+                    >
+                      <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-purple-200 transition-all duration-300 h-full flex flex-col">
+                        {/* Group Header */}
+                        <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
-                            {/* Group Header */}
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-2xl font-bold text-gray-800">
-                                {group.groupName}
-                              </h3>
-                              <div className="flex items-center space-x-3">
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <UsergroupAddOutlined className="mr-1" style={{ fontSize: '14px' }} />
-                                  {group.memberCount || 0} thành viên
-                                </span>
-                              </div>
-                            </div>
-                            
-                            {/* Leader and Status Badges */}
-                            <div className="flex items-center space-x-3 mb-4">
-                              <span className="inline-flex px-4 py-2 rounded-full text-white font-medium bg-purple-600 shadow-md">
-                                👑 {group.leader?.username || 'Leader'}
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
+                              {group.groupName}
+                            </h3>
+                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <UsergroupAddOutlined className="text-gray-400" />
+                                {group.memberCount || 0} thành viên
                               </span>
                               {group.isMember && (
-                                <span className="inline-flex px-4 py-2 rounded-full text-green-700 bg-green-100 font-medium">
-                                  ✓ Đã tham gia
+                                <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium border border-green-200">
+                                  Đã tham gia
                                 </span>
                               )}
                             </div>
-                            
-                            {/* Description */}
-                            <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
-                              {group.description || 'Chưa có mô tả'}
-                            </p>
-                            
-                            {/* Timestamps */}
-                            <div className="mt-3 text-xs text-gray-500">
-                              Tạo lúc: {new Date(group.createdAt).toLocaleDateString('vi-VN')}
-                            </div>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="ml-8 flex-shrink-0">
-                            {group.isMember ? (
-                              <motion.button 
-                                onClick={() => handleViewGroup(group.id)}
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-300 shadow-lg flex items-center gap-2"
-                              >
-                                <CheckCircleOutlined />
-                                VÀO NHÓM
-                              </motion.button>
-                            ) : requestedGroups.has(group.id) ? (
-                              <motion.button 
-                                disabled
-                                className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-full font-semibold cursor-not-allowed transition-all duration-300 shadow-lg flex items-center gap-2 opacity-75"
-                              >
-                                <ClockCircleOutlined className="animate-pulse" />
-                                ĐÃ GỬI YÊU CẦU
-                              </motion.button>
-                            ) : (
-                              <motion.button 
-                                onClick={() => handleOpenJoinRequestModal(group.id, group.groupName)}
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="px-8 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-full font-semibold hover:from-pink-500 hover:to-pink-600 transition-all duration-300 shadow-lg flex items-center gap-2"
-                              >
-                                <SendOutlined />
-                                XIN THAM GIA
-                              </motion.button>
-                            )}
                           </div>
                         </div>
-                      </motion.div>
-                    ))}
+                        
+                        {/* Leader */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-purple-600 font-medium text-sm">
+                                {group.leader?.username?.charAt(0).toUpperCase() || 'L'}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {group.leader?.username || 'Leader'}
+                              </p>
+                              <p className="text-xs text-gray-500">Trưởng nhóm</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Description */}
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1">
+                          {group.description || 'Chưa có mô tả'}
+                        </p>
+                        
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="text-xs text-gray-500">
+                            {new Date(group.createdAt).toLocaleDateString('vi-VN')}
+                          </span>
+                          
+                          {/* Action Button */}
+                          {group.isMember ? (
+                            <motion.button 
+                              onClick={() => handleViewGroup(group.id)}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+                            >
+                              Vào nhóm
+                            </motion.button>
+                          ) : requestedGroups.has(group.id) ? (
+                            <button 
+                              disabled
+                              className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed font-medium text-sm flex items-center gap-1.5"
+                            >
+                              <ClockCircleOutlined />
+                              Đã gửi yêu cầu
+                            </button>
+                          ) : (
+                            <motion.button 
+                              onClick={() => handleOpenJoinRequestModal(group.id, group.groupName)}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium text-sm"
+                            >
+                              Xin tham gia
+                            </motion.button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center items-center gap-2">
+                  {/* Previous Button */}
+                  <motion.button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
+                    whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Trước
+                  </motion.button>
+
+                  {/* Page Numbers */}
+                  <div className="flex gap-2">
+                    {[...Array(totalPages)].map((_, index) => {
+                      const pageNumber = index + 1;
+                      
+                      // Show first page, last page, current page, and pages around current
+                      const showPage = 
+                        pageNumber === 1 ||
+                        pageNumber === totalPages ||
+                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+                      
+                      // Show ellipsis
+                      const showEllipsisBefore = pageNumber === currentPage - 2 && currentPage > 3;
+                      const showEllipsisAfter = pageNumber === currentPage + 2 && currentPage < totalPages - 2;
+
+                      if (showEllipsisBefore || showEllipsisAfter) {
+                        return (
+                          <span key={pageNumber} className="px-3 py-2 text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+
+                      if (!showPage) return null;
+
+                      return (
+                        <motion.button
+                          key={pageNumber}
+                          onClick={() => handlePageChange(pageNumber)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                            currentPage === pageNumber
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNumber}
+                        </motion.button>
+                      );
+                    })}
                   </div>
-                )}
-                
-                {/* Show More Button */}
-                {filteredGroups.length > 3 && (
-                  <div className="text-center mt-10">
-                    <motion.button
-                      onClick={() => setShowMore(!showMore)}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="inline-flex items-center px-6 py-3 text-purple-600 font-semibold hover:text-purple-700 transition-colors bg-purple-50 rounded-full hover:bg-purple-100"
-                    >
-                      {showMore ? 'ẨN BỚT' : `HIỂN THỊ THÊM (${filteredGroups.length - 3} nhóm)`}
-                      <DownOutlined 
-                        className={`ml-2 transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`}
-                        style={{ fontSize: '14px' }}
-                      />
-                    </motion.button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+
+                  {/* Next Button */}
+                  <motion.button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    whileHover={currentPage !== totalPages ? { scale: 1.05 } : {}}
+                    whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Sau
+                  </motion.button>
+                </div>
+              )}
+            </AnimatePresence>
           )}
         </div>
       </div>
@@ -377,7 +474,7 @@ export default function GroupDiscovery() {
       <Modal
         title={
           <div className="flex items-center gap-2">
-            <SendOutlined className="text-pink-500" />
+            <SendOutlined className="text-purple-600" />
             <span>Gửi yêu cầu tham gia nhóm</span>
           </div>
         }
@@ -387,7 +484,7 @@ export default function GroupDiscovery() {
         okText="Gửi yêu cầu"
         cancelText="Hủy"
         okButtonProps={{
-          className: "bg-pink-500 hover:bg-pink-600",
+          className: "bg-purple-600 hover:bg-purple-700",
           disabled: !customMessage.trim()
         }}
         width={600}
@@ -397,7 +494,7 @@ export default function GroupDiscovery() {
             <p className="text-gray-700 mb-2">
               Bạn muốn tham gia nhóm: <strong className="text-purple-600">{joinRequestModal.groupName}</strong>
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-600">
               Hãy viết một lời nhắn ngắn gọn để giới thiệu bản thân và lý do muốn tham gia nhóm.
             </p>
           </div>
@@ -419,7 +516,7 @@ export default function GroupDiscovery() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
-              💡 <strong>Gợi ý:</strong> Lời nhắn tốt nên bao gồm: giới thiệu ngắn gọn về bản thân, lý do muốn tham gia, và điều bạn có thể đóng góp cho nhóm.
+              <strong>Gợi ý:</strong> Lời nhắn tốt nên bao gồm giới thiệu ngắn gọn về bản thân, lý do muốn tham gia, và điều bạn có thể đóng góp cho nhóm.
             </p>
           </div>
         </div>

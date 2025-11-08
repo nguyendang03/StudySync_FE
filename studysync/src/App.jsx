@@ -5,6 +5,7 @@ import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import PublicRoute from './components/PublicRoute';
+import GuestFriendlyRoute from './components/GuestFriendlyRoute';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/admin/AdminLayout';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -162,65 +163,101 @@ function App() {
                 } 
               />
 
-              {/* Public Routes - Anyone can access these */}
+              {/* Public Routes - Anyone can access these (guests and authenticated users) */}
+              <Route 
+                path="/home" 
+                element={
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải trang chủ..." />}>
+                        <Home />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
+                } 
+              />
+              <Route 
+                path="/chatbot" 
+                element={
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải chatbot..." />}>
+                        <ChatBot />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
+                } 
+              />
+              <Route 
+                path="/schedule" 
+                element={
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải lịch học..." />}>
+                        <Schedule />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
+                } 
+              />
               <Route 
                 path="/groups" 
                 element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải danh sách nhóm..." />}>
-                      <GroupDiscovery />
-                    </Suspense>
-                  </Layout>
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải danh sách nhóm..." />}>
+                        <GroupDiscovery />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
                 path="/groups/:id" 
                 element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải thông tin nhóm..." />}>
-                      <GroupDetail />
-                    </Suspense>
-                  </Layout>
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải thông tin nhóm..." />}>
+                        <GroupDetail />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
                 path="/faq" 
                 element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải câu hỏi thường gặp..." />}>
-                      <GiaiDapThacMac />
-                    </Suspense>
-                  </Layout>
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải câu hỏi thường gặp..." />}>
+                        <GiaiDapThacMac />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
                 path="/giai-dap-thac-mac" 
                 element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải câu hỏi thường gặp..." />}>
-                      <GiaiDapThacMac />
-                    </Suspense>
-                  </Layout>
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải câu hỏi thường gặp..." />}>
+                        <GiaiDapThacMac />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
                 path="/reviews" 
                 element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải đánh giá..." />}>
-                      <Reviews />
-                    </Suspense>
-                  </Layout>
-                } 
-              />
-              <Route 
-                path="/home" 
-                element={
-                  <Layout>
-                    <Suspense fallback={<LoadingSpinner size="large" message="Đang tải trang chủ..." />}>
-                      <Home />
-                    </Suspense>
-                  </Layout>
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải đánh giá..." />}>
+                        <Reviews />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
@@ -246,13 +283,13 @@ function App() {
               <Route 
                 path="/" 
                 element={
-                  <ProtectedRoute>
+                  <GuestFriendlyRoute>
                     <Layout>
                       <Suspense fallback={<LoadingSpinner size="large" message="Đang tải trang chủ..." />}>
                         <Home />
                       </Suspense>
                     </Layout>
-                  </ProtectedRoute>
+                  </GuestFriendlyRoute>
                 } 
               />
               <Route 
@@ -274,30 +311,6 @@ function App() {
                     <Layout>
                       <Suspense fallback={<LoadingSpinner size="large" message="Đang tải nhóm của bạn..." />}>
                         <MyGroups />
-                      </Suspense>
-                    </Layout>
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/chatbot" 
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải chatbot..." />}>
-                        <ChatBot />
-                      </Suspense>
-                    </Layout>
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/schedule" 
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải lịch học..." />}>
-                        <Schedule />
                       </Suspense>
                     </Layout>
                   </ProtectedRoute>

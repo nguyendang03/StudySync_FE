@@ -34,12 +34,22 @@ const VideoCall = ({
   const [isScreenShareFullscreen, setIsScreenShareFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [showParticipants, setShowParticipants] = useState(false);
   
   const { user: currentUser } = useAuth();
 
   // Helper function to get username from UID
   const getUsernameByUid = (uid) => {
+    // Debug log to see what we're working with
+    console.log('[VideoCall] getUsernameByUid called:', { 
+      uid, 
+      uidType: typeof uid,
+      groupMembersCount: groupMembers?.length,
+      groupMembersPreview: groupMembers?.slice(0, 3)
+    });
+
     if (!groupMembers || !Array.isArray(groupMembers) || groupMembers.length === 0) {
+      console.log('[VideoCall] No group members available');
       return `Thành viên ${uid}`;
     }
 
@@ -51,6 +61,7 @@ const VideoCall = ({
 
     const uidKey = normalizeId(uid);
     if (!uidKey) {
+      console.log('[VideoCall] UID normalization failed');
       return `Thành viên ${uid}`;
     }
 
@@ -100,7 +111,7 @@ const VideoCall = ({
         if (displayName) return displayName;
       }
       
-      // Try direct fields
+      // Try direct fields (for transformed members from GroupDetail)
       const displayName = member?.username || 
                          member?.fullName || 
                          member?.name ||
@@ -112,11 +123,18 @@ const VideoCall = ({
     // First, try to find exact match
     const matchedMember = groupMembers.find((member) => {
       const memberId = resolveMemberId(member);
+      console.log('[VideoCall] Checking member:', { 
+        memberId, 
+        uidKey,
+        match: memberId && memberId === uidKey,
+        memberPreview: { id: member?.id, name: member?.name }
+      });
       return memberId && memberId === uidKey;
     });
 
     if (matchedMember) {
       const displayName = resolveDisplayName(matchedMember);
+      console.log('[VideoCall] Exact match found:', displayName);
       return displayName;
     }
 
@@ -130,10 +148,12 @@ const VideoCall = ({
 
     if (fuzzyMatch) {
       const displayName = resolveDisplayName(fuzzyMatch);
+      console.log('[VideoCall] Fuzzy match found:', displayName);
       return displayName;
     }
 
     // If still no match, return default
+    console.log('[VideoCall] No match found, using default name');
     return `Thành viên ${uid}`;
   };
   
@@ -206,7 +226,9 @@ const VideoCall = ({
     // Listen for remote user updates
     const handleUserUpdated = (event) => {
       if (isMountedRef.current) {
-        setRemoteUsers(event.detail.users);
+        const users = event.detail.users;
+        console.log('[VideoCall] Remote users updated:', users);
+        setRemoteUsers(users);
       }
     };
 
@@ -832,6 +854,25 @@ const VideoCall = ({
             </motion.button>
           </Tooltip>
 
+          {/* Participants Toggle */}
+          <Tooltip title={showParticipants ? "Đóng danh sách" : "Người tham gia"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowParticipants(!showParticipants)}
+              className={`p-4 rounded-full transition-all duration-200 shadow-lg relative ${
+                showParticipants 
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25' 
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              <Users className="w-6 h-6 text-white" />
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs text-white font-semibold">
+                {remoteUsers.length + 1}
+              </div>
+            </motion.button>
+          </Tooltip>
+
           {/* Invite Button */}
           <Tooltip title="Mời thêm người tham gia">
             <motion.button
@@ -932,6 +973,139 @@ const VideoCall = ({
             participants={[...remoteUsers.map(u => ({ uid: u.uid })), { uid: 'local' }]}
             onNewMessage={handleNewMessage}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Participants Panel */}
+      <AnimatePresence>
+        {showParticipants && (
+          <motion.div
+            initial={{ opacity: 0, x: 300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute top-0 right-0 w-80 h-full bg-gray-900/95 backdrop-blur-md border-l border-gray-700 overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-lg font-semibold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Người tham gia
+                </h3>
+                <p className="text-purple-100 text-sm mt-1">
+                  {remoteUsers.length + 1} thành viên
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowParticipants(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Participants List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {/* Current User */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-lg p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    {currentUser?.username?.substring(0, 2).toUpperCase() || 'ME'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">
+                        {currentUser?.username || 'Bạn'}
+                      </span>
+                      <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                        Bạn
+                      </span>
+                      {isHost && (
+                        <span className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded-full">
+                          Host
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className={`flex items-center gap-1 text-xs ${isAudioMuted ? 'text-red-400' : 'text-green-400'}`}>
+                        {isAudioMuted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                        {isAudioMuted ? 'Tắt mic' : 'Bật mic'}
+                      </div>
+                      <span className="text-gray-500">•</span>
+                      <div className={`flex items-center gap-1 text-xs ${isVideoMuted ? 'text-red-400' : 'text-green-400'}`}>
+                        {isVideoMuted ? <VideoOff className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+                        {isVideoMuted ? 'Tắt cam' : 'Bật cam'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Remote Users */}
+              {remoteUsers.map((user, index) => {
+                const username = getUsernameByUid(user.uid);
+                const initials = username.substring(0, 2).toUpperCase();
+                
+                return (
+                  <motion.div
+                    key={user.uid}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-gray-800/50 border border-gray-700 hover:border-gray-600 rounded-lg p-3 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        {initials}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-white font-medium">{username}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className={`flex items-center gap-1 text-xs ${user.hasAudio ? 'text-green-400' : 'text-red-400'}`}>
+                            {user.hasAudio ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                            {user.hasAudio ? 'Bật mic' : 'Tắt mic'}
+                          </div>
+                          <span className="text-gray-500">•</span>
+                          <div className={`flex items-center gap-1 text-xs ${user.hasVideo ? 'text-green-400' : 'text-red-400'}`}>
+                            {user.hasVideo ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3" />}
+                            {user.hasVideo ? 'Bật cam' : 'Tắt cam'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Empty State */}
+              {remoteUsers.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-gray-600" />
+                  </div>
+                  <p className="text-gray-400 text-sm">Chưa có người tham gia khác</p>
+                  <p className="text-gray-500 text-xs mt-1">Mời bạn bè tham gia cuộc gọi</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Group Members Info */}
+            <div className="border-t border-gray-700 p-4 bg-gray-800/50">
+              <div className="text-xs text-gray-400 mb-2">Thành viên nhóm: {groupMembers?.length || 0}</div>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg py-2 px-4 font-medium transition-all flex items-center justify-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                Mời thêm người
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

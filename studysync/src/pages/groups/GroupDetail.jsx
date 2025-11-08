@@ -314,7 +314,9 @@ export default function GroupDetail() {
                         <ArrowLeftOutlined style={{ fontSize: '16px', color: '#7c3aed' }} />
                       </button>
                       <div className="hover:scale-105 transition-transform duration-200">
-                        <h1 className="text-xl font-bold text-gray-800">TÊN NHÓM: {groupData.groupName || groupData.name}</h1>
+                        <h1 className="text-xl font-bold text-gray-800 break-words max-w-md">
+                          TÊN NHÓM: {groupData.groupName || groupData.name}
+                        </h1>
                       </div>
                     </div>
                     
@@ -382,8 +384,8 @@ export default function GroupDetail() {
                       <h2 className="text-lg font-bold text-purple-600">Mô tả:</h2>
                     </div>
                     <div className="bg-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow duration-200">
-                      <p className="text-gray-700 leading-relaxed">
-                        {groupData.description}
+                      <p className="text-gray-700 leading-relaxed break-words whitespace-pre-wrap overflow-hidden">
+                        {groupData.description || 'Chưa có mô tả'}
                       </p>
                     </div>
                   </div>
@@ -401,7 +403,7 @@ export default function GroupDetail() {
                         <VideoCallManager
                           groupId={groupData.id}
                           groupName={groupData.groupName || groupData.name}
-                          members={transformedMembers}
+                          members={groupData?.members || []}
                         />
                       </div>
                     </div>
