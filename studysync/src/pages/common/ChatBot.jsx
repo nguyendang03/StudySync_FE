@@ -37,6 +37,7 @@ export default function ChatBot() {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
+  const currentConversationIdRef = useRef(null); // Track conversation ID synchronously
 
   const scrollToBottom = (smooth = true) => {
     if (!messagesEndRef.current) return;
@@ -146,6 +147,7 @@ export default function ChatBot() {
         // Old history format - just display the single Q&A pair
         console.log('📖 Loading old history item:', conversation.id);
         setCurrentConversationId(null); // Can't continue old history as conversation
+        currentConversationIdRef.current = null; // Reset ref as well
         
         setMessages([
           {
@@ -173,6 +175,7 @@ export default function ChatBot() {
         // New conversation format - fetch all messages
         console.log('💬 Loading conversation:', conversation.id);
         setCurrentConversationId(conversation.id);
+        currentConversationIdRef.current = conversation.id; // Set ref immediately
         
         const conversationData = await aiChatHistoryService.getConversationMessages(conversation.id, 1, 50);
         console.log('💬 Conversation data:', conversationData);
@@ -251,7 +254,12 @@ export default function ChatBot() {
       timestamp: new Date()
     };
 
-    console.log('📤 Sending message in conversation:', currentConversationId || 'NEW');
+    console.log('📤 [handleSendMessage] Sending message in conversation:', {
+      refValue: currentConversationIdRef.current,
+      stateValue: currentConversationId,
+      message: userMessageText.substring(0, 50),
+      isNewConversation: !currentConversationIdRef.current
+    });
     shouldAutoScrollRef.current = true;
     
     setMessages(prev => [...prev, userMessage]);
@@ -280,14 +288,14 @@ export default function ChatBot() {
       
       setConversationHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       
-      console.log('💾 About to save with conversation ID:', currentConversationId);
-      const newConversationId = await saveChatHistory(userMessageText, aiResponse);
+      console.log('💾 [handleSendMessage] About to save with conversation ID:', currentConversationIdRef.current);
+      const returnedConversationId = await saveChatHistory(userMessageText, aiResponse);
       
-      // Immediately update conversation ID if a new one was created
-      if (newConversationId && !currentConversationId) {
-        setCurrentConversationId(newConversationId);
-        console.log('🔄 Updated current conversation ID to:', newConversationId);
-      }
+      console.log('✅ [handleSendMessage] Save completed:', {
+        returned: returnedConversationId,
+        refAfterSave: currentConversationIdRef.current,
+        stateAfterSave: currentConversationId
+      });
       
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -315,7 +323,7 @@ export default function ChatBot() {
         hasResponse: !!response,
         queryLength: query?.length || 0,
         responseLength: response?.length || 0,
-        conversationId: currentConversationId
+        conversationId: currentConversationIdRef.current
       });
       
       // Validate before sending
@@ -325,28 +333,57 @@ export default function ChatBot() {
         return null;
       }
       
-      // Pass current conversationId if exists, backend will create new conversation if not provided
-      const result = await aiChatHistoryService.saveHistory(query, response, currentConversationId);
+      // Track if this is a new conversation BEFORE saving
+      const isNewConversation = !currentConversationIdRef.current;
+      
+      // Pass current conversationId from ref (most up-to-date value)
+      const result = await aiChatHistoryService.saveHistory(query, response, currentConversationIdRef.current);
+      
+      console.log('📥 Save result:', result);
+      console.log('📥 Save result type:', typeof result);
+      console.log('📥 Save result keys:', Object.keys(result || {}));
+      console.log('📥 ConversationId in result:', result?.conversationId);
       
       // Update current conversation ID from the response (important for first message)
-      // Return the conversation ID so caller can use it immediately
-      if (result.conversationId && !currentConversationId) {
-        console.log('✅ Created new conversation:', result.conversationId);
-        toast.success('Đã tạo cuộc trò chuyện mới');
+      if (result?.conversationId) {
+        // Update both ref and state immediately and synchronously
+        currentConversationIdRef.current = result.conversationId;
+        setCurrentConversationId(result.conversationId);
+        
+        console.log('🔄 Updated conversation ID to:', result.conversationId, isNewConversation ? '(NEW)' : '(EXISTING)');
+        console.log('✅ Ref value after update:', currentConversationIdRef.current);
+        console.log('✅ State value after update (will apply on next render):', result.conversationId);
+        
+        if (isNewConversation) {
+          toast.success('Đã tạo cuộc trò chuyện mới');
+        }
+      } else {
+        console.error('❌ No conversation ID returned from saveHistory!');
       }
       
       // Remember which conversation is active before reloading
-      const activeConversationId = result.conversationId || currentConversationId;
+      const activeConversationId = result.conversationId || currentConversationIdRef.current;
       
       // Reload conversation list to show updated conversations (async, don't block)
-      loadChatHistory().then(() => {
-        // Restore active state for current conversation after reload
-        if (activeConversationId) {
-          setConversations(prev => 
-            prev.map(conv => ({ ...conv, isActive: conv.id === activeConversationId }))
-          );
-        }
-      });
+      // Only reload if this was a new conversation, otherwise just update the timestamp
+      if (isNewConversation) {
+        loadChatHistory().then(() => {
+          // After conversation list is reloaded, mark the new conversation as active
+          if (activeConversationId) {
+            console.log('🎯 Marking new conversation as active in sidebar:', activeConversationId);
+            setConversations(prev => 
+              prev.map(conv => ({ 
+                ...conv, 
+                isActive: conv.id === activeConversationId 
+              }))
+            );
+            // Note: We don't call loadConversation() here because:
+            // 1. We already have the messages displayed in the current chat
+            // 2. Calling loadConversation would fetch from backend and might cause race conditions
+            // 3. The ref is already set correctly, user can continue chatting
+          }
+        });
+      }
       
       // Return the conversation ID immediately
       return result.conversationId;
@@ -362,6 +399,7 @@ export default function ChatBot() {
     setMessages([]);
     setConversationHistory([]);
     setCurrentConversationId(null);
+    currentConversationIdRef.current = null; // Reset ref as well
     setConversations(prev => prev.map(conv => ({ ...conv, isActive: false })));
     toast.success('Cuộc trò chuyện mới đã được tạo');
   };
