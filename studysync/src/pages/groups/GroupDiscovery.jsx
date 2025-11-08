@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { SearchOutlined, DownOutlined, UsergroupAddOutlined, PlusOutlined } from '@ant-design/icons';
+import { SearchOutlined, DownOutlined, UsergroupAddOutlined, PlusOutlined, SendOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Spin, message } from 'antd';
+import { Spin, message, Modal, Input } from 'antd';
 import CreateGroupModal from '../../components/groups/CreateGroupModal';
 import groupService from '../../services/groupService';
+
+const { TextArea } = Input;
 
 export default function GroupDiscovery() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,6 +15,9 @@ export default function GroupDiscovery() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [requestedGroups, setRequestedGroups] = useState(new Set());
+  const [joinRequestModal, setJoinRequestModal] = useState({ visible: false, groupId: null, groupName: '' });
+  const [customMessage, setCustomMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,12 +109,32 @@ export default function GroupDiscovery() {
     setIsCreateModalOpen(false);
   };
 
-  const handleJoinRequest = async (groupId) => {
+  const handleOpenJoinRequestModal = (groupId, groupName) => {
+    setJoinRequestModal({ visible: true, groupId, groupName });
+    setCustomMessage('Xin chào! Tôi muốn tham gia nhóm này để cùng học tập và chia sẻ kiến thức.');
+  };
+
+  const handleCloseJoinRequestModal = () => {
+    setJoinRequestModal({ visible: false, groupId: null, groupName: '' });
+    setCustomMessage('');
+  };
+
+  const handleSubmitJoinRequest = async () => {
     try {
-      await groupService.requestJoinGroup(groupId, { 
-        message: 'Tôi muốn tham gia nhóm này' 
+      const requestMessage = customMessage.trim() || 'Tôi muốn tham gia nhóm này';
+      
+      await groupService.requestJoinGroup(joinRequestModal.groupId, { 
+        message: requestMessage 
       });
-      message.success('Đã gửi yêu cầu tham gia nhóm!');
+      
+      message.success('✅ Đã gửi yêu cầu tham gia nhóm!');
+      
+      // Add to requested groups set
+      setRequestedGroups(prev => new Set([...prev, joinRequestModal.groupId]));
+      
+      // Close modal
+      handleCloseJoinRequestModal();
+      
       // Optionally refresh to update the isMember status
       await fetchAllGroups();
     } catch (error) {
@@ -280,24 +305,34 @@ export default function GroupDiscovery() {
                             </div>
                           </div>
                           
-                          {/* Action Button */}
+                          {/* Action Buttons */}
                           <div className="ml-8 flex-shrink-0">
                             {group.isMember ? (
                               <motion.button 
                                 onClick={() => handleViewGroup(group.id)}
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
+                                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-300 shadow-lg flex items-center gap-2"
                               >
+                                <CheckCircleOutlined />
                                 VÀO NHÓM
+                              </motion.button>
+                            ) : requestedGroups.has(group.id) ? (
+                              <motion.button 
+                                disabled
+                                className="px-8 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-full font-semibold cursor-not-allowed transition-all duration-300 shadow-lg flex items-center gap-2 opacity-75"
+                              >
+                                <ClockCircleOutlined className="animate-pulse" />
+                                ĐÃ GỬI YÊU CẦU
                               </motion.button>
                             ) : (
                               <motion.button 
-                                onClick={() => handleJoinRequest(group.id)}
+                                onClick={() => handleOpenJoinRequestModal(group.id, group.groupName)}
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="px-8 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-full font-semibold hover:from-pink-500 hover:to-pink-600 transition-all duration-300 shadow-lg"
+                                className="px-8 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-full font-semibold hover:from-pink-500 hover:to-pink-600 transition-all duration-300 shadow-lg flex items-center gap-2"
                               >
+                                <SendOutlined />
                                 XIN THAM GIA
                               </motion.button>
                             )}
@@ -337,6 +372,58 @@ export default function GroupDiscovery() {
         onClose={handleCloseCreateModal}
         onCreateGroup={handleCreateGroup}
       />
+
+      {/* Join Request Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <SendOutlined className="text-pink-500" />
+            <span>Gửi yêu cầu tham gia nhóm</span>
+          </div>
+        }
+        open={joinRequestModal.visible}
+        onCancel={handleCloseJoinRequestModal}
+        onOk={handleSubmitJoinRequest}
+        okText="Gửi yêu cầu"
+        cancelText="Hủy"
+        okButtonProps={{
+          className: "bg-pink-500 hover:bg-pink-600",
+          disabled: !customMessage.trim()
+        }}
+        width={600}
+      >
+        <div className="py-4">
+          <div className="mb-4">
+            <p className="text-gray-700 mb-2">
+              Bạn muốn tham gia nhóm: <strong className="text-purple-600">{joinRequestModal.groupName}</strong>
+            </p>
+            <p className="text-sm text-gray-500">
+              Hãy viết một lời nhắn ngắn gọn để giới thiệu bản thân và lý do muốn tham gia nhóm.
+            </p>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lời nhắn của bạn <span className="text-red-500">*</span>
+            </label>
+            <TextArea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Ví dụ: Xin chào! Tôi là sinh viên năm 2 chuyên ngành CNTT. Tôi rất quan tâm đến chủ đề này và muốn cùng các bạn học tập..."
+              rows={5}
+              maxLength={500}
+              showCount
+              className="resize-none"
+            />
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              💡 <strong>Gợi ý:</strong> Lời nhắn tốt nên bao gồm: giới thiệu ngắn gọn về bản thân, lý do muốn tham gia, và điều bạn có thể đóng góp cho nhóm.
+            </p>
+          </div>
+        </div>
+      </Modal>
       
     </>
   );
