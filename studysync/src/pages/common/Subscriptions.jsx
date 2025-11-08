@@ -22,6 +22,7 @@ const Subscriptions = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
+  const [cancelling, setCancelling] = useState(false);
   const paymentPopupRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -271,6 +272,45 @@ const Subscriptions = () => {
     if (!limit || limit === 0) return 0;
     const percentage = (used / limit) * 100;
     return Math.min(100, Math.max(0, percentage));
+  };
+
+  const handleCancelPayment = async () => {
+    if (!paymentData?.orderCode) {
+      toast.error('Không tìm thấy mã đơn hàng');
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      await paymentService.cancelPayment(paymentData.orderCode);
+      
+      // Stop polling
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+
+      // Close payment popup
+      try {
+        if (paymentPopupRef.current && !paymentPopupRef.current.closed) {
+          paymentPopupRef.current.close();
+        }
+      } catch (error) {
+        console.warn('Unable to close payment popup:', error);
+      }
+
+      setPaymentStatus('CANCELLED');
+      toast.success('Đã hủy thanh toán');
+      setShowModal(false);
+      
+      // Refresh payment history
+      await fetchData();
+    } catch (error) {
+      console.error('Cancel payment error:', error);
+      toast.error(error.response?.data?.message || 'Không thể hủy thanh toán');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   if (loading) {
@@ -570,6 +610,15 @@ const Subscriptions = () => {
                   </Button>,
                 ]
               : [
+                  <Button 
+                    key="cancel" 
+                    danger
+                    onClick={handleCancelPayment}
+                    loading={cancelling}
+                    disabled={cancelling}
+                  >
+                    Hủy thanh toán
+                  </Button>,
                   <Button key="close" onClick={() => setShowModal(false)}>
                     Đóng
                   </Button>,

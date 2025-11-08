@@ -130,6 +130,23 @@ class PaymentService {
   }
 
   /**
+   * Cancel a pending payment
+   * @param {string} orderCode - Payment order code to cancel
+   * @returns {Promise<Object>} Cancellation result
+   */
+  async cancelPayment(orderCode) {
+    try {
+      console.log('🚫 Cancelling payment:', orderCode);
+      const response = await axiosInstance.post(`/payments/cancel/${orderCode}`);
+      console.log('✅ Payment cancelled:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Cancel payment error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Admin: refund a payment
    */
   async refundPayment(orderCode) {
