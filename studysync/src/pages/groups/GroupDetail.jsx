@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FileTextOutlined, BookOutlined, RiseOutlined, UserOutlined, MessageOutlined, LoadingOutlined, UserAddOutlined, VideoCameraOutlined, PhoneOutlined, ExclamationCircleOutlined, TeamOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Spin, Button, Badge, Modal } from 'antd';
 import { showToast, commonToasts } from '../../utils/toast';
@@ -21,11 +21,13 @@ export default function GroupDetail() {
   const [error, setError] = useState(null);
   const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false);
   const [isLeavingGroup, setIsLeavingGroup] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activeCalls, setActiveCalls] = useState([]);
   const [isJoiningCall, setIsJoiningCall] = useState(false);
   const [refreshInvitations, setRefreshInvitations] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     if (id && isAuthenticated && !hasFetchedDetail) {
@@ -59,6 +61,42 @@ export default function GroupDetail() {
       return () => clearInterval(interval);
     }
   }, [groupData?.id, isHost]);
+
+  // Fetch pending requests count if user is leader
+  useEffect(() => {
+    if (groupData?.id && isHost) {
+      fetchPendingRequestsCount();
+      // Poll every 30 seconds
+      const interval = setInterval(fetchPendingRequestsCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [groupData?.id, isHost]);
+
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const response = await groupService.getJoinRequests(id);
+      const requestsData = response?.data || response;
+      const count = Array.isArray(requestsData) ? requestsData.length : 0;
+      setPendingRequestsCount(count);
+    } catch (error) {
+      console.error('Error fetching requests count:', error);
+      setPendingRequestsCount(0);
+    }
+  };
+
+  const handleOpenJoinRequests = () => {
+    setShowJoinRequestsModal(true);
+  };
+
+  const handleCloseJoinRequests = () => {
+    setShowJoinRequestsModal(false);
+  };
+
+  const handleRequestProcessed = () => {
+    // Refresh group detail and requests count
+    fetchGroupDetail();
+    fetchPendingRequestsCount();
+  };
 
   
   const fetchGroupDetail = async () => {
@@ -302,15 +340,17 @@ export default function GroupDetail() {
                       
                       {/* Invite Member Button - Only for Leaders */}
                       {isHost && (
-                        <Button
-                          type="primary"
-                          icon={<UserAddOutlined />}
-                          onClick={() => setShowInviteModal(true)}
-                          className="ml-4 bg-gradient-to-r from-purple-500 to-blue-500 border-0 rounded-full shadow-lg hover:shadow-xl"
-                          size="small"
-                        >
-                          Mời thành viên
-                        </Button>
+                        <>
+                          <Button
+                            type="primary"
+                            icon={<UserAddOutlined />}
+                            onClick={() => setShowInviteModal(true)}
+                            className="ml-4 bg-gradient-to-r from-purple-500 to-blue-500 border-0 rounded-full shadow-lg hover:shadow-xl"
+                            size="small"
+                          >
+                            Mời thành viên
+                          </Button>
+                        </>
                       )}
 
                       {/* Leave Group Button - Only for Members (not leaders) */}
