@@ -281,7 +281,13 @@ export default function ChatBot() {
       setConversationHistory(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       
       console.log('💾 About to save with conversation ID:', currentConversationId);
-      saveChatHistory(userMessageText, aiResponse);
+      const newConversationId = await saveChatHistory(userMessageText, aiResponse);
+      
+      // Immediately update conversation ID if a new one was created
+      if (newConversationId && !currentConversationId) {
+        setCurrentConversationId(newConversationId);
+        console.log('🔄 Updated current conversation ID to:', newConversationId);
+      }
       
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -316,15 +322,15 @@ export default function ChatBot() {
       if (!query || !response) {
         console.error('❌ Query or response is empty!');
         toast.error('Dữ liệu không hợp lệ');
-        return;
+        return null;
       }
       
       // Pass current conversationId if exists, backend will create new conversation if not provided
       const result = await aiChatHistoryService.saveHistory(query, response, currentConversationId);
       
       // Update current conversation ID from the response (important for first message)
+      // Return the conversation ID so caller can use it immediately
       if (result.conversationId && !currentConversationId) {
-        setCurrentConversationId(result.conversationId);
         console.log('✅ Created new conversation:', result.conversationId);
         toast.success('Đã tạo cuộc trò chuyện mới');
       }
@@ -332,18 +338,22 @@ export default function ChatBot() {
       // Remember which conversation is active before reloading
       const activeConversationId = result.conversationId || currentConversationId;
       
-      // Reload conversation list to show updated conversations
-      await loadChatHistory();
+      // Reload conversation list to show updated conversations (async, don't block)
+      loadChatHistory().then(() => {
+        // Restore active state for current conversation after reload
+        if (activeConversationId) {
+          setConversations(prev => 
+            prev.map(conv => ({ ...conv, isActive: conv.id === activeConversationId }))
+          );
+        }
+      });
       
-      // Restore active state for current conversation
-      if (activeConversationId) {
-        setConversations(prev => 
-          prev.map(conv => ({ ...conv, isActive: conv.id === activeConversationId }))
-        );
-      }
+      // Return the conversation ID immediately
+      return result.conversationId;
     } catch (error) {
       console.error('❌ Save failed:', error.message);
       toast.error('Không thể lưu lịch sử trò chuyện');
+      return null;
     }
   };
 
