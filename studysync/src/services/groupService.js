@@ -80,6 +80,23 @@ class GroupService {
   }
 
   /**
+   * Get all groups in the system (for discovery)
+   * @returns {Promise<Array>} List of all active groups
+   */
+  async getAllGroups() {
+    try {
+      console.log('📥 Fetching all groups...');
+      const response = await axiosInstance.get('/groups/all');
+      console.log('✅ All groups:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching all groups:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch groups';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Get all groups that the user is a member of
    * @returns {Promise<Array>} List of user's groups
    */

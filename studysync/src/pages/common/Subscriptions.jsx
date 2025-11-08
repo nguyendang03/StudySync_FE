@@ -95,26 +95,32 @@ const Subscriptions = () => {
 
       // Normalize nested response: { data: { data: {...} } } or { data: {...} }
       const normalized = normalizeApiResponse(result);
+      console.log('📦 Normalized response:', normalized);
+      
       const checkoutUrl = normalized?.checkoutUrl;
       const orderCode = normalized?.orderCode;
       console.log('💳 Extracted:', { checkoutUrl, orderCode, normalized });
 
-      if (checkoutUrl) {
-        // Open PayOS checkout in new window and keep a reference
-        paymentPopupRef.current = window.open(checkoutUrl, '_blank', 'width=600,height=700');
-        setPaymentData(normalized);
-        setShowModal(true);
-        console.log("orderCode", orderCode)
-        // Poll for payment status with correct orderCode
-        if (orderCode) {
-          pollPaymentStatus(orderCode);
-        }
-        
-        toast.success('Vui lòng hoàn tất thanh toán trong cửa sổ mới');
-      } else {
+      if (!checkoutUrl) {
         console.error('❌ Missing checkoutUrl in response:', normalized);
-        throw new Error('Không nhận được link thanh toán');
+        throw new Error('Không nhận được link thanh toán từ server');
       }
+
+      if (!orderCode) {
+        console.error('❌ Missing orderCode in response:', normalized);
+        throw new Error('Không nhận được mã đơn hàng từ server');
+      }
+
+      // Open PayOS checkout in new window and keep a reference
+      paymentPopupRef.current = window.open(checkoutUrl, '_blank', 'width=600,height=700');
+      setPaymentData(normalized);
+      setShowModal(true);
+      console.log("✅ Opening payment window with orderCode:", orderCode);
+      
+      // Poll for payment status with correct orderCode
+      pollPaymentStatus(orderCode);
+      
+      toast.success('Vui lòng hoàn tất thanh toán trong cửa sổ mới');
     } catch (error) {
       console.error('Purchase error:', error);
       toast.error(error.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại!');
@@ -124,7 +130,12 @@ const Subscriptions = () => {
   };
 
   const pollPaymentStatus = async (orderCode) => {
-    if (!orderCode) return;
+    if (!orderCode) {
+      console.error('❌ Cannot poll: orderCode is missing');
+      return;
+    }
+
+    console.log('📊 Starting to poll for orderCode:', orderCode);
 
     // Reset previous polling if needed
     if (pollIntervalRef.current) {
@@ -139,6 +150,9 @@ const Subscriptions = () => {
 
     pollIntervalRef.current = setInterval(async () => {
       try {
+        attempts += 1;
+        console.log(`🔁 Polling attempt ${attempts}/${maxAttempts} for order: ${orderCode}`);
+        
         // Use transaction endpoint which checks PayOS directly for real-time status
         const result = await paymentService.getTransactionDetails(orderCode);
         const transaction = normalizeApiResponse(result);
@@ -195,14 +209,21 @@ const Subscriptions = () => {
           return;
         }
 
-        attempts += 1;
         if (attempts >= maxAttempts) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
           toast.error('Không thể xác nhận trạng thái thanh toán. Vui lòng kiểm tra lại sau.');
         }
       } catch (error) {
-        console.error('Poll error:', error);
+        console.error('❌ Poll error:', error);
+        
+        // If error is 404 or transaction not found, payment might not be created yet
+        // Continue polling for a while
+        if (attempts >= maxAttempts) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          toast.error('Không thể xác nhận trạng thái thanh toán. Vui lòng kiểm tra email hoặc lịch sử giao dịch.');
+        }
       }
     }, 5000); // Check every 5 seconds
   };
