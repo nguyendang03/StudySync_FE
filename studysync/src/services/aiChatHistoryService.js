@@ -250,7 +250,12 @@ class AiChatHistoryService {
       }
 
       const data = await res.json();
-      return data.data;
+      console.log('📦 [saveHistory] Full response:', data);
+      console.log('📦 [saveHistory] data.data:', data.data);
+      console.log('📦 [saveHistory] data.data.data:', data.data.data);
+      // The backend returns { data: { data: { conversationId, ... } } }
+      // We need to return data.data.data to get the actual conversation data
+      return data.data.data || data.data;
     } catch (error) {
       console.error('❌ Error saving chat history:', error);
       throw error;
@@ -461,12 +466,44 @@ class AiChatHistoryService {
    * @returns {string}
    */
   formatTime(timestamp) {
+    if (!timestamp) return 'Không rõ';
+    
     const now = new Date();
     const date = new Date(timestamp);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('[formatTime] Invalid timestamp:', timestamp);
+      return 'Không rõ';
+    }
+    
+    // Log for debugging
+    console.log('[formatTime] Input:', timestamp);
+    console.log('[formatTime] Parsed date:', date.toISOString());
+    console.log('[formatTime] Current time:', now.toISOString());
+    
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
+
+    console.log('[formatTime] Time difference:', {
+      milliseconds: diffMs,
+      minutes: diffMins,
+      hours: diffHours,
+      days: diffDays
+    });
+
+    // Handle negative values (future dates - likely timezone issue)
+    if (diffMs < 0) {
+      console.warn('[formatTime] Future timestamp detected:', { 
+        timestamp, 
+        now: now.toISOString(), 
+        date: date.toISOString(),
+        diffHours: Math.abs(diffHours)
+      });
+      return 'Vừa xong';
+    }
 
     if (diffMins < 1) return 'Vừa xong';
     if (diffMins < 60) return `${diffMins} phút trước`;
