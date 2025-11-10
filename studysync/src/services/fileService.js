@@ -43,25 +43,22 @@ axiosInstance.interceptors.response.use(
 
 class FileService {
   // Lấy danh sách file + folder
-async getFiles(parentId = null, params = {}) {
-  try {
-    const query = parentId ? { ...params, parentId } : params;
-    console.log("📡 API Request:", { parentId, query });
-    const res = await axiosInstance.get("/files", { params: query });
-    console.log("📡 API Response (full):", res.data);
-    
-    // Try different paths based on API response structure
-    let data = res.data?.data?.data || res.data?.data || res.data;
-    
-    // ✅ Luôn trả về mảng
-    const items = Array.isArray(data) ? data : [];
-    console.log("📂 getFiles:", parentId ? `Folder ${parentId}` : "Root", `(${items.length} items)`, items);
-    return items;
-  } catch (err) {
-    console.error("❌ Lỗi khi lấy danh sách file:", err);
-    throw new Error("Không thể tải danh sách file!");
+  async getFiles(parentId = null, params = {}) {
+    try {
+      const query = parentId ? { ...params, parentId } : params;
+      console.log("📡 API Request:", { parentId, query });
+      const res = await axiosInstance.get("/files", { params: query });
+      console.log("📡 API Response (full):", res.data);
+
+      let data = res.data?.data?.data || res.data?.data || res.data;
+      const items = Array.isArray(data) ? data : [];
+      console.log("📂 getFiles:", parentId ? `Folder ${parentId}` : "Root", `(${items.length} items)`, items);
+      return items;
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy danh sách file:", err);
+      throw new Error("Không thể tải danh sách file!");
+    }
   }
-}
 
   // Tạo thư mục
   async createFolder(folderData) {
@@ -72,7 +69,6 @@ async getFiles(parentId = null, params = {}) {
         parentId: folderData.parentId || null,
         groupId: folderData.groupId || null,
       };
-
       const res = await axiosInstance.post("/files/folders", payload);
       const folder = res.data?.data?.data || res.data?.data;
       if (!folder || !folder.id) {
@@ -81,10 +77,7 @@ async getFiles(parentId = null, params = {}) {
       return folder;
     } catch (err) {
       console.error("❌ Lỗi khi tạo thư mục:", err);
-      const msg =
-        err.response?.data?.message ||
-        err.message ||
-        "Không thể tạo thư mục.";
+      const msg = err.response?.data?.message || err.message || "Không thể tạo thư mục.";
       throw new Error(msg);
     }
   }
@@ -106,9 +99,7 @@ async getFiles(parentId = null, params = {}) {
       return uploaded;
     } catch (err) {
       console.error("❌ Lỗi khi tải file lên:", err);
-      const msg =
-        err.response?.data?.message ||
-        "Không thể tải file. Vui lòng kiểm tra lại thư mục.";
+      const msg = err.response?.data?.message || "Không thể tải file. Vui lòng kiểm tra lại thư mục.";
       throw new Error(msg);
     }
   }
@@ -137,31 +128,27 @@ async getFiles(parentId = null, params = {}) {
 
   // Xoá file
   async deleteFile(id) {
-  try {
-    const token = authService.getAccessToken();
-    const res = await axios.delete(`${API_BASE_URL}/files/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    console.log("🗑️ File đã được xóa:", res.data);
-    return res.data?.data || res.data;
-  } catch (err) {
-    console.error("❌ Lỗi khi xóa file:", err);
-    const msg =
-      err.response?.data?.message ||
-      `Không thể xóa file (mã lỗi ${err.response?.status || "?"})`;
-    throw new Error(msg);
+    try {
+      const token = authService.getAccessToken();
+      const res = await axios.delete(`${API_BASE_URL}/files/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("🗑️ File đã được xóa:", res.data);
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.error("❌ Lỗi khi xóa file:", err);
+      const msg = err.response?.data?.message || `Không thể xóa file (mã lỗi ${err.response?.status || "?"})`;
+      throw new Error(msg);
+    }
   }
-}
+
   // Dung lượng đã dùng
   async getStorage(type = "personal") {
     try {
-      const res = await axiosInstance.get(`/files/storage`, {
-        params: { type },
-      });
+      const res = await axiosInstance.get(`/files/storage`, { params: { type } });
       return res.data?.data || res.data;
     } catch (err) {
       console.error("❌ Lỗi khi lấy thông tin storage:", err);
@@ -176,6 +163,18 @@ async getFiles(parentId = null, params = {}) {
       return res.data?.data?.data || res.data?.data || res.data;
     } catch (err) {
       throw new Error("Không thể lấy thông tin file!");
+    }
+  }
+
+  // ✅ Lấy danh sách nhóm mà user tham gia
+  async getMyGroups() {
+    try {
+      const res = await axiosInstance.get("/groups/my-groups");
+      const data = res.data?.data || {};
+      return Object.values(data); // chuyển object key "0","1"... thành mảng
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy danh sách nhóm:", err);
+      throw new Error("Không thể lấy danh sách nhóm!");
     }
   }
 }

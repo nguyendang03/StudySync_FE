@@ -13,6 +13,7 @@ export default function FileUpload({ onUploadSuccess }) {
   const [newFolderName, setNewFolderName] = useState("");
   const [folderType, setFolderType] = useState("personal");
   const [groupId, setGroupId] = useState(null);
+  const [groups, setGroups] = useState([]); // ✅ state chứa danh sách nhóm
 
   // Load danh sách thư mục
   const fetchFolders = async () => {
@@ -21,7 +22,6 @@ export default function FileUpload({ onUploadSuccess }) {
       const folderList = (res || []).filter((item) => item.isFolder);
       setFolders(folderList);
 
-      // Nếu chưa chọn folder, chọn folder đầu tiên
       if (folderList.length && !selectedFolder) {
         setSelectedFolder(folderList[0].id);
         setFolderType(folderList[0].type || "personal");
@@ -36,6 +36,17 @@ export default function FileUpload({ onUploadSuccess }) {
   useEffect(() => {
     fetchFolders();
   }, []);
+
+  // Load danh sách nhóm từ API
+  const fetchGroups = async () => {
+    try {
+      const res = await fileService.getMyGroups();
+      setGroups(res);
+    } catch (error) {
+      console.error("❌ Lỗi khi lấy danh sách nhóm:", error);
+      message.error("Không thể tải danh sách nhóm!");
+    }
+  };
 
   // Tạo thư mục
   const handleCreateFolder = async () => {
@@ -56,10 +67,8 @@ export default function FileUpload({ onUploadSuccess }) {
       setShowFolderModal(false);
       setNewFolderName("");
 
-      // Refresh danh sách folder sau khi tạo
       await fetchFolders();
 
-      // Chọn folder vừa tạo
       setSelectedFolder(createdFolder.id);
       setFolderType(createdFolder.type);
       setGroupId(createdFolder.groupId || null);
@@ -69,74 +78,64 @@ export default function FileUpload({ onUploadSuccess }) {
   };
 
   // Upload file
-const handleUpload = async () => {
-  if (!file) {
-    message.warning("Vui lòng chọn file!");
-    return;
-  }
-  if (!selectedFolder) {
-    message.warning("Vui lòng chọn thư mục!");
-    return;
-  }
+  const handleUpload = async () => {
+    if (!file) {
+      message.warning("Vui lòng chọn file!");
+      return;
+    }
+    if (!selectedFolder) {
+      message.warning("Vui lòng chọn thư mục!");
+      return;
+    }
 
-  const folder = folders.find((f) => f.id === selectedFolder);
-  const type = folder?.type || "personal";
-  const gid = folder?.groupId || null;
+    const folder = folders.find((f) => f.id === selectedFolder);
+    const type = folder?.type || "personal";
+    const gid = folder?.groupId || null;
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("parentId", selectedFolder);
-  formData.append("type", type);
-  formData.append("customName", file.name);
-  if (type === "group" && gid) {
-    formData.append("groupId", gid);
-  }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("parentId", selectedFolder);
+    formData.append("type", type);
+    formData.append("customName", file.name);
+    if (type === "group" && gid) {
+      formData.append("groupId", gid);
+    }
 
-  setUploading(true);
-  setProgress(0);
-
-  try {
-    await fileService.uploadFile(formData, (percent) => setProgress(percent));
-
-    // Thông báo thành công
-    message.success(`🎉 File "${file.name}" tải lên thành công!`);
-
-    Modal.success({
-      title: "Upload thành công",
-      content: (
-        <div>
-          File <strong>{file.name}</strong> đã được tải lên thư mục.
-        </div>
-      ),
-      okText: "Đóng",
-    });
-
-    setFile(null);
+    setUploading(true);
     setProgress(0);
 
-    if (onUploadSuccess) onUploadSuccess();
-
-    await fetchFolders(); // refresh folder list
-  } catch (error) {
-    // Log và hiển thị lỗi rõ ràng cho UI
-    console.error("❌ Lỗi khi tải file lên (FileUpload):", error);
-    const errMsg = error?.message || "❌ Không thể tải file!";
-    // Hiển thị toast và modal lỗi để người dùng dễ thấy
     try {
+      await fileService.uploadFile(formData, (percent) => setProgress(percent));
+
+      message.success(`🎉 File "${file.name}" tải lên thành công!`);
+
+      Modal.success({
+        title: "Upload thành công",
+        content: (
+          <div>
+            File <strong>{file.name}</strong> đã được tải lên thư mục.
+          </div>
+        ),
+        okText: "Đóng",
+      });
+
+      setFile(null);
+      setProgress(0);
+      if (onUploadSuccess) onUploadSuccess();
+      await fetchFolders();
+    } catch (error) {
+      console.error("❌ Lỗi khi tải file lên (FileUpload):", error);
+      const errMsg = error?.message || "❌ Không thể tải file!";
       message.error(errMsg);
-    } catch (e) {
-      // defensive: nếu message không hoạt động (css/layer issue), dùng console và modal
-      console.warn("antd message failed:", e);
+      Modal.error({
+        title: "Lỗi tải lên",
+        content: <div>{errMsg}</div>,
+        okText: "Đóng",
+      });
+    } finally {
+      setUploading(false);
     }
-    Modal.error({
-      title: "Lỗi tải lên",
-      content: <div>{errMsg}</div>,
-      okText: "Đóng",
-    });
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   const handleChangeFile = (e) => {
     setFile(e.target.files[0]);
@@ -158,7 +157,10 @@ const handleUpload = async () => {
         />
         <Button
           icon={<FolderAddOutlined />}
-          onClick={() => setShowFolderModal(true)}
+          onClick={() => {
+            if (folderType === "group") fetchGroups(); // Load nhóm khi mở modal
+            setShowFolderModal(true);
+          }}
         >
           Tạo thư mục
         </Button>
@@ -204,7 +206,10 @@ const handleUpload = async () => {
 
           <Select
             value={folderType}
-            onChange={(val) => setFolderType(val)}
+            onChange={(val) => {
+              setFolderType(val);
+              if (val === "group") fetchGroups(); // load nhóm khi chọn "Nhóm"
+            }}
             options={[
               { label: "Cá nhân", value: "personal" },
               { label: "Nhóm", value: "group" },
@@ -212,10 +217,14 @@ const handleUpload = async () => {
           />
 
           {folderType === "group" && (
-            <Input
-              placeholder="Nhập groupId"
-              value={groupId || ""}
-              onChange={(e) => setGroupId(e.target.value)}
+            <Select
+              placeholder="Chọn nhóm"
+              value={groupId || undefined}
+              onChange={(val) => setGroupId(val)}
+              options={groups.map((g) => ({
+                label: `${g.groupName} (${g.subject})`,
+                value: g.id,
+              }))}
             />
           )}
         </Space>
