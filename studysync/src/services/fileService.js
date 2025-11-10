@@ -43,20 +43,22 @@ axiosInstance.interceptors.response.use(
 
 class FileService {
   // Lấy danh sách file + folder
-async getFiles(params = {}) {
+async getFiles(parentId = null, params = {}) {
   try {
-    const res = await axiosInstance.get("/files", { params });
+    const query = parentId ? { ...params, parentId } : params;
+    const res = await axiosInstance.get("/files", { params: query });
     const data = res.data?.data?.data;
 
-    // ✅ Trả về mảng an toàn
+    // ✅ Luôn trả về mảng
     const items = Array.isArray(data) ? data : [];
-    console.log("🚀 Files from API:", items);
+    console.log("📂 getFiles:", parentId ? `Folder ${parentId}` : "Root", items);
     return items;
   } catch (err) {
     console.error("❌ Lỗi khi lấy danh sách file:", err);
     throw new Error("Không thể tải danh sách file!");
   }
 }
+
   // Tạo thư mục
   async createFolder(folderData) {
     try {
