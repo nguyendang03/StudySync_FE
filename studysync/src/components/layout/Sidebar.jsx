@@ -68,11 +68,11 @@ export default function Sidebar() {
           description: 'Trợ lý thông minh'
         },
         {
-      icon: UploadOutlined, // 🆕 icon tải file
-      label: 'Tải tệp lên',
-      path: '/files', // 🆕 trỏ tới trang upload của bạn
-      description: 'Quản lý & tải tệp học tập'
-    }
+          icon: UploadOutlined, 
+          label: 'Tải tệp lên',
+          path: '/files', 
+          description: 'Quản lý & tải tệp học tập'
+        }
       ]
     },
     {

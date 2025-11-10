@@ -13,7 +13,7 @@ export default function FileUpload({ onUploadSuccess }) {
   const [newFolderName, setNewFolderName] = useState("");
   const [folderType, setFolderType] = useState("personal");
   const [groupId, setGroupId] = useState(null);
-  const [groups, setGroups] = useState([]); // ✅ state chứa danh sách nhóm
+  const [groups, setGroups] = useState([]);
 
   // Load danh sách thư mục
   const fetchFolders = async () => {

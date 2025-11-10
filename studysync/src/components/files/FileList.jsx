@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   List,
   Button,
@@ -24,9 +24,10 @@ import {
 import FileUpload from "./FileUpload";
 import fileService from "../../services/fileService";
 
+
 const { Panel } = Collapse;
 
-export default function FileList() {
+const FileList = forwardRef(function FileList(_, ref) {
   const [files, setFiles] = useState([]);
   const [folderFiles, setFolderFiles] = useState({}); // 🔹 Lưu file con cho từng folder
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,11 @@ export default function FileList() {
   useEffect(() => {
     fetchFiles();
   }, []);
+
+  // expose fetchFiles to parent via ref
+  useImperativeHandle(ref, () => ({
+    fetchFiles,
+  }));
 
   // Lazy load khi mở folder
   const handleLoadFolder = async (folderId) => {
@@ -115,25 +121,7 @@ export default function FileList() {
 
   return (
     <div className="space-y-6">
-      {/* Upload */}
-      <Card
-        title={
-          <Space>
-            <CloudUploadOutlined /> Tải file lên
-          </Space>
-        }
-      >
-        <FileUpload onUploadSuccess={handleUploadSuccess} />
-      </Card>
-
-      {/* Danh sách */}
-      <div className="flex justify-between mt-6">
-        <h2 className="text-lg font-semibold">📁 Danh sách file</h2>
-        <Button icon={<ReloadOutlined />} onClick={fetchFiles} loading={loading}>
-          Làm mới
-        </Button>
-      </div>
-
+      
       {loading ? (
         <Spin size="large" className="flex justify-center py-10" />
       ) : files.length === 0 ? (
@@ -276,4 +264,6 @@ export default function FileList() {
       )}
     </div>
   );
-}
+});
+
+export default FileList;

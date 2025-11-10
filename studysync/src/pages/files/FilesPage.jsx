@@ -56,7 +56,7 @@ export default function FilesPage() {
                   <UploadOutlined className="text-2xl" />
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800">
-                  Tải lên file
+                  Tải file lên
                 </h2>
               </div>
               {/* Gọi component Upload, truyền props để reload list */}
