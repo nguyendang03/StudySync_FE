@@ -3,122 +3,165 @@ import API_BASE_URL from "../config/api.js";
 import authService from "./authService.js";
 
 const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: { "Content-Type": "application/json" },
 });
 
-// 🔐 Thêm interceptor để tự động gắn token
+// Gắn token tự động
 axiosInstance.interceptors.request.use(
-    (config) => {
-        const token = authService.getAccessToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
+  (config) => {
+    const token = authService.getAccessToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
-// 🔄 Tự động refresh token khi gặp lỗi 401
+// Refresh token nếu 401
 axiosInstance.interceptors.response.use(
-    (response) => response,
-    async(error) => {
-        const originalRequest = error.config;
-        if (error.response ?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-            try {
-                await authService.refreshToken();
-                const newToken = authService.getAccessToken();
-                if (newToken) {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                    return axiosInstance(originalRequest);
-                }
-            } catch (refreshError) {
-                authService.logout();
-                window.location.href = "/login";
-                return Promise.reject(refreshError);
-            }
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true;
+      try {
+        await authService.refreshToken();
+        const newToken = authService.getAccessToken();
+        if (newToken) {
+          original.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(original);
         }
-        return Promise.reject(error);
+      } catch {
+        authService.logout();
+        window.location.href = "/login";
+      }
     }
+    return Promise.reject(error);
+  }
 );
 
 class FileService {
-    // 📄 Lấy danh sách file
-    async getFiles() {
-        try {
-            const response = await axiosInstance.get("/files");
-            return response.data;
-        } catch (error) {
-            console.error("❌ Lỗi khi lấy danh sách file:", error);
-            throw error;
-        }
+  // Lấy danh sách file + folder
+async getFiles(params = {}) {
+  try {
+    const res = await axiosInstance.get("/files", { params });
+    const data = res.data?.data?.data;
+
+    // ✅ Trả về mảng an toàn
+    const items = Array.isArray(data) ? data : [];
+    console.log("🚀 Files from API:", items);
+    return items;
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy danh sách file:", err);
+    throw new Error("Không thể tải danh sách file!");
+  }
+}
+  // Tạo thư mục
+  async createFolder(folderData) {
+    try {
+      const payload = {
+        name: folderData.name,
+        type: folderData.type || "personal",
+        parentId: folderData.parentId || null,
+        groupId: folderData.groupId || null,
+      };
+
+      const res = await axiosInstance.post("/files/folders", payload);
+      const folder = res.data?.data?.data || res.data?.data;
+      if (!folder || !folder.id) {
+        throw new Error("API không trả về dữ liệu thư mục hợp lệ!");
+      }
+      return folder;
+    } catch (err) {
+      console.error("❌ Lỗi khi tạo thư mục:", err);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Không thể tạo thư mục.";
+      throw new Error(msg);
     }
+  }
 
-    // 📤 Upload file
-    async uploadFile(formData, onProgress) {
-        try {
-            const response = await axiosInstance.post("/files/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-                onUploadProgress: (event) => {
-                    if (onProgress) {
-                        const percent = Math.round((event.loaded * 100) / event.total);
-                        onProgress(percent);
-                    }
-                },
-            });
-            return response.data;
-        } catch (error) {
-            console.error("❌ Lỗi khi tải file lên:", error);
-            const msg =
-                error.response ?.data ?.message ||
-                "Không thể tải file. Vui lòng thử lại.";
-            throw new Error(msg);
-        }
+  // Upload file
+  async uploadFile(formData, onProgress) {
+    try {
+      const res = await axiosInstance.post("/files/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (evt) => {
+          if (onProgress) {
+            const percent = Math.round((evt.loaded * 100) / evt.total);
+            onProgress(percent);
+          }
+        },
+      });
+      const uploaded = res.data?.data?.data || res.data?.data;
+      return uploaded;
+    } catch (err) {
+      console.error("❌ Lỗi khi tải file lên:", err);
+      const msg =
+        err.response?.data?.message ||
+        "Không thể tải file. Vui lòng kiểm tra lại thư mục.";
+      throw new Error(msg);
     }
+  }
 
-    // ⬇️ Tải file xuống
-    async downloadFile(fileId) {
-        try {
-            const response = await axiosInstance.get(`/files/${fileId}/download`, {
-                responseType: "blob",
-            });
-
-            // 🔗 Tạo link tải xuống
-            const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement("a");
-            const disposition = response.headers["content-disposition"];
-            const filenameMatch = disposition ?.match(/filename="?(.+)"?/);
-            const filename = filenameMatch ? filenameMatch[1] : `file_${fileId}`;
-
-            link.href = blobUrl;
-            link.setAttribute("download", filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch (error) {
-            console.error("❌ Lỗi khi tải file:", error);
-            throw error;
-        }
+  // Download file
+  async downloadFile(fileId) {
+    try {
+      const res = await axiosInstance.get(`/files/${fileId}/download`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const name = res.headers["content-disposition"]
+        ?.split("filename=")[1]
+        ?.replace(/"/g, "") || "file";
+      link.href = url;
+      link.download = decodeURIComponent(name);
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ Lỗi khi tải file:", err);
+      throw err;
     }
+  }
 
-    // Xóa file
-    async deleteFile(fileId) {
-        try {
-            const response = await axiosInstance.delete(`/files/${fileId}`);
-            return response.data;
-        } catch (error) {
-            console.error("❌ Lỗi khi xóa file:", error);
-            const msg =
-                error.response?.data?.message ||
-                "Không thể xóa file. Vui lòng thử lại.";
-            throw new Error(msg);
-        }
+  // Xoá file
+  async deleteFile(id) {
+    try {
+      const res = await axiosInstance.delete(`/files/${id}`);
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.error("❌ Lỗi khi xóa file:", err);
+      const msg = err.response?.data?.message || "Không thể xóa file.";
+      throw new Error(msg);
     }
+  }
+
+  // Dung lượng đã dùng
+  async getStorage(type = "personal") {
+    try {
+      const res = await axiosInstance.get(`/files/storage`, {
+        params: { type },
+      });
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy thông tin storage:", err);
+      throw err;
+    }
+  }
+
+  // Chi tiết file
+  async getFileById(id) {
+    try {
+      const res = await axiosInstance.get(`/files/${id}`);
+      return res.data?.data?.data || res.data?.data || res.data;
+    } catch (err) {
+      throw new Error("Không thể lấy thông tin file!");
+    }
+  }
 }
 
-const fileService = new FileService();
-export default fileService;
+export default new FileService();
