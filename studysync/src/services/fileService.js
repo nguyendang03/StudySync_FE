@@ -137,16 +137,25 @@ async getFiles(parentId = null, params = {}) {
 
   // Xoá file
   async deleteFile(id) {
-    try {
-      const res = await axiosInstance.delete(`/files/${id}`);
-      return res.data?.data || res.data;
-    } catch (err) {
-      console.error("❌ Lỗi khi xóa file:", err);
-      const msg = err.response?.data?.message || "Không thể xóa file.";
-      throw new Error(msg);
-    }
-  }
+  try {
+    const token = authService.getAccessToken();
+    const res = await axios.delete(`${API_BASE_URL}/files/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
+    console.log("🗑️ File đã được xóa:", res.data);
+    return res.data?.data || res.data;
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa file:", err);
+    const msg =
+      err.response?.data?.message ||
+      `Không thể xóa file (mã lỗi ${err.response?.status || "?"})`;
+    throw new Error(msg);
+  }
+}
   // Dung lượng đã dùng
   async getStorage(type = "personal") {
     try {
