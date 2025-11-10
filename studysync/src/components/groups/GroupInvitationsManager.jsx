@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Card, Button, Table, Tag, Space, Modal, Spin } from 'antd';
+import { Card, Button, Table, Space, Modal, Spin } from 'antd';
 import { 
-  SendOutlined, 
   UserAddOutlined, 
   CheckOutlined, 
   CloseOutlined,
@@ -11,52 +10,16 @@ import {
 import { showToast } from '../../utils/toast';
 import groupService from '../../services/groupService';
 
-const { TabPane } = Tabs;
-
 export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 }) {
-  const [sentInvitations, setSentInvitations] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
-  const [loadingSent, setLoadingSent] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [processingId, setProcessingId] = useState(null);
-  const [activeTab, setActiveTab] = useState('sent');
 
   useEffect(() => {
     if (groupId) {
       fetchJoinRequests();
     }
-    fetchSentInvitations();
   }, [groupId, refreshTrigger]);
-
-  const fetchSentInvitations = async () => {
-    setLoadingSent(true);
-    try {
-      const response = await groupService.getSentInvitations();
-      const data = response?.data || response;
-      console.log('📤 Sent invitations:', data);
-      
-      // Convert object to array if needed, or use empty array as fallback
-      let invitations = [];
-      if (Array.isArray(data)) {
-        invitations = data;
-      } else if (data && typeof data === 'object') {
-        // If data is an object like {0: {...}, 1: {...}}, convert to array
-        invitations = Object.values(data);
-      }
-      
-      // Filter by groupId if provided
-      const filtered = groupId 
-        ? invitations.filter(inv => inv.group?.id === groupId)
-        : invitations;
-      
-      setSentInvitations(filtered);
-    } catch (error) {
-      console.error('❌ Error fetching sent invitations:', error);
-      showToast.error(error.message || 'Không thể tải danh sách lời mời đã gửi');
-    } finally {
-      setLoadingSent(false);
-    }
-  };
 
   const fetchJoinRequests = async () => {
     if (!groupId) return;
@@ -75,7 +38,7 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
         // If data is an object like {0: {...}, 1: {...}}, convert to array
         requests = Object.values(data);
       }
-      
+      console.log('📋 Parsed join requests array:', requests);
       setJoinRequests(requests);
     } catch (error) {
       console.error('❌ Error fetching join requests:', error);
@@ -86,125 +49,54 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
   };
 
   const handleApproveRequest = async (requestId, userName) => {
-    Modal.confirm({
-      title: 'Duyệt yêu cầu tham gia',
-      content: `Bạn có chắc muốn chấp nhận yêu cầu của "${userName}"?`,
-      okText: 'Chấp nhận',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        setProcessingId(requestId);
-        try {
-          await groupService.approveJoinRequest(requestId);
-          showToast.success(`Đã chấp nhận yêu cầu của ${userName}`);
-          await fetchJoinRequests();
-        } catch (error) {
-          console.error('❌ Error approving request:', error);
-          showToast.error(error.message || 'Không thể duyệt yêu cầu');
-        } finally {
-          setProcessingId(null);
-        }
-      }
-    });
-  };
-
-  const handleDenyRequest = async (requestId, userName) => {
-    Modal.confirm({
-      title: 'Từ chối yêu cầu tham gia',
-      content: `Bạn có chắc muốn từ chối yêu cầu của "${userName}"?`,
-      okText: 'Từ chối',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        setProcessingId(requestId);
-        try {
-          await groupService.denyJoinRequest(requestId);
-          showToast.success(`Đã từ chối yêu cầu của ${userName}`);
-          await fetchJoinRequests();
-        } catch (error) {
-          console.error('❌ Error denying request:', error);
-          showToast.error(error.message || 'Không thể từ chối yêu cầu');
-        } finally {
-          setProcessingId(null);
-        }
-      }
-    });
-  };
-
-  const handleRefresh = () => {
-    if (activeTab === 'sent') {
-      fetchSentInvitations();
-    } else {
-      fetchJoinRequests();
+    console.log('🔵 Approve button clicked for:', { requestId, userName });
+    
+    setProcessingId(requestId);
+    try {
+      console.log('📤 Calling approveJoinRequest API...');
+      const result = await groupService.approveJoinRequest(requestId);
+      console.log('✅ Approve result:', result);
+      showToast.success(`Đã chấp nhận yêu cầu của ${userName}`);
+      await fetchJoinRequests();
+    } catch (error) {
+      console.error('❌ Error approving request:', error);
+      showToast.error(error.message || 'Không thể duyệt yêu cầu');
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const sentInvitationsColumns = [
-    {
-      title: 'Người nhận',
-      dataIndex: 'inviteEmail',
-      key: 'inviteEmail',
-      render: (email) => (
-        <div>
-          <div className="font-medium text-gray-900">{email || 'N/A'}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Nhóm',
-      dataIndex: 'groupName',
-      key: 'groupName',
-      render: (text, record) => (
-        <div>
-          <div className="font-medium">{text || 'N/A'}</div>
-          {record.groupDescription && (
-            <div className="text-xs text-gray-500 line-clamp-1">{record.groupDescription}</div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Người gửi',
-      dataIndex: 'invitedBy',
-      key: 'invitedBy',
-      render: (text) => text || <span className="text-gray-400 italic">N/A</span>,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const statusConfig = {
-          pending: { color: 'orange', text: 'Chờ phản hồi' },
-          accepted: { color: 'green', text: 'Đã chấp nhận' },
-          declined: { color: 'red', text: 'Đã từ chối' },
-        };
-        const config = statusConfig[status] || { color: 'default', text: status };
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
-    },
-    {
-      title: 'Thời gian',
-      dataIndex: 'invitedAt',
-      key: 'invitedAt',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) : 'N/A',
-    },
-  ];
+  const handleDenyRequest = async (requestId, userName) => {
+    console.log('🔴 Deny button clicked for:', { requestId, userName });
+    
+    setProcessingId(requestId);
+    try {
+      console.log('📤 Calling denyJoinRequest API...');
+      const result = await groupService.denyJoinRequest(requestId);
+      console.log('✅ Deny result:', result);
+      showToast.success(`Đã từ chối yêu cầu của ${userName}`);
+      await fetchJoinRequests();
+    } catch (error) {
+      console.error('❌ Error denying request:', error);
+      showToast.error(error.message || 'Không thể từ chối yêu cầu');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchJoinRequests();
+  };
 
   const joinRequestsColumns = [
     {
       title: 'Người yêu cầu',
-      dataIndex: ['user', 'username'],
-      key: 'user',
+      dataIndex: 'requesterName',
+      key: 'requester',
       render: (text, record) => (
         <div>
-          <div className="font-medium">{record.user?.username || 'N/A'}</div>
-          <div className="text-sm text-gray-500">{record.user?.email}</div>
+          <div className="font-medium">{record.requesterName || 'N/A'}</div>
+          <div className="text-sm text-gray-500">{record.requesterEmail || 'N/A'}</div>
         </div>
       ),
     },
@@ -216,9 +108,15 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
     },
     {
       title: 'Thời gian',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
+      dataIndex: 'requestedAt',
+      key: 'requestedAt',
+      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'N/A',
     },
     {
       title: 'Hành động',
@@ -229,7 +127,7 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
             type="primary"
             icon={<CheckOutlined />}
             size="small"
-            onClick={() => handleApproveRequest(record.id, record.user?.username)}
+            onClick={() => handleApproveRequest(record.id, record.requesterName)}
             loading={processingId === record.id}
             className="bg-green-500 hover:bg-green-600 border-0"
           >
@@ -239,7 +137,7 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
             danger
             icon={<CloseOutlined />}
             size="small"
-            onClick={() => handleDenyRequest(record.id, record.user?.username)}
+            onClick={() => handleDenyRequest(record.id, record.requesterName)}
             loading={processingId === record.id}
           >
             Từ chối
@@ -253,13 +151,14 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
     <Card
       title={
         <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">
-            Quản lý lời mời & Yêu cầu tham gia
+          <span className="text-lg font-semibold flex items-center gap-2">
+            <UserAddOutlined />
+            Yêu cầu tham gia ({joinRequests.length})
           </span>
           <Button
             icon={<ReloadOutlined />}
             onClick={handleRefresh}
-            loading={activeTab === 'sent' ? loadingSent : loadingRequests}
+            loading={loadingRequests}
           >
             Làm mới
           </Button>
@@ -267,71 +166,26 @@ export default function GroupInvitationsManager({ groupId, refreshTrigger = 0 })
       }
       className="shadow-lg"
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane
-          tab={
-            <span className="flex items-center gap-2">
-              <SendOutlined />
-              Lời mời đã gửi ({sentInvitations.length})
-            </span>
-          }
-          key="sent"
-        >
-          {loadingSent ? (
-            <div className="text-center py-12">
-              <Spin size="large" />
-            </div>
-          ) : (
-            <Table
-              columns={sentInvitationsColumns}
-              dataSource={sentInvitations}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              locale={{
-                emptyText: (
-                  <div className="py-8">
-                    <SendOutlined className="text-4xl text-gray-300 mb-4" />
-                    <p className="text-gray-500">Chưa gửi lời mời nào</p>
-                  </div>
-                ),
-              }}
-            />
-          )}
-        </TabPane>
-        
-        {groupId && (
-          <TabPane
-            tab={
-              <span className="flex items-center gap-2">
-                <UserAddOutlined />
-                Yêu cầu tham gia ({joinRequests.length})
-              </span>
-            }
-            key="requests"
-          >
-            {loadingRequests ? (
-              <div className="text-center py-12">
-                <Spin size="large" />
+      {loadingRequests ? (
+        <div className="text-center py-12">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <Table
+          columns={joinRequestsColumns}
+          dataSource={joinRequests}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <div className="py-8">
+                <ClockCircleOutlined className="text-4xl text-gray-300 mb-4" />
+                <p className="text-gray-500">Không có yêu cầu tham gia nào</p>
               </div>
-            ) : (
-              <Table
-                columns={joinRequestsColumns}
-                dataSource={joinRequests}
-                rowKey="id"
-                pagination={{ pageSize: 10 }}
-                locale={{
-                  emptyText: (
-                    <div className="py-8">
-                      <ClockCircleOutlined className="text-4xl text-gray-300 mb-4" />
-                      <p className="text-gray-500">Không có yêu cầu tham gia nào</p>
-                    </div>
-                  ),
-                }}
-              />
-            )}
-          </TabPane>
-        )}
-      </Tabs>
+            ),
+          }}
+        />
+      )}
     </Card>
   );
 }

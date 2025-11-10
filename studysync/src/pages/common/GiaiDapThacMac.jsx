@@ -244,43 +244,6 @@ export default function GiaiDapThacMac() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="bg-gradient-to-br from-gray-50 to-gray-100 py-16"
         >
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.6 }}
-              className="text-center"
-            >
-              <motion.h2 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.8 }}
-                className="text-2xl sm:text-3xl font-bold mb-6 lg:mb-8 bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"
-              >
-                ĐẶT CÂU HỎI
-              </motion.h2>
-              
-              {/* Search Input */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, delay: 1 }}
-                className="relative max-w-2xl mx-auto"
-              >
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
-                  type="text"
-                  placeholder="Điền vào đây"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-6 pr-12 lg:pr-16 rounded-2xl bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-500 text-base lg:text-lg focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200 transition-all duration-300 hover:shadow-lg shadow-sm"
-                />
-                <SearchOutlined 
-                  className="absolute right-4 lg:right-6 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl lg:text-2xl hover:text-purple-600 transition-colors duration-200 cursor-pointer" 
-                />
-              </motion.div>
-            </motion.div>
-          </div>
         </motion.div>
         
         {/* FAQ Grid Section */}

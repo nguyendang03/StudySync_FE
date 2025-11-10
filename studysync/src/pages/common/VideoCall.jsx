@@ -65,9 +65,9 @@ export default function VideoCallPage() {
         name: group.groupName || group.name || 'Nhóm không tên',
         subject: group.subject || 'Chưa xác định',
         description: group.description || 'Không có mô tả',
-        members: [], // Will be populated when fetching members
-        memberCount: group.memberCount || 0,
-        activeMembers: Math.floor((group.memberCount || 0) * 0.6), // Mock 60% online
+        members: group.members || [], // Use members from response if available
+        memberCount: group.memberCount || group.members?.length || 0,
+        activeMembers: 0, // Will be calculated after fetching members
         lastCall: Date.now() - Math.random() * 86400000 * 2, // Random within 2 days
         totalCalls: Math.floor(Math.random() * 30),
         color: ['purple', 'blue', 'green', 'pink', 'indigo'][Math.floor(Math.random() * 5)]
@@ -127,16 +127,24 @@ export default function VideoCallPage() {
         return {
           id: userData.id || member.userId,
           name: displayName,
-          online: Math.random() > 0.5, // Mock online status
+          online: Math.random() > 0.4, // Mock 60% online rate
           avatar: displayName.substring(0, 2).toUpperCase(),
           isLeader: member.isLeader || member.role === 'leader'
         };
       });
       
-      // Update the specific group with members
+      // Count online members
+      const onlineCount = transformedMembers.filter(m => m.online).length;
+      
+      // Update the specific group with members and online count
       setMyGroups(prev => prev.map(group => 
         group.id === groupId 
-          ? { ...group, members: transformedMembers }
+          ? { 
+              ...group, 
+              members: transformedMembers,
+              activeMembers: onlineCount,
+              memberCount: transformedMembers.length
+            }
           : group
       ));
     } catch (error) {
@@ -449,7 +457,7 @@ export default function VideoCallPage() {
                             {currentGroup?.subject || 'Môn học'}
                           </Tag>
                           <Tag color="success" className="border-0 bg-green-500/80 text-white font-medium px-3 py-1">
-                            {currentGroup?.activeMembers} Online
+                            {currentGroup?.activeMembers || 0} Online
                           </Tag>
                         </div>
                         <h2 className="text-3xl font-bold mb-2">
@@ -462,10 +470,12 @@ export default function VideoCallPage() {
                       
                       {currentGroup && (
                         <div className="text-right bg-white/10 backdrop-blur-sm rounded-2xl p-6 ml-6">
-                          <div className="text-5xl font-bold mb-2">{currentGroup.activeMembers}</div>
+                          <div className="text-5xl font-bold mb-2">
+                            {currentGroup.activeMembers || 0}
+                          </div>
                           <div className="text-sm text-purple-100 font-medium">Thành viên online</div>
                           <div className="text-xs text-purple-200 mt-1">
-                            / {currentGroup.memberCount} tổng
+                            / {currentGroup.memberCount || 0} tổng
                           </div>
                         </div>
                       )}
