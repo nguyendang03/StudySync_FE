@@ -36,6 +36,7 @@ const PaymentsList = lazy(() => import('./pages/admin/PaymentsList'));
 const Subscriptions = lazy(() => import('./pages/common/Subscriptions'));
 const PaymentSuccess = lazy(() => import('./pages/common/PaymentSuccess'));
 const Reviews = lazy(() => import('./pages/common/Reviews'));
+const ContactSupport = lazy(() => import('./pages/common/ContactSupport'));
 const Forbidden = lazy(() => import('./pages/common/Forbidden'));
 function App() {
   return (
@@ -255,6 +256,18 @@ function App() {
                     <Layout>
                       <Suspense fallback={<LoadingSpinner size="large" message="Đang tải đánh giá..." />}>
                         <Reviews />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
+                } 
+              />
+              <Route 
+                path="/contact" 
+                element={
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải trang liên hệ..." />}>
+                        <ContactSupport />
                       </Suspense>
                     </Layout>
                   </GuestFriendlyRoute>
