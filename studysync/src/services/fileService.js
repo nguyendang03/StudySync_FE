@@ -46,12 +46,16 @@ class FileService {
 async getFiles(parentId = null, params = {}) {
   try {
     const query = parentId ? { ...params, parentId } : params;
+    console.log("📡 API Request:", { parentId, query });
     const res = await axiosInstance.get("/files", { params: query });
-    const data = res.data?.data?.data;
-
+    console.log("📡 API Response (full):", res.data);
+    
+    // Try different paths based on API response structure
+    let data = res.data?.data?.data || res.data?.data || res.data;
+    
     // ✅ Luôn trả về mảng
     const items = Array.isArray(data) ? data : [];
-    console.log("📂 getFiles:", parentId ? `Folder ${parentId}` : "Root", items);
+    console.log("📂 getFiles:", parentId ? `Folder ${parentId}` : "Root", `(${items.length} items)`, items);
     return items;
   } catch (err) {
     console.error("❌ Lỗi khi lấy danh sách file:", err);
@@ -98,6 +102,7 @@ async getFiles(parentId = null, params = {}) {
         },
       });
       const uploaded = res.data?.data?.data || res.data?.data;
+      console.log("✅ File đã tải lên:", uploaded);
       return uploaded;
     } catch (err) {
       console.error("❌ Lỗi khi tải file lên:", err);

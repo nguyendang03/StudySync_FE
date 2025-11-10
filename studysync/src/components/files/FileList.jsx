@@ -51,13 +51,32 @@ export default function FileList() {
 
   // Lazy load khi mở folder
   const handleLoadFolder = async (folderId) => {
-    if (folderFiles[folderId]) return; // nếu đã load rồi thì bỏ qua
+    console.log("🎯 handleLoadFolder called with:", folderId, "Type:", typeof folderId);
+    
+    if (!folderId) {
+      console.log("⚠️ No folderId provided, skipping");
+      return;
+    }
+    
+    if (folderFiles[folderId]) {
+      console.log("✅ Folder already loaded, using cache");
+      return; // nếu đã load rồi thì bỏ qua
+    }
+    
     try {
       setLoadingFolder((prev) => ({ ...prev, [folderId]: true }));
-      const data = await fileService.getFiles(folderId);
+      
+      // Convert to number to ensure API receives number type
+      const folderIdNum = Number(folderId);
+      console.log("📞 Calling getFiles API with folderIdNum:", folderIdNum);
+      
+      const data = await fileService.getFiles(folderIdNum);
       const arr = Array.isArray(data) ? data : Object.values(data || {});
+      
+      console.log(`✅ Received ${arr.length} items for folder ${folderIdNum}:`, arr);
       setFolderFiles((prev) => ({ ...prev, [folderId]: arr }));
-    } catch {
+    } catch (err) {
+      console.error("❌ Error in handleLoadFolder:", err);
       message.error("❌ Không thể tải file trong thư mục!");
     } finally {
       setLoadingFolder((prev) => ({ ...prev, [folderId]: false }));
@@ -91,6 +110,9 @@ export default function FileList() {
   const folders = files.filter((f) => f.isFolder);
   const rootFiles = files.filter((f) => !f.isFolder && !f.parentId);
 
+  console.log("📊 FileList render - Total files:", files.length, "Folders:", folders.length, "Root files:", rootFiles.length);
+  console.log("📂 Folders list:", folders);
+
   return (
     <div className="space-y-6">
       {/* Upload */}
@@ -123,15 +145,23 @@ export default function FileList() {
             <Collapse
               accordion
               onChange={(keys) => {
+                console.log("🔄 Collapse onChange event - keys received:", keys, "Type:", typeof keys);
                 const folderId = Array.isArray(keys) ? keys[0] : keys;
-                if (folderId) handleLoadFolder(folderId);
+                console.log("🔑 Extracted folderId:", folderId, "Type:", typeof folderId);
+                
+                if (folderId) {
+                  console.log("➡️ Calling handleLoadFolder with folderId:", folderId);
+                  handleLoadFolder(folderId);
+                } else {
+                  console.log("⚠️ folderId is falsy, not calling handleLoadFolder");
+                }
               }}
             >
               {folders.map((folder) => (
                 <Panel
                   key={folder.id}
                   header={
-                    <Space>
+                    <Space onClick={() => console.log("📌 Panel header clicked for folder:", folder.id)}>
                       <FolderOutlined style={{ color: "#ffa500" }} />
                       <span>{folder.name}</span>
                       <Tag color="orange">{folder.type || "Folder"}</Tag>

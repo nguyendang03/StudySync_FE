@@ -73,6 +73,7 @@ export default function FilesPage() {
                   Danh sách file
                 </h2>
               </div>
+              <FileList />
             </div>
           </Motion.div>
         </div>
