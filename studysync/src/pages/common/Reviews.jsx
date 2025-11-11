@@ -5,6 +5,7 @@ import { StarOutlined, MessageOutlined, UserOutlined, EditOutlined, DeleteOutlin
 import { useAuth } from '../../hooks/useAuth';
 import reviewService from '../../services/reviewService';
 import ReviewForm from '../../components/reviews/ReviewForm';
+import DeleteReviewModal from '../../components/reviews/DeleteReviewModal';
 import { toast } from 'react-hot-toast';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -25,6 +26,7 @@ export default function Reviews() {
   const [filterRating, setFilterRating] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState('create'); // 'create' or 'edit'
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -111,20 +113,15 @@ export default function Reviews() {
     setShowForm(true);
   };
 
-  const handleDeleteReview = async () => {
-    if (!window.confirm('Bạn có chắc muốn xóa đánh giá này?')) {
-      return;
-    }
+  const handleDeleteReview = () => {
+    setShowDeleteModal(true);
+  };
 
-    try {
-      await reviewService.deleteMyReview();
-      toast.success('Xóa đánh giá thành công');
-      setMyReview(null);
-      setShowForm(false);
-      loadData();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể xóa đánh giá');
-    }
+  const handleDeleteSuccess = () => {
+    setShowDeleteModal(false);
+    setMyReview(null);
+    setShowForm(false);
+    loadData();
   };
 
   const handleFormSuccess = () => {
@@ -283,6 +280,16 @@ export default function Reviews() {
             review={myReview}
             onSuccess={handleFormSuccess}
             onCancel={() => setShowForm(false)}
+          />
+        )}
+
+        {/* Delete Review Modal */}
+        {showDeleteModal && (
+          <DeleteReviewModal
+            review={myReview}
+            open={showDeleteModal}
+            onSuccess={handleDeleteSuccess}
+            onCancel={() => setShowDeleteModal(false)}
           />
         )}
 

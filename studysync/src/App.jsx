@@ -11,32 +11,33 @@ import AdminLayout from './components/admin/AdminLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 
 // Lazy load all page components
-const Home = lazy(() => import("./pages/common/Home"));
-const Login = lazy(() => import("./pages/common/Login"));
-const Register = lazy(() => import("./pages/common/Register"));
-const VerifyEmail = lazy(() => import("./pages/common/VerifyEmail"));
-const ForgotPassword = lazy(() => import("./pages/common/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/common/ResetPassword"));
-const Profile = lazy(() => import("./pages/profile/Profile"));
-const GroupDiscovery = lazy(() => import("./pages/groups/GroupDiscovery"));
-const GroupDetail = lazy(() => import("./pages/groups/GroupDetail"));
-const MyGroups = lazy(() => import("./pages/groups/MyGroups"));
-const GiaiDapThacMac = lazy(() => import("./pages/common/GiaiDapThacMac"));
-const ChatBot = lazy(() => import("./pages/common/ChatBot"));
-const Schedule = lazy(() => import("./pages/common/Schedule"));
-const TaskDistribution = lazy(() => import("./pages/groups/TaskDistribution"));
-const AgoraDebugTest = lazy(() => import("./pages/common/AgoraDebugTest"));
-const VideoCall = lazy(() => import("./pages/common/VideoCall"));
-const JoinCall = lazy(() => import("./pages/common/JoinCall"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const UsersList = lazy(() => import("./pages/admin/UsersList"));
-const ReviewsModeration = lazy(() => import("./pages/admin/ReviewsModeration"));
-const PlansList = lazy(() => import("./pages/admin/PlansList"));
-const PaymentsList = lazy(() => import("./pages/admin/PaymentsList"));
-const Subscriptions = lazy(() => import("./pages/common/Subscriptions"));
-const PaymentSuccess = lazy(() => import("./pages/common/PaymentSuccess"));
-const Reviews = lazy(() => import("./pages/common/Reviews"));
-const Forbidden = lazy(() => import("./pages/common/Forbidden"));
+const Home = lazy(() => import('./pages/common/Home'));
+const Login = lazy(() => import('./pages/common/Login'));
+const Register = lazy(() => import('./pages/common/Register'));
+const VerifyEmail = lazy(() => import('./pages/common/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/common/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/common/ResetPassword'));
+const Profile = lazy(() => import('./pages/profile/Profile'));
+const GroupDiscovery = lazy(() => import('./pages/groups/GroupDiscovery'));
+const GroupDetail = lazy(() => import('./pages/groups/GroupDetail'));
+const MyGroups = lazy(() => import('./pages/groups/MyGroups'));
+const GiaiDapThacMac = lazy(() => import('./pages/common/GiaiDapThacMac'));
+const ChatBot = lazy(() => import('./pages/common/ChatBot'));
+const Schedule = lazy(() => import('./pages/common/Schedule'));
+const TaskDistribution = lazy(() => import('./pages/groups/TaskDistribution'));
+const AgoraDebugTest = lazy(() => import('./pages/common/AgoraDebugTest'));
+const VideoCall = lazy(() => import('./pages/common/VideoCall'));
+const JoinCall = lazy(() => import('./pages/common/JoinCall'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const UsersList = lazy(() => import('./pages/admin/UsersList'));
+const ReviewsModeration = lazy(() => import('./pages/admin/ReviewsModeration'));
+const PlansList = lazy(() => import('./pages/admin/PlansList'));
+const PaymentsList = lazy(() => import('./pages/admin/PaymentsList'));
+const Subscriptions = lazy(() => import('./pages/common/Subscriptions'));
+const PaymentSuccess = lazy(() => import('./pages/common/PaymentSuccess'));
+const Reviews = lazy(() => import('./pages/common/Reviews'));
+const ContactSupport = lazy(() => import('./pages/common/ContactSupport'));
+const Forbidden = lazy(() => import('./pages/common/Forbidden'));
 const FilesPage = lazy(() => import("./pages/files/FilesPage"));
 
 function App() {
@@ -380,8 +381,20 @@ function App() {
                   </GuestFriendlyRoute>
                 } 
               />
-              <Route
-                path="/agora-debug"
+              <Route 
+                path="/contact" 
+                element={
+                  <GuestFriendlyRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingSpinner size="large" message="Đang tải trang liên hệ..." />}>
+                        <ContactSupport />
+                      </Suspense>
+                    </Layout>
+                  </GuestFriendlyRoute>
+                } 
+              />
+              <Route 
+                path="/agora-debug" 
                 element={
                   <Layout>
                     <Suspense

@@ -126,13 +126,8 @@ export default function Header() {
       {
         key: 'contact',
         icon: <PhoneOutlined className="text-green-600" />,
-        label: <a href="#contact">Liên hệ hỗ trợ</a>,
-      },
-      {
-        key: 'about',
-        icon: <InfoCircleOutlined className="text-blue-600" />,
-        label: <a href="#about">Về StudySync</a>,
-      },
+        label: <Link to="/contact">Liên hệ hỗ trợ</Link>,
+      }
     ],
   };
 
@@ -367,12 +362,36 @@ export default function Header() {
                   Cuộc gọi video
                 </Link>
                 <Link 
+                  to="/reviews" 
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <StarOutlined />
+                  Đánh giá
+                </Link>
+                <Link 
                   to="/faq" 
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <QuestionCircleOutlined />
-                  Hỗ trợ
+                  Câu hỏi thường gặp
+                </Link>
+                <Link 
+                  to="/contact" 
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <PhoneOutlined />
+                  Liên hệ hỗ trợ
+                </Link>
+                <Link 
+                  to="/about" 
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <InfoCircleOutlined />
+                  Về StudySync
                 </Link>
                 <Divider className="my-4" />
                 <div className="px-4 space-y-3">
