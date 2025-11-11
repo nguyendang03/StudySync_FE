@@ -106,7 +106,7 @@ export default function AdminDashboard() {
           const d = dash?.data?.data || dash?.data || dash || {};
           console.log(d);
           if (typeof d.totalRevenue === 'number') computedRevenue = d.totalRevenue;
-          if (typeof d.subscriptionStats?.total === 'number') computedTransactions = d.subscriptionStats.total;
+          // Don't use subscriptionStats.total - it counts active subscriptions, not paid transactions
           if (Array.isArray(d.subscriptionStats?.byPlan)) setSubscriptionByPlan(d.subscriptionStats.byPlan);
           if (typeof d.totalUsers === 'number') setTotalUsers(d.totalUsers);
           if (d.reviewStats) {
