@@ -59,7 +59,7 @@ export default function Home() {
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <motion.a
-                  href="/register"
+                  href="/groups"
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors shadow-lg"
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
@@ -932,14 +932,14 @@ export default function Home() {
           {/* Dữ liệu trong tháng 6 Section */}
           <div className="py-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center text-white mb-16">
+              {/* <div className="text-center text-white mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
                   DỮ LIỆU TRONG THÁNG 6
                 </h2>
-              </div>
+              </div> */}
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
                 <div className="text-center text-white">
                   <div className="text-4xl md:text-5xl font-bold mb-2">105</div>
                   <div className="text-sm opacity-90">Người dùng</div>
@@ -958,7 +958,7 @@ export default function Home() {
                     Người học trong tuần qua
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Call to Action */}
               <div className="text-center">
