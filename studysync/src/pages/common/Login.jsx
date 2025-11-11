@@ -79,6 +79,22 @@ export default function Login() {
     } catch (err) {
       console.error('Login error:', err);
       const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+      
+      // Check if error is about unverified email
+      if (errorMessage.toLowerCase().includes('verify your email') || 
+          errorMessage.toLowerCase().includes('please verify') ||
+          errorMessage.toLowerCase().includes('email verification')) {
+        toast.error('Bạn cần xác thực email trước khi đăng nhập');
+        // Redirect to verify-email page with the user's email
+        navigate('/verify-email', {
+          state: {
+            email: formData.email,
+            message: 'Vui lòng xác thực email của bạn để đăng nhập.'
+          }
+        });
+        return;
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);

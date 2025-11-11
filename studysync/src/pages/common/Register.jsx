@@ -85,34 +85,17 @@ export default function Register() {
         password: formData.password
       };
 
-      const response = await register(registerData);
+      await register(registerData);
       
-      if (response.requiresVerification) {
-        toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản 📧');
-        
-        // Redirect to email verification page
-        setTimeout(() => {
-          navigate('/verify-email', { 
-            state: { 
-              email: formData.email,
-              message: 'Chúng tôi đã gửi mã OTP đến email của bạn. Vui lòng kiểm tra hộp thư.'
-            } 
-          });
-        }, 2000);
-      } 
-      // else {
-      //   toast.success('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
-        
-      //   // Redirect to login page
-      //   setTimeout(() => {
-      //     navigate('/login', {
-      //       state: {
-      //         email: formData.email,
-      //         message: 'Đăng ký thành công! Vui lòng đăng nhập.'
-      //       }
-      //     });
-      //   }, 2000);
-      // }
+      // Always navigate to verify-email after successful registration
+      toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản 📧');
+      
+      navigate('/verify-email', { 
+        state: { 
+          email: formData.email,
+          message: 'Chúng tôi đã gửi mã OTP đến email của bạn. Vui lòng kiểm tra hộp thư.'
+        } 
+      });
 
     } catch (err) {
       console.error('Registration error:', err);
