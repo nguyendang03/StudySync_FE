@@ -15,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { UploadOutlined } from '@ant-design/icons';
+
 
 export default function Sidebar() {
   const location = useLocation();
@@ -64,6 +66,12 @@ export default function Sidebar() {
           label: 'AI Trợ lý',
           path: '/chatbot',
           description: 'Trợ lý thông minh'
+        },
+        {
+          icon: UploadOutlined, 
+          label: 'Tải tệp lên',
+          path: '/files', 
+          description: 'Quản lý & tải tệp học tập'
         }
       ]
     },

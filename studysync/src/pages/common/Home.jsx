@@ -59,7 +59,7 @@ export default function Home() {
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <motion.a
-                  href="/register"
+                  href="/groups"
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors shadow-lg"
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
