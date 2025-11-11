@@ -44,22 +44,29 @@ export default function Reviews() {
       };
       
       const reviewsResponse = await reviewService.getReviews(params);
+      console.log('📊 Reviews Response:', reviewsResponse);
       
       // API response structure: { data: { data: { items, total, stats, ... }, statusCode, timestamp }, ... }
       const reviewsData = reviewsResponse?.data?.data || reviewsResponse?.data;
+      console.log('📊 Reviews Data:', reviewsData);
       
       if (reviewsData) {
         setReviews(reviewsData.items || []);
         setTotal(reviewsData.total || 0);
         setStats(reviewsData.stats || null);
+        console.log('📊 Stats from reviews:', reviewsData.stats);
       }
 
-      // Load stats if not included
+      // Load stats separately if not included in reviews response
       if (!reviewsData?.stats) {
         try {
           const statsResponse = await reviewService.getReviewStats();
-          // API response structure: { data: { data: { stats object }, statusCode, timestamp }, ... }
+          console.log('📊 Stats Response:', statsResponse);
+          
+          // Handle nested data structure
           const statsData = statsResponse?.data?.data || statsResponse?.data;
+          console.log('📊 Stats Data:', statsData);
+          
           if (statsData) {
             setStats(statsData);
           }
@@ -160,32 +167,26 @@ export default function Reviews() {
             className="mb-8"
           >
             <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold mb-2">
                     {(() => {
-                      const avgRating = Number(stats.averageRating);
-                      return isNaN(avgRating) ? '0.0' : avgRating.toFixed(1);
+                      // Handle different response formats
+                      const avgRating = stats.averageRating || stats.average || stats.avgRating || 0;
+                      const avgNum = Number(avgRating);
+                      return isNaN(avgNum) ? '0.0' : avgNum.toFixed(1);
                     })()}
                   </div>
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    <Rate disabled value={Number(stats.averageRating) || 0} allowHalf />
+                    <Rate disabled value={Number(stats.averageRating || stats.average || stats.avgRating || 0)} allowHalf />
                   </div>
                   <div className="text-sm opacity-90">Đánh giá trung bình</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">{stats.total || 0}</div>
-                  <div className="text-sm opacity-90">Tổng số đánh giá</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">{stats.stars?.[5] || 0}</div>
-                  <div className="text-sm opacity-90">Đánh giá 5 sao</div>
-                </div>
-                <div className="text-center">
                   <div className="text-3xl font-bold mb-2">
-                    {stats.total > 0 ? Math.round((stats.stars?.[5] || 0) / stats.total * 100) : 0}%
+                    {stats.total || stats.totalReviews || stats.count || 0}
                   </div>
-                  <div className="text-sm opacity-90">Khuyến nghị</div>
+                  <div className="text-sm opacity-90">Tổng số đánh giá</div>
                 </div>
               </div>
             </Card>
