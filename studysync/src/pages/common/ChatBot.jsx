@@ -488,9 +488,9 @@ export default function ChatBot() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       
-      <div className="flex flex-1 h-screen">
+      <div className="flex flex-1 min-h-screen">
         {/* Chat-specific Sidebar */}
-        <div className="w-64 bg-gray-50 border-r border-gray-300 flex flex-col shadow-lg">
+        <div className="w-64 bg-gray-50 border-r border-gray-300 flex flex-col shadow-lg min-h-screen">
           {/* Header */}
           <div className="p-4 border-b border-gray-300 bg-white">
             <div className="flex items-center gap-3 mb-4">
