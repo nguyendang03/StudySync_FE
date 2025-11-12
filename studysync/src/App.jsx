@@ -543,25 +543,6 @@ function App() {
                 }
               />
               <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Suspense
-                        fallback={
-                          <LoadingSpinner
-                            size="large"
-                            message="Đang tải cài đặt..."
-                          />
-                        }
-                      >
-                        <div>Settings Page - Coming Soon</div>
-                      </Suspense>
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/video-call"
                 element={
                   <ProtectedRoute>
