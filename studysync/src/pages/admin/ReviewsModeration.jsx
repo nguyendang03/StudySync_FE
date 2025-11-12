@@ -18,6 +18,8 @@ const ReviewsModeration = () => {
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [viewedReview, setViewedReview] = useState(null);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -216,33 +218,45 @@ const ReviewsModeration = () => {
       title: 'Nội dung',
       dataIndex: 'content',
       key: 'content',
-      ellipsis: {
-        showTitle: false,
-      },
+      ellipsis: true,
       render: (content, record) => {
         const comment = record.comment || record.content || content || '';
         return (
           <div>
-            <Tooltip title={comment}>
-              <div style={{ marginBottom: record.adminReply ? 12 : 4, lineHeight: '1.6', fontSize: '13px', color: '#262626' }}>
-                {comment}
-              </div>
-            </Tooltip>
+            <div 
+              style={{ 
+                marginBottom: record.adminReply ? 12 : 4, 
+                lineHeight: '1.6', 
+                fontSize: '13px', 
+                color: '#262626',
+                cursor: 'pointer'
+              }}
+              className="hover:text-purple-600 transition-colors"
+              onClick={() => {
+                setViewedReview(record);
+                setDetailModalVisible(true);
+              }}
+              title="Nhấn để xem đầy đủ"
+            >
+              {comment}
+            </div>
             {record.adminReply && (
               <div style={{ 
                 background: 'linear-gradient(135deg, #f0e6ff 0%, #e6f0ff 100%)', 
                 padding: '8px 12px', 
                 borderRadius: '8px',
                 borderLeft: '3px solid #7269ef',
-                marginTop: 8
+                marginTop: 8,
+                maxWidth: '100%',
+                overflow: 'hidden'
               }}>
                 <div style={{ display: 'flex', alignItems: 'start', gap: 6 }}>
-                  <MessageOutlined style={{ color: '#7269ef', fontSize: '14px', marginTop: 2 }} />
-                  <div style={{ flex: 1 }}>
+                  <MessageOutlined style={{ color: '#7269ef', fontSize: '14px', marginTop: 2, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '11px', color: '#7269ef', fontWeight: 600, marginBottom: 4 }}>
                       PHẢN HỒI CỦA QUẢN TRỊ VIÊN
                     </div>
-                    <div style={{ fontSize: '13px', color: '#262626', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '13px', color: '#262626', lineHeight: '1.5', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       {record.adminReply}
                     </div>
                     {record.repliedAt && (
@@ -580,20 +594,106 @@ const ReviewsModeration = () => {
           rows={5}
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}
-          placeholder="Nhập phản hồi của quản trị viên... (tối đa 500 ký tự)"
-          maxLength={500}
-          showCount
-          style={{ 
-            borderRadius: 8,
-            fontSize: 13
-          }}
+          placeholder="Nhập phản hồi của bạn..."
+          style={{ borderRadius: 8 }}
         />
         <div style={{ marginTop: 12, padding: 12, background: '#f0f7ff', borderRadius: 8, fontSize: 12, color: '#0958d9' }}>
           <strong>💡 Lưu ý:</strong> Phản hồi của bạn sẽ hiển thị công khai cùng với đánh giá này.
         </div>
+      </Modal>
+
+      {/* Detail Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-purple-600" />
+            <span>Chi tiết đánh giá</span>
+          </div>
+        }
+        open={detailModalVisible}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setViewedReview(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setDetailModalVisible(false);
+            setViewedReview(null);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={600}
+      >
+        {viewedReview && (
+          <div className="space-y-4">
+            {/* User Info */}
+            <div className="flex items-center gap-3 pb-4 border-b">
+              <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: '#7269ef' }}>
+                {viewedReview.user?.username?.charAt(0)?.toUpperCase() || '?'}
+              </Avatar>
+              <div>
+                <div className="font-semibold text-gray-900">
+                  {viewedReview.user?.username || viewedReview.user?.name || 'Người dùng ẩn danh'}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {viewedReview.createdAt ? dayjs(viewedReview.createdAt).format('DD/MM/YYYY HH:mm') : '-'}
+                </div>
+              </div>
+            </div>
+
+            {/* Rating */}
+            <div className="pb-4 border-b">
+              <div className="text-sm text-gray-600 mb-2">Đánh giá:</div>
+              <div className="flex items-center gap-2">
+                <Rate disabled defaultValue={viewedReview.rating} style={{ fontSize: 20 }} />
+                <Tag color={viewedReview.rating >= 4 ? 'green' : viewedReview.rating >= 3 ? 'gold' : 'red'} className="ml-2">
+                  {viewedReview.rating} sao
+                </Tag>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div>
+              <div className="text-sm text-gray-600 mb-2">Nội dung:</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-800 whitespace-pre-wrap break-words">
+                  {viewedReview.comment || viewedReview.content || 'Không có nội dung'}
+                </p>
+              </div>
+            </div>
+
+            {/* Admin Reply */}
+            {viewedReview.adminReply && (
+              <div>
+                <div className="text-sm text-gray-600 mb-2">Phản hồi của quản trị viên:</div>
+                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-blue-800 whitespace-pre-wrap break-words">
+                    {viewedReview.adminReply}
+                  </p>
+                  {viewedReview.repliedAt && (
+                    <div className="text-xs text-blue-600 mt-2">
+                      {dayjs(viewedReview.repliedAt).format('DD/MM/YYYY HH:mm')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            <div className="pt-4 border-t">
+              <div className="text-sm text-gray-600 mb-2">Trạng thái:</div>
+              <Badge
+                status={viewedReview.isPublic ? 'success' : 'default'}
+                text={viewedReview.isPublic ? 'Đang hiển thị' : 'Đã ẩn'}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
 };
 
 export default ReviewsModeration;
+
