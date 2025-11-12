@@ -225,7 +225,8 @@ export default function MyGroups() {
       // Call backend API to create group
       const response = await groupService.createGroup({
         groupName: groupData.groupName,
-        description: groupData.description
+        description: groupData.description,
+        subject: groupData.subject
       });
       
       console.log('✅ Group created successfully:', response);
