@@ -28,7 +28,7 @@ import {
   Target,
   Zap,
 } from 'lucide-react';
-import { Card, Select, DatePicker, Button, Table, Badge, Progress, Dropdown, Tooltip, Statistic, Tag } from 'antd';
+import { Card, Select, DatePicker, Button, Table, Badge, Progress, Dropdown, Tooltip, Statistic, Tag, Modal } from 'antd';
 import paymentService from '../../services/paymentService';
 import reviewService from '../../services/reviewService';
 import adminService from '../../services/adminService';
@@ -61,6 +61,8 @@ export default function AdminDashboard() {
   const [filteredReviews, setFilteredReviews] = useState([]);
   const [selectedStarFilter, setSelectedStarFilter] = useState('all');
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   // Pretty number
   const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('vi-VN') : n);
 
@@ -532,12 +534,13 @@ export default function AdminDashboard() {
                       title: 'Người dùng',
                       dataIndex: 'user',
                       key: 'user',
+                      width: '25%',
                       render: (user) => (
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                             {user?.name?.charAt(0) || 'U'}
                           </div>
-                          <span className="text-sm">{user?.name || 'Người dùng'}</span>
+                          <span className="text-sm truncate">{user?.name || 'Người dùng'}</span>
                         </div>
                       ),
                     },
@@ -545,8 +548,9 @@ export default function AdminDashboard() {
                       title: 'Đánh giá',
                       dataIndex: 'rating',
                       key: 'rating',
+                      width: '20%',
                       render: (rating) => (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {[...Array(5)].map((_, i) => (
                             <span
                               key={i}
@@ -563,8 +567,17 @@ export default function AdminDashboard() {
                       title: 'Nội dung',
                       dataIndex: 'content',
                       key: 'content',
-                      render: (content) => (
-                        <div className="max-w-xs truncate text-sm" title={content}>
+                      width: '35%',
+                      ellipsis: true,
+                      render: (content, record) => (
+                        <div 
+                          className="cursor-pointer hover:text-purple-600 transition-colors" 
+                          title="Nhấn để xem đầy đủ"
+                          onClick={() => {
+                            setSelectedReview(record);
+                            setIsReviewModalOpen(true);
+                          }}
+                        >
                           {content || 'Không có nội dung'}
                         </div>
                       ),
@@ -573,6 +586,7 @@ export default function AdminDashboard() {
                       title: 'Thời gian',
                       dataIndex: 'createdAt',
                       key: 'createdAt',
+                      width: '20%',
                       render: (date) => (
                         <span className="text-sm text-gray-600">
                           {date ? new Date(date).toLocaleDateString('vi-VN') : '-'}
@@ -648,7 +662,78 @@ export default function AdminDashboard() {
           {/* Removed mock Recent Activities Table (fully) */}
         </div>
 
-      <style jsx>{`
+      {/* Review Detail Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-purple-600" />
+            <span>Chi tiết đánh giá</span>
+          </div>
+        }
+        open={isReviewModalOpen}
+        onCancel={() => {
+          setIsReviewModalOpen(false);
+          setSelectedReview(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setIsReviewModalOpen(false);
+            setSelectedReview(null);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={600}
+      >
+        {selectedReview && (
+          <div className="space-y-4">
+            {/* User Info */}
+            <div className="flex items-center gap-3 pb-4 border-b">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-lg font-semibold">
+                {selectedReview.user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">
+                  {selectedReview.user?.name || 'Người dùng ẩn danh'}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {selectedReview.createdAt ? new Date(selectedReview.createdAt).toLocaleString('vi-VN') : '-'}
+                </div>
+              </div>
+            </div>
+
+            {/* Rating */}
+            <div className="pb-4 border-b">
+              <div className="text-sm text-gray-600 mb-2">Đánh giá:</div>
+              <div className="flex items-center gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className={`text-2xl ${i < selectedReview.rating ? 'text-yellow-500' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </span>
+                ))}
+                <Tag color={selectedReview.rating >= 4 ? 'green' : selectedReview.rating >= 3 ? 'gold' : 'red'} className="ml-2">
+                  {selectedReview.rating} sao
+                </Tag>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div>
+              <div className="text-sm text-gray-600 mb-2">Nội dung:</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-800 whitespace-pre-wrap break-words">
+                  {selectedReview.content || 'Không có nội dung'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <style>{`
         .custom-table .ant-table-thead > tr > th {
           background: linear-gradient(to right, #f9fafb, #f3f4f6);
           font-weight: 600;
