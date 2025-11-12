@@ -159,14 +159,13 @@ export default function GroupList() {
       >
         {/* Table Header */}
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-6 py-4 border-b border-purple-100">
-          <div className="grid grid-cols-5 gap-4 font-semibold text-gray-700">
+          <div className="grid grid-cols-4 gap-4 font-semibold text-gray-700">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
               STT
             </div>
             <div>Tên nhóm</div>
             <div>Môn học</div>
-            <div>Thành viên</div>
             <div>Hành động</div>
           </div>
         </div>
@@ -189,7 +188,7 @@ export default function GroupList() {
                   whileHover={{ backgroundColor: 'rgba(147, 51, 234, 0.02)' }}
                   className="px-6 py-4 transition-all duration-200"
                 >
-                  <div className="grid grid-cols-5 gap-4 items-center">
+                  <div className="grid grid-cols-4 gap-4 items-center">
                     {/* STT */}
                     <div className="text-gray-600 font-medium flex items-center gap-3">
                       <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
@@ -220,19 +219,6 @@ export default function GroupList() {
                       </span>
                       {group.description && (
                         <p className="text-xs text-gray-500 mt-1 line-clamp-1">{group.description}</p>
-                      )}
-                    </div>
-                    
-                    {/* Members */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <TeamOutlined className="text-gray-400" />
-                        <span className="text-gray-600 font-medium">{group.memberCount || group.members?.length || 0}</span>
-                      </div>
-                      {group.leader && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leader: {group.leader.username || group.leader.email}
-                        </p>
                       )}
                     </div>
                     
