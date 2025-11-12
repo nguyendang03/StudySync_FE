@@ -103,7 +103,7 @@ export default function Sidebar() {
       initial={{ width: isCollapsed ? 80 : 280 }}
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="relative h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700 flex flex-col overflow-x-hidden"
+      className="relative min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700 flex flex-col overflow-x-hidden"
       style={{
         boxShadow: '2px 0 20px rgba(0, 0, 0, 0.3)'
       }}
