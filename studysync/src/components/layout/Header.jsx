@@ -150,11 +150,6 @@ export default function Header() {
         label: <Link to="/admin/dashboard">Bảng điều khiển Admin</Link>,
       }] : []),
       {
-        key: 'settings',
-        icon: <SettingOutlined />,
-        label: <Link to="/settings">Cài đặt</Link>,
-      },
-      {
         type: 'divider',
       },
       {
@@ -416,14 +411,6 @@ export default function Header() {
                           Bảng điều khiển Admin
                         </Link>
                       )}
-                      <Link 
-                        to="/settings" 
-                        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <SettingOutlined />
-                        Cài đặt
-                      </Link>
                       <button 
                         onClick={() => {
                           handleLogout();

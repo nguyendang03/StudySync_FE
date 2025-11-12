@@ -141,15 +141,6 @@ export default function Login() {
 
           {/* Remember Me and Forgot Password */}
           <div className={`flex items-center justify-between pt-2 transition-all duration-500 delay-800 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-            <label className="flex items-center cursor-pointer hover:scale-105 transition-transform duration-200">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-5 h-5 text-purple-600 bg-white/20 border-2 border-white/40 rounded-md focus:ring-white/50 focus:ring-2 accent-white"
-              />
-              <span className="ml-3 text-sm font-medium text-white">Lưu nhật</span>
-            </label>
             <Link to="/forgot-password" className="text-sm font-medium text-white hover:text-white/80 underline underline-offset-2 transition-all duration-200 hover:scale-105">
               Quên mật khẩu?
             </Link>
