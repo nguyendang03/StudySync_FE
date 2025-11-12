@@ -33,6 +33,7 @@ const PaymentsList = () => {
       const res = await paymentService.getPaymentHistory();
       const data = res?.data?.data || res?.data || res || [];
       setItems(Array.isArray(data) ? data : []);
+      console.log('Loaded payments:', data);
     } catch {
       showToast.error('Không tải được lịch sử thanh toán');
     } finally {
@@ -63,6 +64,18 @@ const PaymentsList = () => {
   };
 
   const refund = (payment) => {
+    // Get display name using the same logic
+    const displayName = payment.user?.username || 
+                       payment.user?.email || 
+                       payment.userEmail || 
+                       payment.username || 
+                       payment.email ||
+                       payment.user?.name ||
+                       payment.user?.fullName ||
+                       '-';
+    
+
+                       c
     Modal.confirm({
       title: 'Xác nhận hoàn tiền',
       content: (
@@ -71,7 +84,6 @@ const PaymentsList = () => {
           <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
             <p style={{ margin: 0, fontSize: '13px' }}><strong>Mã đơn:</strong> {payment.orderCode || payment.id}</p>
             <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Số tiền:</strong> {formatAmount(payment.amount)}</p>
-            <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Người dùng:</strong> {payment.user?.username || payment.userEmail || '-'}</p>
           </div>
           <p style={{ marginTop: '12px', color: '#ff4d4f', fontSize: '12px', fontWeight: 500 }}>
             Lưu ý: Hành động này không thể hoàn tác
@@ -116,7 +128,7 @@ const PaymentsList = () => {
 
   const columns = [
     {
-      title: 'Mã đơn',
+      title: 'Mã đơn',  
       dataIndex: 'orderCode',
       key: 'orderCode',
       ellipsis: true,
@@ -128,24 +140,7 @@ const PaymentsList = () => {
         </Tooltip>
       ),
     },
-    {
-      title: 'Người dùng',
-      dataIndex: 'user',
-      key: 'user',
-      ellipsis: true,
-      render: (user, record) => (
-        <Tooltip title={user?.username || record.userEmail || '-'}>
-          <Space size="small">
-            <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#7269ef' }}>
-              {(user?.username || record.userEmail || '?').toString().charAt(0).toUpperCase()}
-            </Avatar>
-            <span style={{ fontWeight: 500 }}>
-              {user?.username || record.userEmail || '-'}
-            </span>
-          </Space>
-        </Tooltip>
-      ),
-    },
+
     {
       title: 'Số tiền',
       dataIndex: 'amount',
@@ -206,26 +201,7 @@ const PaymentsList = () => {
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateA - dateB;
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space size="small">
-          {record.status === 'PAID' && (
-            <Button
-              type="primary"
-              danger
-              size="small"
-              onClick={() => refund(record)}
-            >
-              Hoàn tiền
-            </Button>
-          )}
-        </Space>
-      ),
-    },
+    }
   ];
 
   return (
@@ -256,7 +232,7 @@ const PaymentsList = () => {
               </Card>
             </motion.div>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <motion.div
               whileHover={{ y: -2 }}
               transition={{ duration: 0.2 }}
@@ -276,7 +252,7 @@ const PaymentsList = () => {
               </Card>
             </motion.div>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <motion.div
               whileHover={{ y: -2 }}
               transition={{ duration: 0.2 }}
@@ -294,22 +270,11 @@ const PaymentsList = () => {
               </Card>
             </motion.div>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <motion.div
               whileHover={{ y: -2 }}
               transition={{ duration: 0.2 }}
             >
-              <Card 
-                className="shadow-sm hover:shadow-md transition-shadow duration-300"
-                style={{ borderRadius: '12px', border: '1px solid #e8e8e8' }}
-              >
-                <Statistic
-                  title={<span style={{ color: '#8c8c8c', fontWeight: 500 }}>Đã hoàn tiền</span>}
-                  value={stats.refunded}
-                  prefix={<RefreshCw className="w-5 h-5" style={{ color: '#faad14' }} />}
-                  valueStyle={{ color: '#262626', fontWeight: 700, fontSize: '28px' }}
-                />
-              </Card>
             </motion.div>
           </Col>
         </Row>
