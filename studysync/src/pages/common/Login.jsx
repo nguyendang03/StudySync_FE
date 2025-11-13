@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
 import AuthLayout from '../../components/AuthLayout';
 import AuthHeader from '../../components/AuthHeader';
 import AuthToggle from '../../components/AuthToggle';
@@ -175,7 +174,6 @@ export default function Login() {
         </div>
       </FormContainer>
       </AuthLayout>
-      <Footer />
     </>
   );
 }
