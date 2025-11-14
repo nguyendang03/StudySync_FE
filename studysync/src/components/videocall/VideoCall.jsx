@@ -40,6 +40,15 @@ const VideoCall = ({
   
   const { user: currentUser } = useAuth();
 
+  // Disable scrollbar while video call is active
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   // Helper function to get username from UID
   const getUsernameByUid = (uid) => {
     // Debug log to see what we're working with
@@ -449,9 +458,33 @@ const VideoCall = ({
   };
 
   const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-    if (!isChatOpen) {
+    const newState = !isChatOpen;
+    setIsChatOpen(newState);
+    if (newState) {
+      // Close other panels when opening chat
+      setIsAIChatOpen(false);
+      setShowParticipants(false);
       setUnreadMessages(0);
+    }
+  };
+
+  const toggleAIChat = () => {
+    const newState = !isAIChatOpen;
+    setIsAIChatOpen(newState);
+    if (newState) {
+      // Close other panels when opening AI chat
+      setIsChatOpen(false);
+      setShowParticipants(false);
+    }
+  };
+
+  const toggleParticipants = () => {
+    const newState = !showParticipants;
+    setShowParticipants(newState);
+    if (newState) {
+      // Close other panels when opening participants
+      setIsChatOpen(false);
+      setIsAIChatOpen(false);
     }
   };
 
@@ -861,10 +894,7 @@ const VideoCall = ({
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => {
-                setIsAIChatOpen(!isAIChatOpen);
-                if (isChatOpen) setIsChatOpen(false);
-              }}
+              onClick={toggleAIChat}
               className={`p-4 rounded-full transition-all duration-200 shadow-lg relative ${
                 isAIChatOpen 
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-purple-600/25' 
@@ -883,7 +913,7 @@ const VideoCall = ({
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => setShowParticipants(!showParticipants)}
+              onClick={toggleParticipants}
               className={`p-4 rounded-full transition-all duration-200 shadow-lg relative ${
                 showParticipants 
                   ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25' 
