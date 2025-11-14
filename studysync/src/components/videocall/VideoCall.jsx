@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, MicOff, Video, VideoOff, Phone, PhoneOff, 
   Monitor, Users, Settings, MessageSquare, X, MonitorOff,
-  Maximize2, Minimize2, UserPlus
+  Maximize2, Minimize2, UserPlus, Brain
 } from 'lucide-react';
 import { Modal, Tooltip, Badge } from 'antd';
 import agoraService from '../../services/agoraService';
@@ -11,6 +11,7 @@ import { useVideoCallStore } from '../../stores';
 import { useAuth } from '../../hooks/useAuth';
 import InvitationModal from './InvitationModal';
 import VideoCallChat from './VideoCallChat';
+import VideoCallAIChat from './VideoCallAIChat';
 import toast from 'react-hot-toast';
 
 const VideoCall = ({ 
@@ -35,6 +36,7 @@ const VideoCall = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   
   const { user: currentUser } = useAuth();
 
@@ -854,6 +856,28 @@ const VideoCall = ({
             </motion.button>
           </Tooltip>
 
+          {/* AI Chat Toggle */}
+          <Tooltip title={isAIChatOpen ? "Đóng AI trợ lý" : "AI trợ lý"}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                setIsAIChatOpen(!isAIChatOpen);
+                if (isChatOpen) setIsChatOpen(false);
+              }}
+              className={`p-4 rounded-full transition-all duration-200 shadow-lg relative ${
+                isAIChatOpen 
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-purple-600/25' 
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              <Brain className="w-6 h-6 text-white" />
+              {isAIChatOpen && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              )}
+            </motion.button>
+          </Tooltip>
+
           {/* Participants Toggle */}
           <Tooltip title={showParticipants ? "Đóng danh sách" : "Người tham gia"}>
             <motion.button
@@ -969,9 +993,21 @@ const VideoCall = ({
             channelName={channelName}
             groupId={groupId}
             isOpen={isChatOpen}
-            onClose={toggleChat}
+            onClose={() => setIsChatOpen(false)}
             participants={[...remoteUsers.map(u => ({ uid: u.uid })), { uid: 'local' }]}
             onNewMessage={handleNewMessage}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* AI Chat Panel */}
+      <AnimatePresence>
+        {isAIChatOpen && (
+          <VideoCallAIChat
+            isOpen={isAIChatOpen}
+            onClose={() => setIsAIChatOpen(false)}
+            groupId={groupId}
+            groupName={groupName}
           />
         )}
       </AnimatePresence>
