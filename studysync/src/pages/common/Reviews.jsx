@@ -160,28 +160,22 @@ export default function Reviews() {
             className="mb-8"
           >
             <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold mb-2">
                     {(() => {
-                      const avgRating = Number(stats.averageRating);
+                      const avgRating = Number(stats?.averageRating ?? 0);
                       return isNaN(avgRating) ? '0.0' : avgRating.toFixed(1);
                     })()}
                   </div>
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    <Rate disabled value={Number(stats.averageRating) || 0} allowHalf />
+                    <Rate disabled value={Number(stats?.averageRating) || 0} allowHalf />
                   </div>
                   <div className="text-sm opacity-90">Đánh giá trung bình</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">{stats.total || 0}</div>
+                  <div className="text-3xl font-bold mb-2">{total || (stats?.total ?? 0)}</div>
                   <div className="text-sm opacity-90">Tổng số đánh giá</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">
-                    {stats.total > 0 ? Math.round((stats.stars?.[5] || 0) / stats.total * 100) : 0}%
-                  </div>
-                  <div className="text-sm opacity-90">Khuyến nghị</div>
                 </div>
               </div>
             </Card>
