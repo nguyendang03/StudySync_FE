@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Home() {
   return (
@@ -25,18 +26,18 @@ export default function Home() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <a
-                  href="/register"
+                <Link
+                  to="/groups"
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors shadow-lg"
                 >
                   Bắt đầu ngay
-                </a>
-                <a
-                  href="#features"
+                </Link>
+                <Link
+                  to="/faq"
                   className="border border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-3 rounded-lg text-lg font-medium transition-colors"
                 >
                   Tìm hiểu thêm
-                </a>
+                </Link>
               </div>
             </div>
 

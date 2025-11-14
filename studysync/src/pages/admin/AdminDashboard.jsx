@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserOutlined,
   TeamOutlined,
@@ -13,6 +13,7 @@ import {
   SettingOutlined,
   DownloadOutlined,
   FilterOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import {
   Users,
@@ -27,8 +28,9 @@ import {
   Award,
   Target,
   Zap,
+  BarChart3,
 } from 'lucide-react';
-import { Card, Select, DatePicker, Button, Table, Badge, Progress, Dropdown, Tooltip, Statistic, Tag, Modal } from 'antd';
+import { Card, Select, DatePicker, Button, Table, Badge, Progress, Dropdown, Tooltip, Statistic, Tag, Modal, Spin } from 'antd';
 import paymentService from '../../services/paymentService';
 import reviewService from '../../services/reviewService';
 import adminService from '../../services/adminService';
@@ -247,6 +249,78 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-blue-50">
+      {/* Loading Screen */}
+      <AnimatePresence>
+        {loadingKpis && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md"
+          >
+            <div className="text-center">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  scale: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                }}
+                className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-white to-gray-200 rounded-2xl flex items-center justify-center shadow-2xl p-4"
+              >
+                <img 
+                  src="/authLogo.png" 
+                  alt="StudySync Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </motion.div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-2xl font-bold text-gray-800 mb-2"
+              >
+                Đang tải Dashboard
+              </motion.h2>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-gray-600 mb-6"
+              >
+                Vui lòng chờ trong giây lát...
+              </motion.p>
+
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="flex justify-center gap-2"
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      y: [0, -10, 0],
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                      ease: 'easeInOut'
+                    }}
+                    className="w-3 h-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full"
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div
         initial={{ y: -100, opacity: 0 }}
