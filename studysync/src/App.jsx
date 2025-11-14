@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
@@ -9,6 +9,7 @@ import GuestFriendlyRoute from './components/GuestFriendlyRoute';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/admin/AdminLayout';
 import LoadingSpinner from './components/LoadingSpinner';
+import WelcomeScreen from './components/WelcomeScreen';
 
 // Lazy load all page components
 const Home = lazy(() => import('./pages/common/Home'));
@@ -41,8 +42,45 @@ const Forbidden = lazy(() => import('./pages/common/Forbidden'));
 const FilesPage = lazy(() => import("./pages/files/FilesPage"));
 
 function App() {
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
+
+  useEffect(() => {
+    // Check if welcome screen has been shown in this session
+    const welcomeShown = sessionStorage.getItem('welcomeScreenShown');
+    if (welcomeShown === 'true') {
+      setShowWelcome(false);
+      setHasShownWelcome(true);
+    }
+  }, []);
+
+  // Disable/enable scrollbar based on welcome screen state
+  useEffect(() => {
+    if (showWelcome && !hasShownWelcome) {
+      // Disable scrollbar while welcome screen is showing
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable scrollbar after welcome screen
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showWelcome, hasShownWelcome]);
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+    setHasShownWelcome(true);
+    sessionStorage.setItem('welcomeScreenShown', 'true');
+  };
+
   return (
     <AuthProvider>
+      {showWelcome && !hasShownWelcome && (
+        <WelcomeScreen onComplete={handleWelcomeComplete} />
+      )}
       <Router>
         <div className="App">
           <Suspense
