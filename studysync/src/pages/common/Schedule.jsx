@@ -19,11 +19,14 @@ import {
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Badge, Tooltip, Modal, Form, Input, TimePicker, Select, DatePicker } from 'antd';
+import { Button, Badge, Tooltip, Modal, Form, Input, TimePicker, Select, DatePicker, Popconfirm } from 'antd';
 import { Calendar, Clock, Users, Video, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import Sidebar from '../../components/layout/Sidebar';
+import groupEventService from '../../services/groupEventService';
+import groupService from '../../services/groupService';
+import useGroupsStore from '../../stores/groupsStore';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -31,80 +34,305 @@ const { TextArea } = Input;
 export default function Schedule() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(0);
+  const [baseDate, setBaseDate] = useState(dayjs()); // reference date for the calendar range
+  const [rangeMode, setRangeMode] = useState('week'); // 'week' | 'month' | '6months' | 'year'
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [form] = Form.useForm();
+  const currentGroup = useGroupsStore(state => state.currentGroup);
+  const myGroups = useGroupsStore(state => state.myGroups);
+  const setCurrentGroup = useGroupsStore(state => state.setCurrentGroup);
+  const setMyGroups = useGroupsStore(state => state.setMyGroups);
+  const [isCreating, setIsCreating] = useState(false);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Sample schedule data
-  const [scheduleEvents, setScheduleEvents] = useState([
-    {
-      id: 1,
-      title: 'Họp nhóm EXE101',
-      description: 'Thảo luận về dự án cuối kỳ',
-      day: 2, // Tuesday
-      startTime: '14:00',
-      endTime: '16:00',
-      type: 'meeting',
-      participants: ['John', 'Jane', 'Bob'],
-      color: 'bg-blue-500'
-    },
-    {
-      id: 2,
-      title: 'Học nhóm SWP391',
-      description: 'Ôn tập lý thuyết và thực hành',
-      day: 4, // Thursday
-      startTime: '9:00',
-      endTime: '11:00',
-      type: 'study',
-      participants: ['Alice', 'Charlie', 'David'],
-      color: 'bg-green-500'
-    },
-    {
-      id: 3,
-      title: 'Thuyết trình nhóm',
-      description: 'Báo cáo tiến độ dự án',
-      day: 5, // Friday
-      startTime: '15:00',
-      endTime: '17:00',
-      type: 'presentation',
-      participants: ['Team Alpha'],
-      color: 'bg-purple-500'
+  // Open event detail and try to resolve participant IDs to names using group members
+  const openEventDetail = async (ev) => {
+    let displayParticipants = ev.participants || [];
+
+    const looksLikeId = (p) => typeof p === 'string' && /[0-9a-fA-F\-]{6,}/.test(p);
+    const needResolve = Array.isArray(displayParticipants) && displayParticipants.some(looksLikeId);
+
+    if (needResolve) {
+      // try to find group id from event.groupName by matching myGroups
+      let groupId = null;
+      if (ev.groupName) {
+        const g = myGroups.find(gr => String(gr.id) === String(ev.groupName) || gr.groupName === ev.groupName || gr.name === ev.groupName);
+        if (g) groupId = g.id;
+      }
+
+      if (groupId) {
+        try {
+          const resp = await groupService.getGroupMembers(groupId);
+          const data = resp?.data || resp || {};
+          const membersRaw = data?.members || data || [];
+          const members = Array.isArray(membersRaw) ? membersRaw : Object.values(membersRaw);
+          const map = {};
+          members.forEach(m => {
+            const id = m.id || m.userId || m.user_id;
+            const name = m.username || m.name || (m.email ? m.email.split('@')[0] : id);
+            if (id) map[String(id)] = name;
+          });
+
+          displayParticipants = displayParticipants.map(p => map[String(p)] || p);
+        } catch (err) {
+          console.error('Error resolving participant names', err);
+        }
+      }
     }
-  ]);
+
+    setSelectedEvent({ ...ev, displayParticipants });
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDeleteEvent = async (ev) => {
+    if (!ev) return;
+    const eventId = ev.id || ev._id || (ev._id && ev._id.toString());
+    try {
+      if (eventId) {
+        await groupEventService.deleteEvent(eventId);
+      }
+      setScheduleEvents(prev => prev.filter(e => String(e.id) !== String(eventId)));
+      toast.success('Đã xóa sự kiện');
+      setIsDetailModalOpen(false);
+      setSelectedEvent(null);
+    } catch (err) {
+      console.error('Delete event error', err);
+      toast.error(err?.message || 'Xóa sự kiện thất bại');
+    }
+  };
+
+  // Events loaded from backend
+  const [scheduleEvents, setScheduleEvents] = useState([]);
 
   const timeSlots = [
     '1 AM', '2 AM', '3 AM', '4 AM', '5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM',
     '12 AM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM'
   ];
 
-  const daysOfWeek = [
-    { key: 'mon', label: 'Thứ Hai', date: '30/06' },
-    { key: 'tue', label: 'Thứ Ba', date: '01/07' },
-    { key: 'wed', label: 'Thứ Tư', date: '02/07' },
-    { key: 'thu', label: 'Thứ Năm', date: '03/07' },
-    { key: 'fri', label: 'Thứ Sáu', date: '04/07' },
-    { key: 'sat', label: 'Thứ Bảy', date: '05/07' },
-    { key: 'sun', label: 'Chủ Nhật', date: '06/07' }
-  ];
+  // Fetch events for the visible range (based on baseDate and rangeMode)
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        // compute start and end ISO strings according to rangeMode
+        let start;
+        let end;
+        if (rangeMode === 'week') {
+          const s = dayjs(baseDate).day() === 0 ? dayjs(baseDate).subtract(6, 'day') : dayjs(baseDate).day(1);
+          start = s.startOf('day').toISOString();
+          end = dayjs(s).add(6, 'day').endOf('day').toISOString();
+        } else if (rangeMode === 'month') {
+          const s = dayjs(baseDate).startOf('month');
+          start = s.startOf('day').toISOString();
+          end = s.endOf('month').endOf('day').toISOString();
+        } else if (rangeMode === '6months') {
+          const s = dayjs(baseDate).startOf('month').subtract(2, 'month');
+          start = s.startOf('day').toISOString();
+          end = dayjs(s).add(5, 'month').endOf('month').endOf('day').toISOString();
+        } else { // year
+          const s = dayjs(baseDate).startOf('year');
+          start = s.startOf('day').toISOString();
+          end = s.endOf('year').endOf('day').toISOString();
+        }
+
+        // call backend to get events for user (backend filters by user's groups if no groupId provided)
+        const resp = await groupEventService.getEvents({ startDate: start, endDate: end });
+        const data = resp?.data || resp || [];
+
+        const eventsArr = Array.isArray(data) ? data : data?.data || [];
+
+        // map backend events to scheduleEvents format
+        const mapped = eventsArr.map(ev => {
+          const evStart = ev.eventDate || ev.startDate || ev.start || ev.start_time || ev.startAt;
+          const evEnd = ev.endDate || ev.end || ev.end_time || ev.endAt;
+          const startDt = evStart ? dayjs(evStart) : dayjs();
+          const endDt = evEnd ? dayjs(evEnd) : dayjs(startDt).add(1, 'hour');
+          const dayIndex = startDt.day() === 0 ? 6 : startDt.day() - 1; // 0=Monday
+          // map event type
+          const typeMapRev = {
+            study_session: 'study',
+            meeting: 'meeting',
+            presentation: 'presentation',
+            exam: 'exam'
+          };
+          const localType = typeMapRev[ev.eventType] || ev.eventType || 'meeting';
+
+          // participants mapping: try to extract names
+          let participants = [];
+          if (Array.isArray(ev.participants) && ev.participants.length > 0) {
+            participants = ev.participants.map(p => p.name || p.username || p.email || (p.userId || p.id) );
+          } else if (Array.isArray(ev.participantIds)) {
+            participants = ev.participantIds.map(id => id);
+          }
+
+          return {
+            id: ev.id || ev._id || Date.now(),
+            title: ev.title || ev.name || 'Sự kiện',
+            description: ev.description || ev.content || '',
+            day: dayIndex,            startIso: startDt.toISOString(),
+            endIso: endDt.toISOString(),
+            startTime: startDt.format('HH:mm'),
+            endTime: endDt.format('HH:mm'),
+            type: localType,
+            participants,
+            color: getEventColor(localType),
+            groupName: ev.groupName || ev.group?.groupName || ev.group?.name || ev.groupId || ev.group_id
+          };
+        });
+
+        setScheduleEvents(mapped);
+      } catch (err) {
+        console.error('Error fetching calendar events', err);
+        toast.error('Không thể tải lịch. Vui lòng thử lại.');
+      }
+    };
+
+    fetchEvents();
+  }, [baseDate, rangeMode, myGroups]);
+
+  // compute weekdays for header based on baseDate and rangeMode
+  const computeDaysOfWeek = () => {
+    const labels = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    // For week mode, pick the Monday of the baseDate's week; for other modes use baseDate's current week as reference
+    let mondayStart;
+    if (rangeMode === 'week') {
+      mondayStart = dayjs(baseDate).day() === 0 ? dayjs(baseDate).subtract(6, 'day') : dayjs(baseDate).day(1);
+    } else {
+      // For month/6months/year we still show the week that contains baseDate in header
+      mondayStart = dayjs(baseDate).day() === 0 ? dayjs(baseDate).subtract(6, 'day') : dayjs(baseDate).day(1);
+    }
+
+    const arr = [];
+    for (let i = 0; i < 7; i++) {
+      const d = dayjs(mondayStart).add(i, 'day');
+      arr.push({ key: labels[i].toLowerCase().replace(/\s+/g, '-'), label: labels[i], date: d.format('DD/MM'), fullDate: d });
+    }
+    return arr;
+  };
+
+  const daysOfWeek = computeDaysOfWeek();
 
   useEffect(() => {
     setIsLoaded(true);
+    // Fetch user's groups on mount
+    const fetchGroups = async () => {
+      try {
+        const response = await groupService.getMyGroups();
+        const groupsData = response?.data || response || [];
+        console.log('Fetched my groups:', groupsData);
+        // If backend returns object with numeric keys, convert to array
+        const groupsArr = Array.isArray(groupsData) ? groupsData : Object.values(groupsData);
+        setMyGroups(groupsArr);
+        // Optionally set current group to first
+        if (groupsArr.length > 0 && !currentGroup) {
+          setCurrentGroup(groupsArr[0]);
+        }
+      } catch (err) {
+        console.error('Error fetching my groups', err);
+        setMyGroups([]);
+      }
+    };
+    fetchGroups();
   }, []);
 
   const getEventsForTimeSlot = (day, timeIndex) => {
+    // compute visible start/end according to current baseDate and rangeMode
+    let visibleStart;
+    let visibleEnd;
+    if (rangeMode === 'week') {
+      const s = dayjs(baseDate).day() === 0 ? dayjs(baseDate).subtract(6, 'day') : dayjs(baseDate).day(1);
+      visibleStart = s.startOf('day');
+      visibleEnd = dayjs(s).add(6, 'day').endOf('day');
+    } else if (rangeMode === 'month') {
+      const s = dayjs(baseDate).startOf('month');
+      visibleStart = s.startOf('day');
+      visibleEnd = s.endOf('month').endOf('day');
+    } else if (rangeMode === '6months') {
+      const s = dayjs(baseDate).startOf('month').subtract(2, 'month');
+      visibleStart = s.startOf('day');
+      visibleEnd = dayjs(s).add(5, 'month').endOf('month').endOf('day');
+    } else {
+      const s = dayjs(baseDate).startOf('year');
+      visibleStart = s.startOf('day');
+      visibleEnd = s.endOf('year').endOf('day');
+    }
+
     return scheduleEvents.filter(event => {
+      // if event has explicit ISO, ensure it falls into the visible range
+      if (event.startIso) {
+        const evStart = dayjs(event.startIso);
+        if (evStart.isBefore(visibleStart) || evStart.isAfter(visibleEnd)) return false;
+      }
+
       const eventStartHour = parseInt(event.startTime.split(':')[0]);
       const eventEndHour = parseInt(event.endTime.split(':')[0]);
       const currentHour = timeIndex + 1;
-      
+
       return event.day === day && currentHour >= eventStartHour && currentHour < eventEndHour;
     });
   };
 
   const handleTimeSlotClick = (day, timeIndex) => {
-    setSelectedTimeSlot({ day, timeIndex, time: timeSlots[timeIndex] });
+    const sel = { day, timeIndex, time: timeSlots[timeIndex] };
+    setSelectedTimeSlot(sel);
+    // prefill selected group if exists
+    // prefill eventDate based on clicked day within the current baseDate's week/month
+    const dayOfWeek = 1 + day; // 1 = Monday
+    // set selected date to that weekday in the week that contains baseDate
+    const selDate = dayjs(baseDate).day(dayOfWeek);
+    form.setFieldsValue({ groupId: currentGroup?.id, eventDate: selDate });
     setIsModalOpen(true);
+  };
+
+  // Fetch members when group selection changes in the modal
+  const fetchMembersForGroup = async (groupId) => {
+    if (!groupId) {
+      setGroupMembers([]);
+      return;
+    }
+
+    try {
+      const resp = await groupService.getGroupMembers(groupId);
+      const data = resp?.data || resp || {};
+      console.log('Fetched group members:', data);
+      // backend may wrap members in { members: [...] }
+      const membersRaw = data?.members || data || [];
+
+      const members = membersRaw.map((member, idx) => ({
+        id: member.id || member.userId || member.user_id,
+        userId: member.id || member.userId || member.user_id,
+        name: member.username || member.name || (member.email ? member.email.split('@')[0] : 'User'),
+        email: member.email,
+        avatar: (member.username || 'U').substring(0, 2).toUpperCase(),
+        color: `bg-${['purple','blue','green','yellow','pink','indigo','red','cyan'][idx % 8]}-500`,
+      }));
+
+      setGroupMembers(members);
+    } catch (err) {
+      console.error('Error fetching group members', err);
+      setGroupMembers([]);
+      toast.error('Không thể tải thành viên nhóm.');
+    }
+  };
+
+  // Watch form changes to detect groupId/groupName change
+  const handleFormValuesChange = (changedValues, allValues) => {
+    // Support both groupId and groupName
+    if (changedValues.groupId !== undefined || changedValues.groupName !== undefined) {
+      // Prefer groupName if present
+      let groupId = changedValues.groupId;
+      if (changedValues.groupName !== undefined) {
+        const groupObj = myGroups.find(g => g.groupName === changedValues.groupName);
+        groupId = groupObj?.id;
+      }
+      if (groupId) fetchMembersForGroup(groupId);
+      else setGroupMembers([]);
+      // Reset participants field when group changes
+      form.setFieldsValue({ participants: [] });
+    }
   };
 
   const handleCreateEvent = async (values) => {
@@ -113,22 +341,125 @@ export default function Schedule() {
       const startTime = values.timeRange ? values.timeRange[0] : null;
       const endTime = values.timeRange ? values.timeRange[1] : null;
       
-      const newEvent = {
-        id: scheduleEvents.length + 1,
-        title: values.title,
-        description: values.description,
-        day: selectedTimeSlot.day,
-        startTime: startTime ? `${startTime.hour().toString().padStart(2, '0')}:${startTime.minute().toString().padStart(2, '0')}` : '09:00',
-        endTime: endTime ? `${endTime.hour().toString().padStart(2, '0')}:${endTime.minute().toString().padStart(2, '0')}` : '10:00',
-        type: values.type,
-        participants: values.participants ? values.participants.split(',').map(p => p.trim()) : [],
-        color: getEventColor(values.type)
+      // If user selected a group in the form, use it; otherwise use currently selected group
+      // Support different group object shapes: prefer `groupName`, then `name`.
+      const selectedGroupName = values.groupName || currentGroup?.groupName || currentGroup?.name;
+      const selectedGroupObj = (
+        myGroups.find(g => g.groupName === selectedGroupName) ||
+        myGroups.find(g => g.name === selectedGroupName) ||
+        currentGroup
+      );
+      const selectedGroupId = selectedGroupObj?.id;
+
+      // Map local type to backend EventType
+      const typeMap = {
+        meeting: 'meeting',
+        study: 'study_session',
+        presentation: 'presentation',
+        exam: 'exam'
       };
 
-      setScheduleEvents(prev => [...prev, newEvent]);
-      setIsModalOpen(false);
-      form.resetFields();
-      toast.success('Đã thêm sự kiện thành công! 📅');
+      const startHour = startTime ? startTime.hour() : 9;
+      const startMinute = startTime ? startTime.minute() : 0;
+      const endHour = endTime ? endTime.hour() : (startHour + 1);
+      const endMinute = endTime ? endTime.minute() : 0;
+
+      // Determine base date: prefer user-picked date, otherwise use selectedTimeSlot's week day
+      let baseDate;
+      if (values.eventDate) {
+        baseDate = dayjs(values.eventDate);
+      } else if (selectedTimeSlot) {
+        const dayOfWeek = 1 + selectedTimeSlot.day; // dayjs: 0 = Sunday, 1 = Monday
+        baseDate = dayjs().day(dayOfWeek).add(currentWeek * 7, 'day');
+      } else {
+        baseDate = dayjs();
+      }
+
+      const eventDate = baseDate.hour(startHour).minute(startMinute).second(0).toISOString();
+      const endDateIso = baseDate.hour(endHour).minute(endMinute).second(0).toISOString();
+
+      if (selectedGroupId) {
+        // CREATE
+        setIsCreating(true);
+        try {
+          const payload = {
+            groupId: selectedGroupId,
+            title: values.title,
+            description: values.description,
+            eventType: typeMap[values.type] || typeMap.study,
+            eventDate,
+            endDate: endDateIso,
+            participantIds: values.participants && Array.isArray(values.participants) ? values.participants : undefined,
+          };
+
+          const created = await groupEventService.createEvent(payload);
+          const body = created?.data || created || {};
+          const eventObj = body.data || body;
+
+          const eventDayIndex = values.eventDate
+            ? (dayjs(values.eventDate).day() === 0 ? 6 : dayjs(values.eventDate).day() - 1)
+            : (selectedTimeSlot ? selectedTimeSlot.day : 0);
+
+          const backendEvent = {
+            id: eventObj?.id || Date.now(),
+            title: eventObj?.title || values.title,
+            description: eventObj?.description || values.description,
+            day: eventDayIndex,
+            startIso: eventObj?.eventDate || eventDate,
+            endIso: eventObj?.endDate || endDateIso,
+            startTime: `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`,
+            endTime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`,
+            type: values.type,
+            participants: Array.isArray(values.participants)
+              ? values.participants.map(id => {
+                  const member = groupMembers.find(m => m.userId === id);
+                  return member ? member.name : id;
+                })
+              : values.participants ? values.participants.split(',').map(p => p.trim()) : [],
+            color: getEventColor(values.type),
+            groupName: selectedGroupName,
+          };
+
+          setScheduleEvents(prev => [...prev, backendEvent]);
+          if (!currentGroup || currentGroup.id !== selectedGroupId) {
+            const groupObj = myGroups.find(g => g.id === selectedGroupId);
+            if (groupObj) setCurrentGroup(groupObj);
+          }
+
+          setIsModalOpen(false);
+          form.resetFields();
+          toast.success('Đã thêm sự kiện vào nhóm thành công! 📅');
+        } catch (err) {
+          console.error('Create event error', err);
+          toast.error(err?.message || 'Có lỗi xảy ra khi tạo sự kiện trên server!');
+        } finally {
+          setIsCreating(false);
+        }
+      } else {
+        // Fallback: local-only event
+        const eventDayIndex = values.eventDate
+          ? (dayjs(values.eventDate).day() === 0 ? 6 : dayjs(values.eventDate).day() - 1)
+          : (selectedTimeSlot ? selectedTimeSlot.day : 0);
+        const newEvent = {
+          id: scheduleEvents.length + 1,
+          title: values.title,
+          description: values.description,
+          day: eventDayIndex,
+          startIso: eventDate,
+          endIso: endDateIso,
+          startTime: `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`,
+          endTime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`,
+          type: values.type,
+          participants: values.participants ? values.participants.split(',').map(p => p.trim()) : [],
+          color: getEventColor(values.type),
+          groupName: selectedGroupName,
+        };
+
+        setScheduleEvents(prev => [...prev, newEvent]);
+        setIsModalOpen(false);
+        form.resetFields();
+        toast.success('Đã thêm sự kiện (cục bộ) thành công! 📅');
+      }
     } catch (error) {
       toast.error('Có lỗi xảy ra khi tạo sự kiện!');
     }
@@ -155,11 +486,18 @@ export default function Schedule() {
   };
 
   const handlePrevWeek = () => {
-    setCurrentWeek(prev => prev - 1);
+    // Move baseDate backwards according to rangeMode
+    if (rangeMode === 'week') setBaseDate(d => dayjs(d).subtract(1, 'week'));
+    else if (rangeMode === 'month') setBaseDate(d => dayjs(d).subtract(1, 'month'));
+    else if (rangeMode === '6months') setBaseDate(d => dayjs(d).subtract(6, 'month'));
+    else if (rangeMode === 'year') setBaseDate(d => dayjs(d).subtract(1, 'year'));
   };
 
   const handleNextWeek = () => {
-    setCurrentWeek(prev => prev + 1);
+    if (rangeMode === 'week') setBaseDate(d => dayjs(d).add(1, 'week'));
+    else if (rangeMode === 'month') setBaseDate(d => dayjs(d).add(1, 'month'));
+    else if (rangeMode === '6months') setBaseDate(d => dayjs(d).add(6, 'month'));
+    else if (rangeMode === 'year') setBaseDate(d => dayjs(d).add(1, 'year'));
   };
 
   return (
@@ -210,7 +548,30 @@ export default function Schedule() {
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/30">
                   <div className="flex items-center gap-3 text-white">
                     <CalendarOutlined className="text-xl" />
-                    <span className="font-semibold">30/06 - 07/07/2025</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const start = (() => {
+                          if (rangeMode === 'week') {
+                            // Monday of baseDate's week
+                            const d = dayjs(baseDate).day() === 0 ? dayjs(baseDate).subtract(6, 'day') : dayjs(baseDate).day(1);
+                            return d;
+                          } else if (rangeMode === 'month') {
+                            return dayjs(baseDate).startOf('month');
+                          } else if (rangeMode === '6months') {
+                            return dayjs(baseDate).startOf('month').subtract(2, 'month');
+                          } else { // year
+                            return dayjs(baseDate).startOf('year');
+                          }
+                        })();
+                        const end = (() => {
+                          if (rangeMode === 'week') return dayjs(start).add(6, 'day');
+                          if (rangeMode === 'month') return dayjs(start).endOf('month');
+                          if (rangeMode === '6months') return dayjs(start).add(5, 'month').endOf('month');
+                          return dayjs(start).endOf('year');
+                        })();
+                        return `${start.format('DD/MM/YYYY')} - ${end.format('DD/MM/YYYY')}`;
+                      })()}
+                    </span>
                   </div>
                 </div>
                 <Button
@@ -226,7 +587,16 @@ export default function Schedule() {
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    // open modal and prefill default time / group
+                      const todayIndex = dayjs().day(); // 0 = Sunday
+                      const mappedDay = todayIndex === 0 ? 6 : todayIndex - 1; // 0=Mon
+                      setSelectedTimeSlot({ day: mappedDay, timeIndex: 8, time: timeSlots[8] });
+                      // prefill eventDate from baseDate's week
+                      const selDate = dayjs(baseDate).day(1 + mappedDay);
+                      form.setFieldsValue({ groupId: currentGroup?.id, eventDate: selDate });
+                      setIsModalOpen(true);
+                  }}
                   className="bg-white text-purple-600 border-0 hover:bg-gray-100"
                   size="large"
                 >
@@ -291,6 +661,10 @@ export default function Schedule() {
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 whileHover={{ scale: 1.02 }}
                                 className={`${event.color} text-white p-2 rounded-lg text-xs mb-1 shadow-sm hover:shadow-md transition-all cursor-pointer`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEventDetail(event);
+                                }}
                               >
                                 <div className="flex items-center gap-1 mb-1">
                                   {getEventIcon(event.type)}
@@ -301,7 +675,7 @@ export default function Schedule() {
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
                                   <UserOutlined className="text-xs" />
-                                  <span>{event.participants.length}</span>
+                                  <span>{Array.isArray(event.participants) ? event.participants.length : 0}</span>
                                 </div>
                               </motion.div>
                             ))}
@@ -369,6 +743,7 @@ export default function Schedule() {
           <Form
             form={form}
             onFinish={handleCreateEvent}
+            onValuesChange={(changedValues, allValues) => handleFormValuesChange(changedValues, allValues)}
             layout="vertical"
             size="large"
           >
@@ -397,6 +772,21 @@ export default function Schedule() {
 
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
+                name="groupName"
+                label={<span className="text-gray-700 font-medium">Nhóm</span>}
+              >
+                <Select placeholder="Chọn nhóm (mặc định là nhóm hiện tại)" className="rounded-xl">
+                  {myGroups && myGroups.length > 0 ? (
+                    myGroups.map(g => (
+                      <Option key={g.id} value={g.groupName}>{g.groupName}</Option>
+                    ))
+                  ) : (
+                    <Option key="none" value="">Không có nhóm</Option>
+                  )}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
                 name="type"
                 label={<span className="text-gray-700 font-medium">Loại sự kiện</span>}
                 rules={[{ required: true, message: 'Vui lòng chọn loại sự kiện!' }]}
@@ -408,16 +798,30 @@ export default function Schedule() {
                   <Option value="exam">Kiểm tra</Option>
                 </Select>
               </Form.Item>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <Form.Item
+                name="eventDate"
+                label={<span className="text-gray-700 font-medium">Ngày</span>}
+                rules={[{ required: true, message: 'Vui lòng chọn ngày!' }]}
+              >
+                <DatePicker
+                  className="w-full rounded-xl"
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày"
+                />
+              </Form.Item>
 
               <Form.Item
                 name="timeRange"
                 label={<span className="text-gray-700 font-medium">Thời gian</span>}
                 rules={[{ required: true, message: 'Vui lòng chọn thời gian!' }]}
               >
-                <TimePicker.RangePicker 
+                <TimePicker.RangePicker
                   format="HH:mm"
                   className="w-full rounded-xl"
-                  placeholder={['Bắt đầu', 'Kết thúc']}
+                  placeholder={["Bắt đầu", "Kết thúc"]}
                 />
               </Form.Item>
             </div>
@@ -426,11 +830,30 @@ export default function Schedule() {
               name="participants"
               label={<span className="text-gray-700 font-medium">Thành viên tham gia</span>}
             >
-              <Input
-                placeholder="Nhập tên thành viên, cách nhau bởi dấu phẩy"
-                prefix={<TeamOutlined className="text-gray-400" />}
-                className="rounded-xl"
-              />
+              {groupMembers && groupMembers.length > 0 ? (
+                <Select
+                  mode="multiple"
+                  placeholder="Chọn thành viên tham gia"
+                  optionFilterProp="label"
+                  className="rounded-xl"
+                  showSearch
+                >
+                  {groupMembers.map(member => (
+                    <Option key={member.userId} value={member.userId} label={member.name}>
+                      <div className="flex items-center gap-2">
+                        <div className={`${member.color} w-6 h-6 rounded-full flex items-center justify-center text-white text-xs`}>{member.avatar}</div>
+                        <span>{member.name}</span>
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
+              ) : (
+                <Input
+                  placeholder="Nhập tên thành viên, cách nhau bởi dấu phẩy"
+                  prefix={<TeamOutlined className="text-gray-400" />}
+                  className="rounded-xl"
+                />
+              )}
             </Form.Item>
 
             <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
@@ -447,6 +870,7 @@ export default function Schedule() {
               <Button
                 type="primary"
                 htmlType="submit"
+                loading={isCreating}
                 className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-pink-600 border-0 rounded-xl"
                 size="large"
               >
@@ -455,6 +879,85 @@ export default function Schedule() {
             </div>
           </Form>
         </div>
+      </Modal>
+      {/* Event Detail Modal */}
+      <Modal
+        title={null}
+        open={isDetailModalOpen}
+        onCancel={() => {
+          setIsDetailModalOpen(false);
+          setSelectedEvent(null);
+        }}
+        footer={null}
+        width={650}
+        centered
+        destroyOnClose
+        className="rounded-lg overflow-hidden"
+      >
+        {selectedEvent && (
+          <div className="px-6 py-5">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-semibold">
+                  {selectedEvent.title ? (selectedEvent.title[0] || 'E').toUpperCase() : 'E'}
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">{selectedEvent.title}</div>
+                  <div className="mt-1 text-sm text-gray-500">{selectedEvent.groupName || 'Nhóm không xác định'}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500">{selectedEvent.startIso ? dayjs(selectedEvent.startIso).format('DD/MM/YYYY') : ''}</div>
+                <div className="text-xs text-gray-400">{selectedEvent.startIso ? dayjs(selectedEvent.startIso).format('HH:mm') : ''} — {selectedEvent.endIso ? dayjs(selectedEvent.endIso).format('HH:mm') : ''}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-4">
+              {/* Description card */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div className="text-sm text-gray-600 mb-2">Mô tả</div>
+                <div className="text-gray-800">{selectedEvent.description || <span className="text-gray-400">Không có mô tả</span>}</div>
+              </div>
+
+              {/* Participants */}
+              <div>
+                <div className="text-sm text-gray-600 mb-3">Thành viên ({(selectedEvent.displayParticipants || selectedEvent.participants || []).length})</div>
+                <div className="flex flex-wrap gap-3">
+                  {(selectedEvent.displayParticipants && selectedEvent.displayParticipants.length > 0 ? selectedEvent.displayParticipants : selectedEvent.participants || []).map((p, idx) => {
+                    const name = typeof p === 'string' ? p : (p.name || p.username || String(p));
+                    const initials = name ? name.split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase() : 'U';
+                    return (
+                      <div key={idx} className="flex items-center gap-3 bg-white border border-gray-100 p-2 rounded-lg shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium text-sm">{initials}</div>
+                        <div className="text-sm text-gray-800">{name}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Popconfirm
+                title={"Bạn có chắc muốn xóa sự kiện này? Hành động không thể hoàn tác."}
+                okText="Xóa"
+                okType="danger"
+                cancelText="Hủy"
+                onConfirm={() => handleDeleteEvent(selectedEvent)}
+                getPopupContainer={() => document.body}
+              >
+                <Button danger>Xóa</Button>
+              </Popconfirm>
+              <Button
+                type="default"
+                onClick={() => { setIsDetailModalOpen(false); setSelectedEvent(null); }}
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
       </div>
 
